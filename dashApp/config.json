@@ -1,0 +1,23 @@
+{
+  "dsaBaseUrl": "https://wsi-deid.pathology.emory.edu/api/v1",
+  "defaultFolderId": "642603bb23a7e18ea331d72a",
+  "sampleDataFile": "dg-megabrain-itemset.json",
+  "colsToHide": [
+    "modelType",
+    "_modelType",
+    "baseParentId",
+    "baseParentType",
+    "created",
+    "creatorId",
+    "description",
+    "copyOfItem",
+    "updated",
+    "folderId",
+    "size",
+    "largeImage.fileId",
+    "largeImage.sourceName",
+    "meta.npSchema.controlSlide",
+    "meta.npWorking.stainID"
+  ],
+  "colsToShow": ["_id", "name", "stainID", "caseID", "regionName", "blockID"]
+}

@@ -1,0 +1,47 @@
+version: "3"
+volumes:
+  postgis-data-volume:
+  mongodb-data-volume:
+services:
+  mongodb:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: docker
+      MONGO_INITDB_ROOT_PASSWORD: docker
+    volumes:
+      - mongodb-data-volume:/data/db
+    ports:
+      - "27017" ## Commend if you do not want anything outside of docker compose to connect
+    command: --nojournal --maxConns 1000
+
+    logging:
+      options:
+        max-size: "10M"
+        max-file: "5"
+  neurotk-notebook:
+    container_name: neurotknb
+    build: neurotk-notebook/
+    # volumes:
+    #   - ./dsapostgisnb/geonotebooks:/app
+    #   - ./fastapi/app:/app/fastapifiles
+    ports:
+      - 8888:8888
+    expose:
+      - "8888"
+    depends_on:
+      - mongodb
+  neurotk-dash:
+    container_name: neurotkdash
+    build: dashApp/
+    environment:
+      - PORT=8050
+    volumes:
+      - ./dashApp:/app
+    ports:
+      - "8050:8050"
+    expose:
+      - "8050"
+    depends_on:
+      - mongodb
+      - neurotk-notebook
