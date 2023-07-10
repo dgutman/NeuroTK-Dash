@@ -12,7 +12,7 @@ from flask import Flask
 import os
 
 # local imports
-from src.utils.settings import APP_HOST, APP_PORT, DEV_TOOLS_PROPS_CHECK, MONGO_URI
+from src.utils.settings import APP_HOST, APP_PORT, DEV_TOOLS_PROPS_CHECK, MONGO_URI, MONGODB_USERNAME, MONGODB_PASSWORD
 from src.utils.database import db
 from src.components import header
 
@@ -20,7 +20,11 @@ from src.utils.settings import MONGO_URI
 
 # create the extension
 server = Flask(__name__)
-server.config["MONGODB_SETTINGS"] = {"host": MONGO_URI}  # Replace with your MongoDB connection URI
+server.config["MONGODB_SETTINGS"] = {
+    "host": MONGO_URI,
+    "username": MONGODB_USERNAME,
+    "password": MONGODB_PASSWORD,
+}  # Replace with your MongoDB connection URI
 
 with server.app_context():
     db.init_app(server)
