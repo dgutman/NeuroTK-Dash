@@ -4,14 +4,6 @@ from .settings import MONGO_URI
 from flask import Flask
 
 # initialize the app with the extension
-## So this seems like this should be done in the app.py and imported...
-
-# db = MongoEngine({"config": {"MONGODB_HOST": MONGO_URI}})
-### So this is all wrong, I need to the flask app context or this doesn't seem to work..
-# app = Flask(__name__)
-
-db_settings = {"DB": "DSACache", "host": "mongodb://docker:docker@mongodb:27017/DSACache"}  #
-# {## just do db = {}
 
 db = MongoEngine()
 
