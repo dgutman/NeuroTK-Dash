@@ -1,3 +1,8 @@
+.card.clicked {
+    background-color: lightgreen !important;
+}
+
+
 body {
     font-family: "Open Sans", sans-serif;
     background-color: #F1F1F1;
@@ -404,13 +409,4 @@ h6 {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-
-.card.clicked {
-    background-color: lightgreen !important;
-}
-
-.clicked {
-    background-color: green !important;
 }

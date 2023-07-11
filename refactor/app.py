@@ -30,6 +30,8 @@ from src.utils.settings import MONGO_URI
 
 # create the extension
 server = Flask(__name__)
+
+
 server.config["MONGODB_SETTINGS"] = {
     "host": MONGODB_HOST,
     "username": MONGODB_USERNAME,

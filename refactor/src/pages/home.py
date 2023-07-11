@@ -14,6 +14,9 @@ from ..utils.dsa_login import LoginSystem
 dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
 
 
+## For development I am checking to see if I am in a docker environment or not..
+
+
 # dsa_login = LoginSystem("SOME_URL_GOES_HERE") # TO BE DONE
 
 ### This contains high level stats graphs for stain and regionName
@@ -29,9 +32,12 @@ stats_graphs = html.Div(
 
 cur_image_annotationTable = html.Div(id="curImageAnnotation-div")
 
-cur_image_viz = html.Div(
-    [html.Div(id="cur-image-for-ppc", className="cur-image-for-ppc"), html.Div(id="cur-image-with-annotation")],
-    className="six columns",
+cur_image_viz = dbc.Col(
+    [
+        html.Div(id="cur-image-for-ppc", className="cur-image-for-ppc three columns"),
+        html.Div(cur_image_annotationTable, className="seven columns"),
+        html.Div(id="cur-image-with-annotation", className="two columns"),
+    ],
 )
 
 main_item_datatable = html.Div([], className="twelve columns", id="datatable-div")
@@ -69,7 +75,6 @@ layout = html.Div(
         html.Div(
             [
                 multi_acc,
-                cur_image_annotationTable,
                 html.Div(
                     [
                         dcc.Loading(
