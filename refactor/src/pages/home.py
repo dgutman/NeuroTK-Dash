@@ -9,7 +9,8 @@ import dash_mantine_components as dmc
 from ..utils.helpers import generate_dsaDataTable, getSampleDataset, generate_dsaAnnotationsTable
 from ..utils.api import getItemSetData, getThumbnail, getItemAnnotations
 from ..utils.database import insert_records, get_all_records_df
-from ..utils.dsa_login import LoginSystem
+
+# from ..utils.dsa_login import LoginSystem
 
 dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
 
