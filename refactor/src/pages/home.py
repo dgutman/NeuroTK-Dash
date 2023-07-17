@@ -9,6 +9,7 @@ import dash_mantine_components as dmc
 from ..utils.helpers import generate_dsaDataTable, getSampleDataset, generate_dsaAnnotationsTable
 from ..utils.api import getItemSetData, getThumbnail, getItemAnnotations
 from ..utils.database import insert_records, get_all_records_df
+from dash_iconify import DashIconify
 
 # from ..utils.dsa_login import LoginSystem
 
@@ -47,6 +48,10 @@ main_item_datatable = html.Div([], className="twelve columns", id="datatable-div
 multi_acc = dmc.AccordionMultiple(
     children=[
         dmc.AccordionItem(
+            [dmc.AccordionControl("JC Playground"), dmc.AccordionPanel(html.Div("Coming soon"), id="jcplayground")],
+            value="jcp",
+        ),
+        dmc.AccordionItem(
             [
                 dmc.AccordionControl("Item Set Datatable"),
                 dmc.AccordionPanel(main_item_datatable),
@@ -71,27 +76,64 @@ multi_acc = dmc.AccordionMultiple(
 )
 
 
-layout = html.Div(
-    [
-        html.Div(
-            [
-                multi_acc,
-                html.Div(
-                    [
-                        dcc.Loading(
-                            id="loading",
-                            type="default",
-                            children=html.Button("Update Item Data", id="update-btn", n_clicks=0),
-                        ),
-                    ],
-                    className="twelve columns process-btn-div",
-                ),
-            ],
-            className="content__card",
-        ),
-        dcc.Store(id="store", storage_type="memory"),
-    ]
+layout = dmc.MantineProvider(
+    dmc.NotificationsProvider(
+        [
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            multi_acc,
+                            html.Div(
+                                [
+                                    dcc.Loading(
+                                        id="loading",
+                                        type="default",
+                                        children=[
+                                            html.Button("Update Item Data", id="update-btn", n_clicks=0),
+                                            html.Button("JCClickMe", id="jcbutton", n_clicks=0),
+                                        ],
+                                    ),
+                                ],
+                                className="twelve columns process-btn-div",
+                            ),
+                        ],
+                        className="content__card",
+                    ),
+                    dcc.Store(id="store", storage_type="memory"),
+                    html.Div(id="notification-container"),
+                ]
+            )
+        ]
+    )
 )
+
+
+def jc_gen_layout_demo():
+    jc_layout = dbc.Row(
+        [dbc.Col("Column Uno", width=3), dbc.Col("Column Two", width=6), dbc.Col("Column Three", width=3)]
+    )
+
+    return jc_layout
+
+
+@callback(
+    Output("notification-container", "children"),
+    Output("jcplayground", "children"),
+    Input("jcbutton", "n_clicks"),
+    prevent_initial_call=True,
+)
+def show_jcbuttons(n_clicks):
+    # print("JC CLicked button!")
+    notify_msg = dmc.Notification(
+        title="Hey there!",
+        id="simple-notify",
+        action="show",
+        message="Notifications in Dash, Awesome! This is click %d" % n_clicks,
+        icon=DashIconify(icon="ic:round-celebration"),
+    )
+
+    return notify_msg, jc_gen_layout_demo()
 
 
 @callback(

@@ -7,7 +7,7 @@ header = html.Div(
     [
         html.Div(
             [
-                html.H4("Dashboard", className="app__header__title"),
+                html.H4("NeuroTK Dashboard", className="app__header__title"),
             ],
             className="app__header__desc",
         ),
