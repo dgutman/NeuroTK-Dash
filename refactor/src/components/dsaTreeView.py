@@ -7,6 +7,7 @@ import dash_mantine_components as dmc
 from dash_iconify import DashIconify
 import girder_client
 
+
 app = dash.Dash(
     __name__,
     external_stylesheets=[
@@ -17,7 +18,6 @@ app = dash.Dash(
 
 # # Replace with the base URL of your DSA
 BASE_URL = "https://styx.neurology.emory.edu/api/v1"
-
 gc = girder_client.GirderClient(apiUrl=BASE_URL)
 
 
@@ -52,7 +52,13 @@ class DSAFileTree:
         )
 
     def make_folder(self, folder_name):
-        return [DashIconify(icon="akar-icons:folder"), " ", folder_name]
+        return [
+            DashIconify(
+                icon="akar-icons:folder",
+            ),
+            " ",
+            folder_name,
+        ]
 
     def list_folder(self, path, parentFolderType="folder"):
         ### list a folder from the DSA
@@ -79,7 +85,10 @@ class DSAFileTree:
                 return self.flatten(children)
             item = dmc.AccordionItem(
                 [
-                    dmc.AccordionControl(self.make_folder(os.path.basename(path))),
+                    dmc.AccordionControl(
+                        self.make_folder(os.path.basename(path)),
+                        id={"type": "folder-contents", "index": path},
+                    ),
                     dmc.AccordionPanel(children=self.flatten(children)),
                 ],
                 value=path,
@@ -87,26 +96,7 @@ class DSAFileTree:
             d.append(item)
         else:
             d.append(self.make_file(os.path.basename(path)))
-            # item = dmc.AccordionItem(
-            #        [     dmc.AccordionControl(self.make_folder(os.path.basename(path)),
 
-            #         ],value=path)
-            #     )
-        #     else:
-        #         d.append(
-        #             dmc.Accordion(
-        #                 children=[
-        #                     dmc.AccordionItem(
-        #                         children=children,
-        #                         value=self.make_folder(os.path.basename(path)),
-        #                     )
-        #                 ],
-        #                 value=os.path.basename(path),
-        #                 id=path,  ### Make the id of this resource the resourcePath
-        #             )
-        #         )
-        # else:
-        #     d.append(self.make_file(os.path.basename(path)))
         return d
 
 
@@ -120,14 +110,79 @@ print(fileTreeLayout)
 
 app.layout = dbc.Row(
     [
-        html.Div("Stuff goes here too"),
+        html.Div("DSA Tree Browser for %s" % dsaResourcePath),
         fileTreeLayout,
     ]
 )
 
 
+@app.callback(
+    Output({"type": "folder-contents", "index": MATCH}, "children"),
+    [Input({"type": "load-button", "index": MATCH}, "n_clicks")],
+    [State({"type": "folder-contents", "index": MATCH}, "id")],
+)
+def load_collection(n, id):
+    print("HELLO COLLECTION")
+    if n is not None:
+        response = requests.get(
+            BASE_URL + "/folder",
+            params={"parentType": "collection", "parentId": id["index"], "limit": 0},
+        )
+        folders = response.json()
+        return [
+            html.Div(
+                [
+                    html.H3(folder["name"]),
+                    html.Div(id={"type": "item-contents", "index": folder["_id"]}),
+                    dbc.Button(
+                        "Load",
+                        id={"type": "load-item-button", "index": folder["_id"]},
+                        outline=True,
+                        size="sm",
+                    ),
+                ]
+            )
+            for folder in folders
+        ]
+
+
+@app.callback(
+    Output({"type": "item-contents", "index": MATCH}, "children"),
+    [Input({"type": "load-item-button", "index": MATCH}, "n_clicks")],
+    [State({"type": "item-contents", "index": MATCH}, "id")],
+)
+def load_items(n, id):
+    print("HELLO ITEM")
+    if n is not None:
+        response = requests.get(
+            BASE_URL + "/item", params={"folderId": id["index"], "limit": 0}
+        )
+        items = response.json()
+        return [
+            html.Div(
+                [
+                    dcc.Checkbox(id={"type": "item-checkbox", "index": item["_id"]}),
+                    html.Label(item["name"]),
+                ]
+            )
+            for item in items
+        ]
+
+
 if __name__ == "__main__":
     app.run_server(debug=True)
+
+
+# @app.callback(
+#     Output("file_tree", "children"),
+#     [Input("select_folder", "n_clicks")],
+# )
+# def add(n_clicks):
+#     if n_clicks > 0:
+
+#         children = DSAFileTree.build_tree(path, isRoot=True)
+#         print(children)
+#         return children
 
 
 # app.layout = html.Div(
@@ -186,57 +241,6 @@ if __name__ == "__main__":
 #                 ]
 #             )
 #             for collection in collections
-#         ]
-
-
-# @app.callback(
-#     Output({"type": "folder-contents", "index": MATCH}, "children"),
-#     [Input({"type": "load-button", "index": MATCH}, "n_clicks")],
-#     [State({"type": "folder-contents", "index": MATCH}, "id")],
-# )
-# def load_collection(n, id):
-#     if n is not None:
-#         response = requests.get(
-#             BASE_URL + "/folder",
-#             params={"parentType": "collection", "parentId": id["index"], "limit": 0},
-#         )
-#         folders = response.json()
-#         return [
-#             html.Div(
-#                 [
-#                     html.H3(folder["name"]),
-#                     html.Div(id={"type": "item-contents", "index": folder["_id"]}),
-#                     dbc.Button(
-#                         "Load",
-#                         id={"type": "load-item-button", "index": folder["_id"]},
-#                         outline=True,
-#                         size="sm",
-#                     ),
-#                 ]
-#             )
-#             for folder in folders
-#         ]
-
-
-# @app.callback(
-#     Output({"type": "item-contents", "index": MATCH}, "children"),
-#     [Input({"type": "load-item-button", "index": MATCH}, "n_clicks")],
-#     [State({"type": "item-contents", "index": MATCH}, "id")],
-# )
-# def load_items(n, id):
-#     if n is not None:
-#         response = requests.get(
-#             BASE_URL + "/item", params={"folderId": id["index"], "limit": 0}
-#         )
-#         items = response.json()
-#         return [
-#             html.Div(
-#                 [
-#                     dcc.Checkbox(id={"type": "item-checkbox", "index": item["_id"]}),
-#                     html.Label(item["name"]),
-#                 ]
-#             )
-#             for item in items
 #         ]
 
 
