@@ -5,11 +5,18 @@ import dash_bootstrap_components as dbc  # Useful set of layout widgets
 import plotly.express as px
 import pandas as pd
 import dash_mantine_components as dmc
+from dash import callback_context
 
-from ..utils.helpers import generate_dsaDataTable, getSampleDataset, generate_dsaAnnotationsTable
+
+from ..utils.helpers import (
+    generate_dsaDataTable,
+    getSampleDataset,
+    generate_dsaAnnotationsTable,
+)
 from ..utils.api import getItemSetData, getThumbnail, getItemAnnotations
 from ..utils.database import insert_records, get_all_records_df
 from dash_iconify import DashIconify
+from ..components.statsGraph import stats_graphs_layout
 
 # from ..utils.dsa_login import LoginSystem
 
@@ -18,18 +25,9 @@ dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
 
 ## For development I am checking to see if I am in a docker environment or not..
 
-
 # dsa_login = LoginSystem("SOME_URL_GOES_HERE") # TO BE DONE
 
 ### This contains high level stats graphs for stain and regionName
-stats_graphs = html.Div(
-    [
-        html.Div([], className="four columns", id="graph1-div"),
-        html.Div([], className="four columns", id="graph2-div"),
-        html.Div([], className="four columns", id="graph3-div"),
-    ],
-    className="twelve columns",
-)
 
 
 cur_image_annotationTable = html.Div(id="curImageAnnotation-div")
@@ -48,10 +46,6 @@ main_item_datatable = html.Div([], className="twelve columns", id="datatable-div
 multi_acc = dmc.AccordionMultiple(
     children=[
         dmc.AccordionItem(
-            [dmc.AccordionControl("JC Playground"), dmc.AccordionPanel(html.Div("Coming soon"), id="jcplayground")],
-            value="jcp",
-        ),
-        dmc.AccordionItem(
             [
                 dmc.AccordionControl("Item Set Datatable"),
                 dmc.AccordionPanel(main_item_datatable),
@@ -68,7 +62,7 @@ multi_acc = dmc.AccordionMultiple(
         dmc.AccordionItem(
             [
                 dmc.AccordionControl("Stats Graphs"),
-                dmc.AccordionPanel(stats_graphs),
+                dmc.AccordionPanel(stats_graphs_layout),
             ],
             value="flexibility",
         ),
@@ -81,6 +75,17 @@ layout = dmc.MantineProvider(
         [
             html.Div(
                 [
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader("Full Screen"),
+                            dbc.ModalBody(
+                                [html.Div([], id="modal-body")],
+                            ),
+                        ],
+                        id="modal",
+                        is_open=False,
+                        fullscreen=True,
+                    ),
                     html.Div(
                         [
                             multi_acc,
@@ -90,8 +95,11 @@ layout = dmc.MantineProvider(
                                         id="loading",
                                         type="default",
                                         children=[
-                                            html.Button("Update Item Data", id="update-btn", n_clicks=0),
-                                            html.Button("JCClickMe", id="jcbutton", n_clicks=0),
+                                            html.Button(
+                                                "Update Item Data",
+                                                id="update-btn",
+                                                n_clicks=0,
+                                            ),
                                         ],
                                     ),
                                 ],
@@ -109,35 +117,16 @@ layout = dmc.MantineProvider(
 )
 
 
-def jc_gen_layout_demo():
-    jc_layout = dbc.Row(
-        [dbc.Col("Column Uno", width=3), dbc.Col("Column Two", width=6), dbc.Col("Column Three", width=3)]
-    )
-
-    return jc_layout
+### What's the best way to make this also update the graphs... do I have to explicitly also include
+### The function that updates the graphs here?  or is there some other better way to do it..
+## I'd rather the call back function just live in the statsGraph.py file..
 
 
+### This callback should only populate the datatable
 @callback(
-    Output("notification-container", "children"),
-    Output("jcplayground", "children"),
-    Input("jcbutton", "n_clicks"),
-    prevent_initial_call=True,
-)
-def show_jcbuttons(n_clicks):
-    # print("JC CLicked button!")
-    notify_msg = dmc.Notification(
-        title="Hey there!",
-        id="simple-notify",
-        action="show",
-        message="Notifications in Dash, Awesome! This is click %d" % n_clicks,
-        icon=DashIconify(icon="ic:round-celebration"),
-    )
-
-    return notify_msg, jc_gen_layout_demo()
-
-
-@callback(
-    [Output("datatable-div", "children"), Output("graph1-div", "children"), Output("graph2-div", "children")],
+    [
+        Output("datatable-div", "children"),
+    ],
     [Input("store", "data")],
 )
 def populate_data(data):
@@ -147,27 +136,34 @@ def populate_data(data):
         samples_dataset = pd.DataFrame(data)
 
     if samples_dataset.empty:
-        currentStainHistogram = None
-        currentRegionHistogram = None
+        #     currentStainHistogram = None
+        #     currentRegionHistogram = None
         table = None
     else:
-        currentStainHistogram = (dcc.Graph(figure=px.histogram(samples_dataset, x="stainID")),)
-        currentRegionHistogram = dcc.Graph(figure=px.histogram(samples_dataset, x="regionName"))
+        #     currentStainHistogram = (
+        #         dcc.Graph(figure=px.histogram(samples_dataset, x="stainID")),
+        #     )
+        #     currentRegionHistogram = dcc.Graph(
+        #         figure=px.histogram(samples_dataset, x="regionName")
+        #     )
         table = generate_dsaDataTable(samples_dataset)
 
-        # annotation_table = generate_dsaAnnotationsTable(None)
+    #     # annotation_table = generate_dsaAnnotationsTable(None)
 
     return [
-        table,
-        currentStainHistogram,
-        currentRegionHistogram
+        table
+        # currentStainHistogram,
+        # currentRegionHistogram
         # annotation_table
     ]
 
 
 @callback(
     # [Output("cur-hover-image", "children"), Output("cur-image-for-ppc", "children")],
-    [Output("cur-image-for-ppc", "children"), Output("curImageAnnotation-div", "children")],
+    [
+        Output("cur-image-for-ppc", "children"),
+        Output("curImageAnnotation-div", "children"),
+    ],
     [Input("datatable-interactivity", "active_cell")],
     # (A) pass table as data input to get current value from active cell "coordinates"
     [State("datatable-interactivity", "data")],
@@ -214,4 +210,37 @@ def update_data(n_clicks):
         samples_dataset = getSampleDataset(item_set)
         samples_dataset_records = samples_dataset.to_dict(orient="records")
         insert_records(samples_dataset_records)
-        return samples_dataset_records, html.Button("Update", id="update-btn", n_clicks=0)
+        return samples_dataset_records, html.Button(
+            "Update", id="update-btn", n_clicks=0
+        )
+
+
+# def jc_gen_layout_demo():
+#     jc_layout = dbc.Row(
+#         [
+#             dbc.Col("Column Uno", width=3),
+#             dbc.Col("Column Two", width=6),
+#             dbc.Col("Column Three", width=3),
+#         ]
+#     )
+
+#     return jc_layout
+
+
+# @callback(
+#     Output("notification-container", "children"),
+#     Output("jcplayground", "children"),
+#     Input("jcbutton", "n_clicks"),
+#     prevent_initial_call=True,
+# )
+# def show_jcbuttons(n_clicks):
+#     # print("JC CLicked button!")
+#     notify_msg = dmc.Notification(
+#         title="Hey there!",
+#         id="simple-notify",
+#         action="show",
+#         message="Notifications in Dash, Awesome! This is click %d" % n_clicks,
+#         icon=DashIconify(icon="ic:round-celebration"),
+#     )
+
+#     return notify_msg, jc_gen_layout_demo()

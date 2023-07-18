@@ -25,7 +25,6 @@ class DSAFileTree:
     def __init__(self, DSAResoucePath, gc: girder_client.GirderClient, id: str):
         self.resourcePath = DSAResoucePath
         self.gc = gc  ### GirderClient
-        self.id = id
 
     def getResourcePathId(self, resourcePath):
         rp = gc.get("/resource/lookup?path=%s" % resourcePath)
@@ -36,10 +35,7 @@ class DSAFileTree:
 
     def render(self) -> dmc.Accordion:
         return dmc.AccordionMultiple(
-            self.build_tree(
-                self.resourcePath, id=self.id, isRoot=True, parentFolderType="folder"
-            ),
-            id=self.id,
+            self.build_tree(self.resourcePath, isRoot=True, parentFolderType="folder"),
         )
 
     def flatten(self, l):
@@ -69,31 +65,46 @@ class DSAFileTree:
         print(list(fldrList))
         return fldrList
 
-    def build_tree(self, path, id, isRoot=False, parentFolderType="folder"):
+    def get_collection_folders(self, path):
+        ### This is the the first thing called and will get all the top level folders..
+        pass
+
+    def build_tree(self, path, isRoot=False, parentFolderType="folder"):
         ## Main modification is here.. Will use the girder Path lookup functionality
         ## So this is easier to follow than if using IDs.. can also add a class
         ## to cache the folders .. although not sure if that is particularly useful
         print("Processing path: %s" % path)
         d = []
         if self.getResourcePathId(path):
-            children = [
-                self.build_tree(os.path.join(path, x), path)
-                for x in self.list_folder(path, parentFolderType)
+            # children = [
+            #     self.build_tree(os.path.join(path, x), path)
+            #     for x in self.list_folder(path, parentFolderType)
+            # ]
+            # print(children)
+            ## Need to think through the logic
+            subFolders = [
+                os.path.join(path, x) for x in self.list_folder(path, parentFolderType)
             ]
-            print(children)
-            if isRoot:
-                return self.flatten(children)
-            item = dmc.AccordionItem(
-                [
-                    dmc.AccordionControl(
-                        self.make_folder(os.path.basename(path)),
-                        id={"type": "folder-contents", "index": path},
-                    ),
-                    dmc.AccordionPanel(children=self.flatten(children)),
-                ],
-                value=path,
-            )
-            d.append(item)
+            # if isRoot:
+            #     print("Processing root....")
+            #     return self.flatten(children)
+            folderList = [
+                dmc.AccordionItem(
+                    [
+                        dmc.AccordionControl(
+                            self.make_folder(os.path.basename(subFolderPath)),
+                            id={
+                                "type": "folder-contents",
+                                "index": os.path.basename(subFolderPath),
+                            },
+                        ),
+                        dmc.AccordionPanel(html.Div(os.path.basename(subFolderPath))),
+                    ],
+                    value=subFolderPath,
+                )
+                for subFolderPath in subFolders
+            ]
+            return folderList
         else:
             d.append(self.make_file(os.path.basename(path)))
 
@@ -103,7 +114,7 @@ class DSAFileTree:
 # Usage
 ## I am using the DSA resource path it's easier to follow
 
-dsaResourcePath = "/collection/NeuroPathDemoImages/2020/E20-106"  # Any filepath here
+dsaResourcePath = "/collection/NeuroPathDemoImages/2020"  # Any filepath here
 
 fileTreeLayout = DSAFileTree(dsaResourcePath, gc, "file_tree_root").render()
 print(fileTreeLayout)
@@ -250,65 +261,6 @@ if __name__ == "__main__":
 # )
 # def update_selected_items(values):
 #     return "You have selected {} items".format(sum(values))
-
-# app.layout = html.Div(
-#     [
-#         html.Details(
-#             [
-#                 html.Summary(
-#                     html.A(id="outer-link", children=["Outer Link"]),
-#                 ),
-#                 html.Div(
-#                     [
-#                         html.Details(
-#                             html.Summary(
-#                                 html.A(id="inner-link", children=["Inner Link"])
-#                             )
-#                         )
-#                     ],
-#                     style={"text-indent": "2em"},
-#                 ),
-#             ]
-#         ),
-#         html.Div(id="outer-count"),
-#         html.Div(id="inner-count"),
-#         html.Div(id="last-clicked"),
-#     ]
-# )
-
-
-# @app.callback(
-#     [
-#         Output("outer-count", "children"),
-#         Output("inner-count", "children"),
-#         Output("last-clicked", "children"),
-#     ],
-#     [
-#         Input("outer-link", "n_clicks"),
-#         Input("outer-link", "n_clicks_timestamp"),
-#         Input("inner-link", "n_clicks"),
-#         Input("inner-link", "n_clicks_timestamp"),
-#     ],
-# )
-# def divclick(outer_link_clicks, outer_link_time, inner_link_clicks, inner_link_time):
-#     if outer_link_time is None:
-#         outer_link_time = 0
-#     if inner_link_time is None:
-#         inner_link_time = 0
-
-#     timestamps = {
-#         "None": 1,
-#         "Outer Link": outer_link_time,
-#         "Inner Link": inner_link_time,
-#     }
-
-#     last_clicked = max(timestamps, key=timestamps.get)
-
-#     return (
-#         "Outer link clicks: " + str(outer_link_clicks),
-#         "Inner link clicks: " + str(inner_link_clicks),
-#         "Last clicked: " + last_clicked,
-#     )
 
 
 ### The FileTree widget will start at a COLLECTION level.. that will be the root

@@ -11,6 +11,10 @@ import dash_bootstrap_components as dbc
 from flask import Flask
 import os
 
+# from src.components.statsGraph import bp as stats_bp, stats_graphs_layout
+from dash_extensions.enrich import DashBlueprint, DashProxy
+
+
 # local imports
 from src.utils.settings import (
     APP_HOST,
@@ -25,8 +29,6 @@ from src.utils.settings import (
 )
 from src.utils.database import db
 from src.components import header
-
-from src.utils.settings import MONGO_URI
 
 # create the extension
 server = Flask(__name__)
@@ -43,13 +45,16 @@ print(server.config["MONGODB_SETTINGS"])
 with server.app_context():
     db.init_app(server)
 
-
+## Was Dash Proxy, removing that functionality for now
 app = dash.Dash(
     __name__,
     server=server,
     use_pages=True,  # turn on Dash pages
     pages_folder=os.path.join(os.path.dirname(__file__), "src", "pages"),
-    external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.FONT_AWESOME],  # fetch the proper css items we want
+    external_stylesheets=[
+        dbc.themes.BOOTSTRAP,
+        dbc.icons.FONT_AWESOME,
+    ],  # fetch the proper css items we want
     meta_tags=[
         {  # check if device is a mobile device. This is a must if you do any mobile styling
             "name": "viewport",
@@ -69,6 +74,8 @@ def serve_layout():
                 [
                     header,
                     html.Div(dash.page_container, className="twelve columns"),
+                    # stats_bp.embed(app),
+                    # stats_graphs_layout,
                 ],
                 className="app__content",
             ),
@@ -81,4 +88,9 @@ app.layout = serve_layout()  # set the layout to the serve_layout function
 server = app.server  # the server is needed to deploy the application
 
 if __name__ == "__main__":
-    app.run_server(host=APP_HOST, port=APP_PORT, debug=True, dev_tools_props_check=DEV_TOOLS_PROPS_CHECK)
+    app.run_server(
+        host=APP_HOST,
+        port=APP_PORT,
+        debug=True,
+        dev_tools_props_check=DEV_TOOLS_PROPS_CHECK,
+    )
