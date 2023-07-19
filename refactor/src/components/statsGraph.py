@@ -5,7 +5,7 @@ import plotly.express as px
 import pandas as pd
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
-from dash import callback_context
+from dash import callback_context, ctx
 
 from ..utils.helpers import generate_graph_DataTable
 
@@ -90,46 +90,30 @@ stats_graphs_layout = html.Div(
         Output("graph1-div", "children"),
         Output("graph2-div", "children"),
     ],
-    [
-        Input("store", "data"),
-        Input("graph1-switch", "checked"),
-        Input("graph2-switch", "checked"),
-    ],
+    [Input("graph1-switch", "checked"), Input("graph2-switch", "checked"), Input("store", "data")],
+    #   [State("store", "data")],
 )
-def populate_data(data, graph1_switch, graph2_switch):
+def populate_graph_data(graph1_switch, graph2_switch, data):
+    print(ctx.triggered, data)
     if data is None:
         return None, None
     else:
         samples_dataset = pd.DataFrame(data)
 
     if samples_dataset.empty:
-        currentStainHistogram = None
-        currentRegionHistogram = None
+        currentStain = None
+        currentRegion = None
     else:
-        currentStainHistogram = (
-            dcc.Graph(figure=px.histogram(samples_dataset, x="stainID")),
-        )
-        currentRegionHistogram = dcc.Graph(
-            figure=px.histogram(samples_dataset, x="regionName")
-        )
+        currentStain = (dcc.Graph(figure=px.histogram(samples_dataset, x="stainID")),)
+        currentRegion = dcc.Graph(figure=px.histogram(samples_dataset, x="regionName"))
         if graph1_switch:
-            currentStain_ds = (
-                samples_dataset.groupby("stainID")["_id"]
-                .count()
-                .reset_index(name="count")
-            )
+            currentStain_ds = samples_dataset.groupby("stainID")["_id"].count().reset_index(name="count")
             currentStain = generate_graph_DataTable(currentStain_ds, "graph_dataTable1")
         if graph2_switch:
-            currentRegion_ds = (
-                samples_dataset.groupby("regionName")["_id"]
-                .count()
-                .reset_index(name="count")
-            )
-            currentRegion = generate_graph_DataTable(
-                currentRegion_ds, "graph_dataTable2"
-            )
+            currentRegion_ds = samples_dataset.groupby("regionName")["_id"].count().reset_index(name="count")
+            currentRegion = generate_graph_DataTable(currentRegion_ds, "graph_dataTable2")
 
-    return [currentStainHistogram, currentRegionHistogram]
+    return [currentStain, currentRegion]
 
 
 @dash.callback(
