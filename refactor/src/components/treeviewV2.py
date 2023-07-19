@@ -5,6 +5,12 @@ from dash.dependencies import Input, Output, State, MATCH
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
 import dash_bootstrap_components as dbc
+import girder_client
+
+
+# # Replace with the base URL of your DSA
+BASE_URL = "https://styx.neurology.emory.edu/api/v1"
+gc = girder_client.GirderClient(apiUrl=BASE_URL)
 
 
 app = dash.Dash(
@@ -32,6 +38,8 @@ root_folder = "/home/dagutman/devel"
 
 
 def folder_div(folder_path, level=0):
+    global recent_folder
+    recent_folder = folder_path
     return html.Div(
         [
             dmc.Button(
@@ -75,7 +83,8 @@ app.layout = html.Div(
 def display_selected_folder(n_clicks, folder_id):
     print(folder_id)
     if n_clicks > 0:
-        return f"You selected folder: {folder_id['path']}"
+        #        return f"You selected folder: {folder_id['path']}"
+        return f"You selected folder: {recent_folder}"
     return "No folder selected"
 
 
