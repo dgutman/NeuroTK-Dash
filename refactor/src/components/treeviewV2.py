@@ -1,16 +1,10 @@
-import dash
+import dash, os
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, MATCH
-import os
-from flask import Flask
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
 import dash_bootstrap_components as dbc
-
-# server = Flask(__name__)
-
-# app = dash.Dash(server=server)
 
 
 app = dash.Dash(
@@ -21,9 +15,19 @@ app = dash.Dash(
     ],
 )
 
+# Global variable to keep track of the most recently clicked folder
+recent_folder = None
+
+
+def display_selected_folder(n_clicks, folder_id):
+    global recent_folder
+    if n_clicks > 0:
+        recent_folder = folder_id["path"]
+        return f"You selected folder: {recent_folder}"
+    return "No folder selected"
+
+
 root_folder = "/home/dagutman/devel"
-
-
 ## There's folder  and then folder-close and folder-open
 
 
@@ -32,12 +36,7 @@ def folder_div(folder_path, level=0):
         [
             dmc.Button(
                 os.path.basename(folder_path),
-                # rightIcon=DashIconify(icon="akar-icons:folder-open", width=20),
-                leftIcon=DashIconify(
-                    icon="material-symbols:folder-close"
-                    if level % 2 == 0
-                    else "material-symbols:folder-open"
-                ),
+                leftIcon=DashIconify(icon="material-symbols:folder", width=20),
                 id={"type": "folder", "path": folder_path},
                 n_clicks=0,
                 variant="outline",
@@ -60,7 +59,7 @@ app.layout = html.Div(
                 "max-height": "600px",
                 "overflow": "auto",
                 "border": "1px solid #ddd",  # Optional: adds a border around the div
-                "padding": "10px",  # Optional: adds some space around the content
+                "padding": "6px",  # Optional: adds some space around the content
             },
         ),
         html.Div(id={"type": "selected-folder", "path": root_folder}),
@@ -90,10 +89,6 @@ def toggle_folder(n_clicks, folder_id):
     if n_clicks % 2 == 1:  # folder was expanded
         try:
             subfolders = os.listdir(folder_id["path"])
-            if subfolders:  # if there are subfolders, update the folder icon to "open"
-                folder_id["icon"] = "material-symbols:folder-open"
-            else:  # if there are no subfolders, keep the folder icon as "closed"
-                folder_id["icon"] = "material-symbols:folder-close"
             return [
                 folder_div(os.path.join(folder_id["path"], subfolder), level=level + 1)
                 for subfolder in subfolders
@@ -102,29 +97,7 @@ def toggle_folder(n_clicks, folder_id):
         except FileNotFoundError:
             return []
     else:  # folder was collapsed
-        folder_id["icon"] = "material-symbols:folder-close"
         return []
-
-
-# @app.callback(
-#     Output({"type": "subfolders", "path": MATCH}, "children"),
-#     [Input({"type": "folder", "path": MATCH}, "n_clicks")],
-#     [State({"type": "folder", "path": MATCH}, "id")],
-# )
-# def toggle_folder(n_clicks, folder_id):
-#     level = folder_id["path"].count(os.sep) - root_folder.count(os.sep)
-#     if n_clicks % 2 == 1:  # folder was expanded
-#         try:
-#             subfolders = os.listdir(folder_id["path"])
-#             return [
-#                 folder_div(os.path.join(folder_id["path"], subfolder), level=level + 1)
-#                 for subfolder in subfolders
-#                 if os.path.isdir(os.path.join(folder_id["path"], subfolder))
-#             ]
-#         except FileNotFoundError:
-#             return []
-#     else:  # folder was collapsed
-#         return []
 
 
 if __name__ == "__main__":
