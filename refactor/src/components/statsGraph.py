@@ -38,7 +38,7 @@ stats_graphs_layout = html.Div(
                         id="graph1-fullscreen-btn",
                         color="primary",
                         n_clicks=0,
-                        style={"width": "15%"},
+                        className="fullScreenButton"
                     ),
                 ],
                 style={
@@ -63,7 +63,7 @@ stats_graphs_layout = html.Div(
                         id="graph2-fullscreen-btn",
                         color="primary",
                         n_clicks=0,
-                        style={"width": "15%"},
+                        className="fullScreenButton"
                     ),
                 ],
                 style={
