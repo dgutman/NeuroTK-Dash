@@ -6,6 +6,8 @@ import plotly.express as px
 import pandas as pd
 import dash_mantine_components as dmc
 from dash import callback_context
+import dash_leaflet as dl
+
 
 
 from ..utils.helpers import (
@@ -34,13 +36,16 @@ cur_image_annotationTable = html.Div(id="curImageAnnotation-div")
 
 cur_image_viz = dbc.Col(
     [
-        html.Div(id="cur-image-for-ppc", className="cur-image-for-ppc three columns"),
-        html.Div(cur_image_annotationTable, className="seven columns"),
-        html.Div(id="cur-image-with-annotation", className="two columns"),
+        # html.Div(id="cur-image-for-ppc", className="cur-image-for-ppc three columns"),
+        # html.Div(cur_image_annotationTable, className="seven columns"),
+        # html.Div(id="cur-image-with-annotation", className="two columns"),
+        html.Div(id="leaflet-map", className="twelve columns leaflet-map",
+                 children=[ dl.Map(dl.TileLayer(), style={'width': '1000px', 'height': '500px', 'marginTop': '25px'})])
     ],
+    className="cur-image-viz-tab",
 )
 
-main_item_datatable = html.Div([], className="twelve columns", id="datatable-div")
+main_item_datatable = html.Div([], className="twelve columns item_datatable", id="datatable-div")
 
 
 multi_acc = dmc.AccordionMultiple(
@@ -188,7 +193,6 @@ def update_data(n_clicks):
     if n_clicks is None or n_clicks == 0:  ## Need this to initially load data set
         samples_dataset_records = get_all_records_df().to_dict(orient="records")
         return samples_dataset_records, html.Button("Update", id="update-btn", n_clicks=0)
-
     else:
         item_set = getItemSetData()
         samples_dataset = getSampleDataset(item_set)
