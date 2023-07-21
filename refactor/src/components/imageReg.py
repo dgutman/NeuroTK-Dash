@@ -8,6 +8,9 @@ from PIL import Image
 import numpy as np
 import dash_bootstrap_components as dbc
 import base64, io
+import plotly.graph_objects as go
+
+
 
 # Initialize the Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -67,18 +70,11 @@ app.layout = html.Div(
                 dbc.Col(overlay_image_layout, width=3),
                 dbc.Col(id="input-image-reference", width=3),
                 dbc.Col(id="input-image-moving", width=3),
-                dbc.Col(id="output-image-register", width=2),
-                   dbc.Col(id="output-affine-transform", width=1)
+                dbc.Col(id="output-image-register", width=3),
+                   dbc.Col(id="output-affine-transform", width=2)
             ]
         ),
-        dbc.Row(
-            [
-            
-            
-             
-                
-            ],
-        ),
+       
     ],
 )
 
@@ -98,8 +94,6 @@ def register_images(fixed_image, moving_image):
 
     fixed_image = sitk.GetImageFromArray(fixed_gray, isVector=False)
     moving_image = sitk.GetImageFromArray(moving_gray, isVector=False)
-
-    
     
     initial_transform = sitk.CenteredTransformInitializer(
         fixed_image,
@@ -146,8 +140,6 @@ def load_image(image_path):
     image = Image.open(image_path)
     return np.array(image)
 
-
-
 def resampleImage(fixed_image, moving_image, transform, outputGray=False):
 
     # For now, I have to make everything grayscale so xfm works..
@@ -193,12 +185,19 @@ def update_output(n_clicks, opacity_value):
 
     fig1 = px.imshow(img1_array)#,# color_continuous_scale="gray")
     fig2 = px.imshow(img2_array)#, color_continuous_scale="gray")
-    fig3 = px.imshow(resampled_img, color_continuous_scale="gray")
 
+    fig3 = go.Figure(
+        go.Heatmap(
+            z=np.flipud(resampled_img),#.T,
+            colorscale="gray",
+            showscale=False  # This line removes the color bar
+        )
+    )
+    
     input_image_reference = html.Div(
         [
             html.H3("Reference"),
-            dcc.Graph(figure=fig1),
+            dcc.Graph(figure=fig1,style={"width": "100%", "height": "100%"}),
         ]
     )
 
@@ -219,12 +218,13 @@ def update_output(n_clicks, opacity_value):
     # Display the affine transform parameters
     affine_params = transform.GetParameters()
     affine_transform_display = html.Div(
-        [
-            html.H3("Affine Transform Parameters"),
-            html.P(f"Translation: {affine_params[0]}, {affine_params[1]}"),
-            html.P(f"Rotation: {affine_params[2]}"),
-        ]
-    )
+    [
+        html.H3("Affine Transform Parameters", style={"color": "white", "background-color": "blue", "padding": "10px", "text-align": "center"}),
+        html.P(f"Translation: {affine_params[0]}, {affine_params[1]}", style={"padding": "10px"}),
+        html.P(f"Rotation: {affine_params[2]}", style={"padding": "10px"}),
+    ],
+    style={"border": "2px solid blue", "border-radius": "15px", "padding": "10px", "margin-top": "15px"}
+        )
 
     img_io = io.BytesIO()
     Image.fromarray(resampled_img).convert("RGB").save(img_io, "JPEG", quality=95)
