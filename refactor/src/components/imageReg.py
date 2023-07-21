@@ -15,14 +15,15 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 image_path1 = "./assets/E20-9_1.HE.svs_thumb_1024.jpg"
 image_path2 = "./assets/E20-9_1.p62.svs_thumb_1024.jpg"
 
-
+overlay_box_style = {"position": "relative", "width": "400px", "height": "500px"}
+# overlay_box_style = {"position":"relative"}
 
 overlay_image_layout = html.Div(
-    style={"position": "relative", "width": "500px", "height": "600px"},
+    style=overlay_box_style,
     children=[
         html.Div(
             id="image-container",
-            style={"position": "absolute", "top": 0, "left": 0, "width": "100%", "height": "500px"},
+            style={"position": "absolute", "top": 0, "left": 0, "width": "100%", "height": "400px"},
             children=[
                 html.Img(
                     id="image1",
@@ -63,16 +64,18 @@ app.layout = html.Div(
         html.Button("Load and register images", id="load-register", n_clicks=0),
         dbc.Row(
             [
-                dbc.Col(id="input-image-reference", width=4),
-                dbc.Col(id="input-image-moving", width=4),
-                dbc.Col(id="output-image-register", width=4),
+                dbc.Col(overlay_image_layout, width=3),
+                dbc.Col(id="input-image-reference", width=3),
+                dbc.Col(id="input-image-moving", width=3),
+                dbc.Col(id="output-image-register", width=2),
+                   dbc.Col(id="output-affine-transform", width=1)
             ]
         ),
         dbc.Row(
             [
             
-                dbc.Col(overlay_image_layout, width=8),
-                dbc.Col(id="output-affine-transform", width=4)
+            
+             
                 
             ],
         ),
@@ -183,19 +186,14 @@ def update_output(n_clicks, opacity_value):
     img1_array = load_image(image_path1)
     img2_array = load_image(image_path2)
  
- 
     transform = register_images(img1_array, img2_array)
-  
-
     out = resampleImage( img1_array, img2_array, transform)
 
     resampled_img = sitk.GetArrayFromImage(out)
 
-    fig1 = px.imshow(img1_array, color_continuous_scale="gray")
-    fig2 = px.imshow(img2_array, color_continuous_scale="gray")
+    fig1 = px.imshow(img1_array)#,# color_continuous_scale="gray")
+    fig2 = px.imshow(img2_array)#, color_continuous_scale="gray")
     fig3 = px.imshow(resampled_img, color_continuous_scale="gray")
-
-   
 
     input_image_reference = html.Div(
         [
@@ -232,7 +230,6 @@ def update_output(n_clicks, opacity_value):
     Image.fromarray(resampled_img).convert("RGB").save(img_io, "JPEG", quality=95)
     b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
 
-
     return (
         input_image_reference,
         input_image_moving,
@@ -241,8 +238,5 @@ def update_output(n_clicks, opacity_value):
         affine_transform_display,
     )
 
-
 if __name__ == "__main__":
     app.run_server(debug=True)
-
-
