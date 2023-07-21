@@ -1,5 +1,5 @@
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.express as px
@@ -7,10 +7,56 @@ import SimpleITK as sitk
 from PIL import Image
 import numpy as np
 import dash_bootstrap_components as dbc
+import base64, io
 
 # Initialize the Dash app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+image_path1 = "./assets/E20-9_1.HE.svs_thumb_1024.jpg"
+image_path2 = "./assets/E20-9_1.p62.svs_thumb_1024.jpg"
+
+
+
+overlay_image_layout = html.Div(
+    style={"position": "relative", "width": "500px", "height": "600px"},
+    children=[
+        html.Div(
+            id="image-container",
+            style={"position": "absolute", "top": 0, "left": 0, "width": "100%", "height": "500px"},
+            children=[
+                html.Img(
+                    id="image1",
+                    src=image_path1,
+                    style={"position": "absolute", "top": 0, "left": 0, "width": "100%", "height": "100%"},
+                ),
+                html.Img(
+                    id="image2",
+                    src=image_path2,
+                    style={"position": "absolute", "top": 0, "left": 0, "width": "100%", "height": "100%"},
+                ),
+            ],
+        ),
+        html.Div(
+            id="slider-container",
+            style={"position": "absolute", "bottom": 0, "left": 0, "width": "100%", "height": "100px"},
+            children=[
+                html.Label("Opacity", style={"textAlign": "center"}),
+                html.Div(
+                    style={"width": "100%"},
+                    children=[
+                        dcc.Slider(
+                            id="opacity-slider",
+                            min=0,
+                            max=1,
+                            step=0.1,
+                            value=1,
+                        )
+                    ],
+                ),
+            ],
+        ),
+    ],
+)
 # Define the layout of the app
 app.layout = html.Div(
     [
@@ -24,24 +70,34 @@ app.layout = html.Div(
         ),
         dbc.Row(
             [
-                dbc.Col(
-                    dbc.Row(
-                        [
-                            html.H3("Opacity Slider"),
-                            dcc.Slider(id="opacity-slider", min=0, max=1, step=0.1, value=0.5),
-                            html.Div(id="output-overlay-image"),
-                        ]
-                    ),
-                    width=4,
-                ),
-                dbc.Col(id="output-affine-transform", width=4),
+            
+                dbc.Col(overlay_image_layout, width=8),
+                dbc.Col(id="output-affine-transform", width=4)
+                
             ],
         ),
     ],
 )
 
 
+
+@app.callback(Output("image2", "style"), [Input("opacity-slider", "value")], [State("image2", "style")])
+def update_image2_opacity(opacity, style):
+    style.update({"opacity": opacity})
+    return style
+
+
 def register_images(fixed_image, moving_image):
+    
+    # Convert to grayscale
+    fixed_gray = np.dot(fixed_image[..., :3], [0.2989, 0.5870, 0.1140])
+    moving_gray = np.dot(moving_image[..., :3], [0.2989, 0.5870, 0.1140])
+
+    fixed_image = sitk.GetImageFromArray(fixed_gray, isVector=False)
+    moving_image = sitk.GetImageFromArray(moving_gray, isVector=False)
+
+    
+    
     initial_transform = sitk.CenteredTransformInitializer(
         fixed_image,
         moving_image,
@@ -88,32 +144,17 @@ def load_image(image_path):
     return np.array(image)
 
 
-# Define the callback for loading and registering images
-@app.callback(
-    Output("input-image-reference", "children"),
-    Output("input-image-moving", "children"),
-    Output("output-image-register", "children"),
-    Output("output-overlay-image", "children"),
-    Output("output-affine-transform", "children"),
-    [Input("load-register", "n_clicks"), Input("opacity-slider", "value")],
-    prevent_initial_call=True,
-)
-def update_output(n_clicks, opacity_value):
-    # Paths to your images - replace these with the actual paths to your images
-    image_path1 = "./assets/E20-9_1.HE.svs_thumb_1024.jpg"
-    image_path2 = "./assets/E20-9_1.p62.svs_thumb_1024.jpg"
 
-    img1_array = load_image(image_path1)
-    img2_array = load_image(image_path2)
+def resampleImage(fixed_image, moving_image, transform, outputGray=False):
 
-    # Convert to grayscale
-    img1_gray = np.dot(img1_array[..., :3], [0.2989, 0.5870, 0.1140])
-    img2_gray = np.dot(img2_array[..., :3], [0.2989, 0.5870, 0.1140])
+    # For now, I have to make everything grayscale so xfm works..
+    fixed_image = np.dot(fixed_image[..., :3], [0.2989, 0.5870, 0.1140])
+    moving_image = np.dot(moving_image[..., :3], [0.2989, 0.5870, 0.1140])
 
-    fixed_image = sitk.GetImageFromArray(img1_gray, isVector=False)
-    moving_image = sitk.GetImageFromArray(img2_gray, isVector=False)
+    # Convert to SimpleITK images
+    fixed_image = sitk.GetImageFromArray(fixed_image)
+    moving_image = sitk.GetImageFromArray(moving_image)
 
-    transform = register_images(fixed_image, moving_image)
     resampler = sitk.ResampleImageFilter()
     resampler.SetReferenceImage(fixed_image)
     resampler.SetInterpolator(sitk.sitkLinear)
@@ -121,26 +162,40 @@ def update_output(n_clicks, opacity_value):
     resampler.SetTransform(transform)
 
     out = resampler.Execute(moving_image)
+    return out
+
+
+
+
+# Define the callback for loading and registering images
+@app.callback(
+    Output("input-image-reference", "children"),
+    Output("input-image-moving", "children"),
+    Output("output-image-register", "children"),
+    Output("image2", "src"),
+    Output("output-affine-transform", "children"),
+    [Input("load-register", "n_clicks"), Input("opacity-slider", "value")],
+    prevent_initial_call=True,
+)
+def update_output(n_clicks, opacity_value):
+    # Paths to your images - replace these with the actual paths to your images
+
+    img1_array = load_image(image_path1)
+    img2_array = load_image(image_path2)
+ 
+ 
+    transform = register_images(img1_array, img2_array)
+  
+
+    out = resampleImage( img1_array, img2_array, transform)
+
     resampled_img = sitk.GetArrayFromImage(out)
 
     fig1 = px.imshow(img1_array, color_continuous_scale="gray")
     fig2 = px.imshow(img2_array, color_continuous_scale="gray")
     fig3 = px.imshow(resampled_img, color_continuous_scale="gray")
 
-    # overlay images
-    img1_gray_rescaled = (img1_gray * 255 / img1_gray.max()).astype(np.uint8)
-    resampled_img_rescaled = (resampled_img * 255 / resampled_img.max()).astype(np.uint8)
-    overlay_img = (img1_gray_rescaled * (1.0 - opacity_value) + resampled_img_rescaled * opacity_value).astype(
-        np.uint8
-    )
-    fig4 = px.imshow(overlay_img, color_continuous_scale="gray")
-
-    overlay_image = html.Div(
-        [
-            html.H3("Overlay"),
-            dcc.Graph(figure=fig4),
-        ]
-    )
+   
 
     input_image_reference = html.Div(
         [
@@ -173,14 +228,21 @@ def update_output(n_clicks, opacity_value):
         ]
     )
 
+    img_io = io.BytesIO()
+    Image.fromarray(resampled_img).convert("RGB").save(img_io, "JPEG", quality=95)
+    b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
+
+
     return (
         input_image_reference,
         input_image_moving,
         output_images,
-        overlay_image,
+        "data:image/jpeg;base64," + b64image,
         affine_transform_display,
     )
 
 
 if __name__ == "__main__":
     app.run_server(debug=True)
+
+
