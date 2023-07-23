@@ -2,8 +2,8 @@
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import html
-from ..utils.api import getThumbnail
-
+from ..utils.api import get_thumbnail_as_b64
+from ..components.annotationViewPanel import plotImageAnnotations
 
 ## We have to pull the images from the DSA and use base64 encoding to actually set them as an iamge source
 
@@ -13,37 +13,38 @@ from ..utils.api import getThumbnail
 #     return np.array(image)
 
 
-
-
 # This will render a set of thumbnails from a given region or case depending on what input it receives
 
-def genRelatedImagePanel( imageInfo ):
-    #print(imageInfo)
-    imageId = imageInfo['_id']
 
-    card = dbc.Col([
-    dbc.Card(
+def genRelatedImagePanel(imageInfo):
+    # print(imageInfo)
+    imageId = imageInfo["_id"]
+
+    stainId = imageInfo["stainID"]
+    regionName = imageInfo["regionName"]
+    image_details = f"{regionName.title()}, Stained with {stainId}"
+
+    card = dbc.Col(
         [
-            dbc.CardImg(src=getThumbnail(imageId,return_format='b64img'), top=True),
-            dbc.CardBody(
+            dbc.Card(
                 [
-                    html.H4(imageInfo['stainID'], className="card-title"),
-                    html.P(
-                        f"This should be displaying info about the image you clicked {imageInfo['blockID']} {imageInfo['stainID']}",
-                        className="card-text",
+                    dbc.CardImg(src=get_thumbnail_as_b64(item_id=imageId), top=True),
+                    dbc.CardBody(
+                        [
+                            html.H4(imageInfo["stainID"], className="card-title"),
+                            html.P(image_details, className="card-text"),
+                            dbc.Button("GetAnnotationForThis", color="primary"),
+                        ]
                     ),
-                    dbc.Button("GetAnnotationForThis", color="primary"),
-                ]
-            ),
+                ],
+                style={"width": "18rem"},
+            )
         ],
-        style={"width": "18rem"},
-    )],width=2)
+        width="auto",
+    )
     return card
 
 
-def imageSetViewer_layout( imageDataToDisplay ):
-    imageSetViewer_layout = dbc.Row([ genRelatedImagePanel(img) for img in imageDataToDisplay])
+def imageSetViewer_layout(imageDataToDisplay):
+    imageSetViewer_layout = dbc.Row([genRelatedImagePanel(img) for img in imageDataToDisplay])
     return imageSetViewer_layout
-
-
-

@@ -11,6 +11,7 @@ import requests
 import json
 import girder_client
 import numpy as np
+
 # local imports
 from .settings import DSA_BASE_Url, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE, API_KEY
 from PIL import Image
@@ -23,6 +24,7 @@ import base64
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_Url)
 print(gc.authenticate(apiKey=API_KEY))
 
+
 def getItemAnnotations(itemId):
     ### Given an item ID from the DSA, grabs relevant annotation data
     ## This will also have functionality to normalize/cleanup results that are stored in the annotation object
@@ -33,10 +35,9 @@ def getItemAnnotations(itemId):
 
 
 def getItemSetData(num_of_items=0):
-    #url = f"{DSA_BASE_Url}/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
+    # url = f"{DSA_BASE_Url}/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
     url = f"/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
-    
-    
+
     # # print(url)
     # response = requests.get(url)
     response = gc.get(url)
@@ -48,34 +49,46 @@ def getItemSetData(num_of_items=0):
         return None
 
 
-def getThumbnail(item_id,return_format="PNG"):
+def pull_thumbnail_array(item_id, height=1000, encoding="PNG"):
     """
     Gets thumbnail image associated with provided item_id and with specified height
     The aspect ratio is retained, so the width may not be equal to the height
     Thumbnail is returned as a numpy array, after dropping alpha channel
-    Thumbnail encoding is specified as PNG, but that may not be relevant
-    
-    ToDo:  Redo so it pulls as a numpy array.. this conversion is a bit extraneous
-
+    Thumbnail encoding is specified as PNG by default
     """
-    thumb_download_endpoint = f"/item/{item_id}/tiles/thumbnail?encoding=PNG" 
+    thumb_download_endpoint = f"/item/{item_id}/tiles/thumbnail?encoding={encoding}&height={height}"
     thumb = gc.get(thumb_download_endpoint, jsonResp=False).content
     thumb = np.array(Image.open(BytesIO(thumb)))
     # dropping alpha channel and keeping only rgb
     thumb = thumb[:, :, :3]
-
-    if return_format=="b64img":
-        img_io = BytesIO()
-        Image.fromarray(thumb).convert("RGB").save(img_io, "PNG", quality=95)
-        b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
-
-        return "data:image/png;base64," + b64image
-
     return thumb
 
 
-def get_largeImageInfo( imageId):
-    ### This will return the large image info in terms of tile size, base size, etc..
+def get_thumbnail_as_b64(item_id=None, thumb_array=False, height=1000, encoding="PNG"):
+    """
+    If thumb_array provided, just converts, otherwise will fetch required thumbnail array
+
+    Fetches thumbnail image associated with provided item_id and with specified height
+    The aspect ratio is retained, so the width may not be equal to the height
+
+    Thumbnail is returned as b64 encoded string
+    """
+
+    if not thumb_array:
+        thumb_array = pull_thumbnail_array(item_id, height=height, encoding=encoding)
+
+    img_io = BytesIO()
+    Image.fromarray(thumb_array).convert("RGB").save(img_io, "PNG", quality=95)
+    b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
+
+    return "data:image/png;base64," + b64image
+
+
+def get_largeImageInfo(imageId):
+    """
+    Returns WSI info; tile size, base size, etc.
+    """
+
     liInfo = gc.get(f"item/{imageId}/tiles")
     return liInfo
 
@@ -93,8 +106,3 @@ def get_item_rois(item_id, annot_name=None):
     ]
 
     return item_records
-## Just going to return the default height&height={height}"
-
-# def getThumbnail(imgId):
-#     url = f"{DSA_BASE_Url}/item/{imgId}/tiles/thumbnail"
-#     return url

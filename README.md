@@ -31,3 +31,16 @@ Another service at http://127.0.0.1:8888 is running a jupyter notebook instance.
 ## Getting started
 
 docker compose up
+
+
+## Files by Function
+
+ - src
+  - components
+    - imageSetViewer.py: generates panels which visualize the images related to the selection/filters applied to the main table in "Item Set Datatable"
+    - statsGraph.py: generates graph/table which give counts of stainID and regionName
+    - annotationViewPanel.py: code for pulling and plotting annotations, including existing annotations and any being generalized
+  - pages
+    - home.py: generates home page, including building and populating the main table in "Item Set Datatable"
+  - utils
+    - api.py: various functions used to interact with the DSA/girder client
