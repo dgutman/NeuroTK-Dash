@@ -3,20 +3,25 @@ from dash import html, dash_table
 import dash_ag_grid as dag
 
 
-def generate_graph_DataTable(df):
+def generate_graph_DataTable(df, id_val, with_filt=True):
+    default_col_def = (
+        {
+            "filter": "agSetColumnFilter",
+            "editable": True,
+            "flex": 1,
+            "filterParams": {"debounceMs": 2500},
+            "floatingFilter": True,
+        }
+        if with_filt
+        else {}
+    )
     dsa_datatable = html.Div(
         [
             dag.AgGrid(
-                id="dag-annotation-table",
+                id=id_val,
                 enableEnterpriseModules=True,
                 className="ag-theme-alpine-dark",
-                defaultColDef={
-                    "filter": "agSetColumnFilter",
-                    "editable": True,
-                    "flex": 1,
-                    "filterParams": {"debounceMs": 2500},
-                    "floatingFilter": True,
-                },
+                defaultColDef=default_col_def,
                 # masterDetail=True,
                 columnDefs=[{"field": col} for col in df.columns],
                 rowData=df.to_dict("records"),

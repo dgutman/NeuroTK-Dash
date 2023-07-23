@@ -2,22 +2,14 @@
 import dash
 from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc  # Useful set of layout widgets
-import plotly.express as px
 import pandas as pd
 import dash_mantine_components as dmc
-from dash import callback_context
 import dash_leaflet as dl
 
 
-from ..utils.helpers import (
-    generate_dsaDataTable,
-    getSampleDataset,
-    generate_dsaAnnotationsTable,
-    generate_graph_DataTable,
-)
-from ..utils.api import getItemSetData, pull_thumbnail_array, getItemAnnotations
+from ..utils.helpers import getSampleDataset, generate_graph_DataTable
+from ..utils.api import getItemSetData, get_ppc_details
 from ..utils.database import insert_records, get_all_records_df
-from dash_iconify import DashIconify
 from ..components.statsGraph import stats_graphs_layout
 from ..components.imageSetViewer import imageSetViewer_layout
 from ..components.annotationViewPanel import plotImageAnnotations
@@ -51,6 +43,7 @@ cur_image_viz = dbc.Col(
 )
 
 main_item_datatable = html.Div([], className="twelve columns item_datatable", id="datatable-div")
+ppc_results_datatable = html.Div([], className="twelve columns item_datatable", id="ppc-results-datatable-div")
 
 
 multi_acc = dmc.AccordionMultiple(
@@ -61,6 +54,14 @@ multi_acc = dmc.AccordionMultiple(
                 dmc.AccordionPanel(main_item_datatable),
             ],
             value="focus",
+        ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("PPC Results Datatable"),
+                dmc.AccordionPanel(ppc_results_datatable),
+            ],
+            id="annots_accordion",
+            value="focus_1",
         ),
         dmc.AccordionItem(
             [
@@ -134,12 +135,12 @@ layout = dmc.MantineProvider(
 ## I'd rather the call back function just live in the statsGraph.py file..
 @callback(
     [
-        Output("dag-annotation-table", "rowData"),
-        Output("dag-annotation-table", "filterModel"),
+        Output("dag-main-table", "rowData"),
+        Output("dag-main-table", "filterModel"),
     ],
     [
-        Input("dag-annotation-table", "filterModel"),
-        State("dag-annotation-table", "virtualRowData"),
+        Input("dag-main-table", "filterModel"),
+        State("dag-main-table", "virtualRowData"),
         State("store", "data"),
     ],
     prevent_initial_call=True,
@@ -170,7 +171,23 @@ def populate_main_datatable(data):
         table = None
     else:
         # table = generate_dsaDataTable(samples_dataset)
-        table = generate_graph_DataTable(samples_dataset)
+        table = generate_graph_DataTable(samples_dataset, id_val="dag-annotation-table")
+
+    return [table]
+
+
+@callback(
+    [Output("ppc-results-datatable-div", "children")],
+    [Input("annots_accordion", "n_clicks")],
+)
+def populate_annotations_datatable(n_clicks):
+    samples_dataset = get_ppc_details()
+
+    if samples_dataset.empty:
+        table = None
+    else:
+        # table = generate_dsaDataTable(samples_dataset)
+        table = generate_graph_DataTable(samples_dataset, id_val="dag-annotation-table", with_filt=False)
 
     return [table]
 
@@ -182,8 +199,8 @@ def populate_main_datatable(data):
         Output("curImage_annotations", "children"),
     ],
     [
-        Input("dag-annotation-table", "cellClicked"),
-        State("dag-annotation-table", "rowData"),
+        Input("dag-main-table", "cellClicked"),
+        State("dag-main-table", "rowData"),
         State("store", "data"),
     ],
     # (A) pass table as data input to get current value from active cell "coordinates"

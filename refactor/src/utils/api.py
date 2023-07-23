@@ -6,8 +6,6 @@ Depending on the API you are using, you might need to modify the value `x-api-ke
 """
 
 # package imports
-import os
-import requests
 import json
 import girder_client
 import numpy as np
@@ -109,54 +107,41 @@ def get_item_rois(item_id, annot_name=None):
     return item_records
 
 
-def get_annotations_of_type(gc, annot_type):
-    annots = gc.get(f"annotation?text={annot_type}&limit=0")
+# NOTE: not super well implemented -- does not filter for dates or particular params or anything
+# I had added this filtering for the PPC chart gen code but want to figure out a better way of doing this
+# via the DASH UI or similar in order to be more interactive and not hardcode stuff
+def get_ppc_details():
+    ppc_str = "Positive Pixel Count"
+    annots = gc.get(f"annotation?text={ppc_str}&limit=0")
 
-    # keep only the annotation's id and the id of the item it is associated with
-    # seems to do a fuzzy match, hence the need for 1: 1 match in logic below
-    annot_records = {annot["_id"]: annot["itemId"] for annot in annots if annot["annotation"]["name"] == annot_type}
+    ppc_records = dict()
 
-    metadata = dict()
+    for annot in annots:
+        item_id = annot["itemId"]
 
-    for annot_id, item_id in annot_records.items():
-        annotation = gc.get(f"annotation/{annot_id}")
-        rois = annotation["annotation"]["elements"]
+        annot = json.loads(
+            annot["annotation"]["description"]
+            .replace("Used params: ", "{'params':")
+            .replace("\nResults:", ',"Results":')
+            .replace("'", '"')
+            .replace("None", "null")
+            + "}"
+        )
+        ppc_records.update({item_id: annot["Results"]})
 
-        if not rois:
-            continue
+    ppc_records = pd.DataFrame.from_dict(ppc_records, orient="index")
+    ppc_records.reset_index(inplace=True)
 
-        # getting points as a filter since there can be multiple annotations of the same type on a given image
-        # so want to make sure we get the right ones
-        # TODO: replace with get_annotation_from_rois
+    keep_cols = ["index", "NumberStrongPositive", "NumberTotalPixels", "RatioStrongToPixels"]
+    ppc_records = ppc_records[keep_cols]
 
-        points = []
-        region_count = len(rois)
-
-        delineate = region_count > 1
-        delineator = ["-1, -1"]
-
-        for ind, roi in enumerate(rois, start=1):
-            [points.extend([str(item) for item in val[:2]]) for val in roi["points"]]
-
-            if (delineate) and (ind != region_count):
-                points.extend(delineator)
-
-        points = f"[{', '.join(points)}]"
-
-        item = gc.get(f"item/{item_id}")
-        metadata[item["_id"]] = item["meta"]["npSchema"]
-
-        update_dict = {
-            "folder_id": item["folderId"],
-            "large_image": item["largeImage"]["fileId"],
-            "points": points,
-            "elements": rois,
-        }
-        metadata[item["_id"]].update(update_dict)
-
-    meta_df = pd.DataFrame.from_dict(metadata, orient="index")
-
-    meta_df.reset_index(inplace=True)
-    meta_df.rename(columns={"index": "item_id"}, inplace=True)
-
-    return meta_df
+    ppc_records.rename(
+        columns={
+            "index": "item_id",
+            "NumberStrongPositive": "Count Strong Positive",
+            "NumberTotalPixels": "Count Total Pixels",
+            "RatioStrongToPixels": "Percent Strong Positive",
+        },
+        inplace=True,
+    )
+    return ppc_records

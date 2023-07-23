@@ -1,9 +1,7 @@
 """ This will be a viewer that displays one or more related images.. for example all of the images for a specific tissue block"""
 import dash_bootstrap_components as dbc
-import dash_mantine_components as dmc
 from dash import html
 from ..utils.api import get_thumbnail_as_b64
-from ..components.annotationViewPanel import plotImageAnnotations
 
 ## We have to pull the images from the DSA and use base64 encoding to actually set them as an iamge source
 

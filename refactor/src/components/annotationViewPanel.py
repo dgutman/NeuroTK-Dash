@@ -1,6 +1,3 @@
-import dash_bootstrap_components as dbc
-import dash_mantine_components as dmc
-from dash import html
 import plotly.graph_objects as go
 from ..utils.api import get_item_rois, pull_thumbnail_array, get_largeImageInfo
 import numpy as np
