@@ -91,8 +91,6 @@ def get_largeImageInfo(imageId):
     liInfo = gc.get(f"item/{imageId}/tiles")
     return liInfo
 
-    # def get_item_wsi_dims(item_id):    details = gc.get(f"/item/{item_id}/tiles/")    return (details["sizeY"], details["sizeX"])
-
 
 def get_item_rois(item_id, annot_name=None):
     annots = gc.get(f"annotation/item/{item_id}")
@@ -110,7 +108,7 @@ def get_item_rois(item_id, annot_name=None):
 # NOTE: not super well implemented -- does not filter for dates or particular params or anything
 # I had added this filtering for the PPC chart gen code but want to figure out a better way of doing this
 # via the DASH UI or similar in order to be more interactive and not hardcode stuff
-def get_ppc_details():
+def get_ppc_details_simple():
     ppc_str = "Positive Pixel Count"
     annots = gc.get(f"annotation?text={ppc_str}&limit=0")
 
@@ -118,6 +116,7 @@ def get_ppc_details():
 
     for annot in annots:
         item_id = annot["itemId"]
+        created = annot["created"].split("T")[0]
 
         annot = json.loads(
             annot["annotation"]["description"]
@@ -127,12 +126,13 @@ def get_ppc_details():
             .replace("None", "null")
             + "}"
         )
+        annot["Results"].update({"Created On": created})
         ppc_records.update({item_id: annot["Results"]})
 
     ppc_records = pd.DataFrame.from_dict(ppc_records, orient="index")
     ppc_records.reset_index(inplace=True)
 
-    keep_cols = ["index", "NumberStrongPositive", "NumberTotalPixels", "RatioStrongToPixels"]
+    keep_cols = ["index", "Created On", "NumberStrongPositive", "NumberTotalPixels", "RatioStrongToPixels"]
     ppc_records = ppc_records[keep_cols]
 
     ppc_records.rename(
@@ -145,3 +145,157 @@ def get_ppc_details():
         inplace=True,
     )
     return ppc_records
+
+
+def get_folder_items(gc, parent_id):
+    """Recursively gets items in a folder.
+
+    Args:
+        gc: Authenticated girder client instance.
+        parent_id: The id of the folder to get all items under.
+
+    Returns:
+        List of items in parent folder.
+
+    """
+    return gc.get(f"resource/{parent_id}/items?type=folder&limit=0&sort=_id&sortdir=1")
+
+
+def get_items_in_folder(gc, folder_id):
+    metadata = dict()
+    items = get_folder_items(gc, folder_id)
+
+    for item in items:
+        if not item["meta"]:
+            continue
+
+        metadata[item["_id"]] = item["meta"]["npSchema"]
+
+        large_image = l_image if (l_image := item.get("largeImage")) is None else l_image.get("fileId")
+
+        update_dict = {"folder_id": item["folderId"], "large_image": large_image}
+        metadata[item["_id"]].update(update_dict)
+
+    meta_df = pd.DataFrame.from_dict(metadata, orient="index")
+
+    meta_df.reset_index(inplace=True)
+    meta_df.rename(columns={"index": "item_id"}, inplace=True)
+
+    return meta_df
+
+
+def update_metadata_df(metadata_df, records_df):
+    records_df.drop_duplicates(subset=["item_id"], inplace=True)
+    records_df.set_index(["item_id"], drop=True, inplace=True)
+
+    # narrowing metadata to only those images for which PPC has been performed
+    filt = metadata_df.index.isin(records_df.index)
+    metadata_df = metadata_df[filt].copy()
+
+    # updating metadata df to include the percentage calculated above
+    metadata_df["RatioStrongToPixels"] = None
+    metadata_df.update(records_df)
+
+    return metadata_df
+
+
+# default folder_id is for Dunn study
+def get_ppc_details_specific(folder_id="6464e04c6df8ba8751afabb3", annotation_name="Positive Pixel Count"):
+    ppc_params = {
+        "hue_value": "0.1",
+        "hue_width": "0.5",
+        "saturation_minimum": "0.2",
+        "intensity_upper_limit": f"{197/255}",
+        "intensity_weak_threshold": f"{175/255}",
+        "intensity_strong_threshold": f"{100/255}",
+        "intensity_lower_limit": "0.0",
+    }
+
+    # get all items with annotations which match the provided name
+    # using this as a proxy filter to target only relevant images for PPC data aggregation
+
+    dunn_items = get_items_in_folder(gc, folder_id)
+
+    filt = dunn_items["stainID"] == "aBeta"
+    dunn_items = dunn_items[filt]
+
+    # get all items with annotations which match the provided name
+    # using this as a proxy filter to allow removal of any which already have positive pixel count
+
+    annots = gc.get(f"annotation?text={annotation_name}&limit=0")
+
+    ppc_create_date = ["2023-06-22", "2023-07-06", "2023-07-05", "2023-07-04", "2023-07-03"]
+    ppc_records, metadata = dict(), dict()
+
+    # filtering for any that were run with the same params
+    # NOTE: potential for bug here since item_id is not really unique -- may have multiple PPC with since item_id, though unlikely given filters present, etc.
+    for annot in annots:
+        details = {
+            val.split(": ")[0].replace("'", ""): val.split(": ")[1].replace("'", "")
+            for val in annot["annotation"]["description"].split(", ")
+            if any([val.replace("'", "").startswith(key) for key in ppc_params.keys()])
+        }
+
+        item_id = annot["itemId"]
+
+        if (
+            (details == ppc_params)
+            and (item_id in dunn_items["item_id"].values)
+            and (annot.get("created").split("T")[0] in ppc_create_date)
+        ):
+            annot = json.loads(
+                annot["annotation"]["description"]
+                .replace("Used params: ", "{'params':")
+                .replace("\nResults:", ',"Results":')
+                .replace("'", '"')
+                .replace("None", "null")
+                + "}"
+            )
+            ppc_records.update({item_id: annot["Results"]})
+
+            item = gc.get(f"item/{item_id}")
+            metadata[item["_id"]] = item["meta"]["npSchema"]
+
+            if item["meta"].get("npClinical", False):
+                metadata[item["_id"]].update(item["meta"]["npClinical"])
+
+    ppc_records = pd.DataFrame.from_dict(ppc_records, orient="index")
+    ppc_records.reset_index(inplace=True)
+    ppc_records.rename(columns={"index": "item_id"}, inplace=True)
+    metadata_df = pd.DataFrame.from_dict(metadata, orient="index")
+
+    keep_regions = [
+        "Frontal cortex",
+        "Temporal cortex",
+        "Parietal cortex",
+        "Occipital cortex",
+        "Cingulate cortex",
+        "Insular cortex",
+        "Hippocampus",
+        "Amygdala",
+    ]
+
+    filt = metadata_df["regionName"].isin(keep_regions)
+    metadata_df = metadata_df[filt]
+
+    metadata_df = update_metadata_df(metadata_df, ppc_records)
+
+    # removing control slides
+    cont_filt = metadata_df["stainID"] == "control"
+    metadata_df = metadata_df[~cont_filt]
+
+    metadata_df.reset_index(inplace=True)
+    metadata_df.rename(columns={"index": "item_id", "RatioStrongToPixels": "Percent Strong Positive"}, inplace=True)
+
+    keep_cols = [
+        "item_id",
+        "caseID",
+        "Percent Strong Positive",
+        "regionName",
+        "Braak Stage",
+        "CERAD",
+    ]
+
+    metadata_df = metadata_df[keep_cols]
+
+    return metadata_df

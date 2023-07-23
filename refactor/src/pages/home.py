@@ -7,8 +7,8 @@ import dash_mantine_components as dmc
 import dash_leaflet as dl
 
 
-from ..utils.helpers import getSampleDataset, generate_graph_DataTable
-from ..utils.api import getItemSetData, get_ppc_details
+from ..utils.helpers import getSampleDataset, generate_main_DataTable, generate_generic_DataTable
+from ..utils.api import getItemSetData, get_ppc_details_simple, get_ppc_details_specific
 from ..utils.database import insert_records, get_all_records_df
 from ..components.statsGraph import stats_graphs_layout
 from ..components.imageSetViewer import imageSetViewer_layout
@@ -43,7 +43,16 @@ cur_image_viz = dbc.Col(
 )
 
 main_item_datatable = html.Div([], className="twelve columns item_datatable", id="datatable-div")
-ppc_results_datatable = html.Div([], className="twelve columns item_datatable", id="ppc-results-datatable-div")
+simple_ppc_results_datatable = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="simple-ppc-results-datatable-div",
+)
+specific_ppc_results_datatable = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="specific-ppc-results-datatable-div",
+)
 
 
 multi_acc = dmc.AccordionMultiple(
@@ -57,11 +66,19 @@ multi_acc = dmc.AccordionMultiple(
         ),
         dmc.AccordionItem(
             [
-                dmc.AccordionControl("PPC Results Datatable"),
-                dmc.AccordionPanel(ppc_results_datatable),
+                dmc.AccordionControl("Simple PPC Results Datatable"),
+                dmc.AccordionPanel(simple_ppc_results_datatable),
             ],
-            id="annots_accordion",
+            id="simple_annots_accordion",
             value="focus_1",
+        ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("Specific (Dunn) PPC Results Datatable"),
+                dmc.AccordionPanel(specific_ppc_results_datatable),
+            ],
+            id="specific_annots_accordion",
+            value="focus_2",
         ),
         dmc.AccordionItem(
             [
@@ -170,24 +187,65 @@ def populate_main_datatable(data):
     if samples_dataset.empty:
         table = None
     else:
-        # table = generate_dsaDataTable(samples_dataset)
-        table = generate_graph_DataTable(samples_dataset, id_val="dag-annotation-table")
+        table = generate_main_DataTable(samples_dataset, id_val="dag-annotation-table")
 
     return [table]
 
 
 @callback(
-    [Output("ppc-results-datatable-div", "children")],
-    [Input("annots_accordion", "n_clicks")],
+    [Output("simple-ppc-results-datatable-div", "children")],
+    [Input("simple_annots_accordion", "n_clicks")],
 )
-def populate_annotations_datatable(n_clicks):
-    samples_dataset = get_ppc_details()
+def populate_simple_annotations_datatable(n_clicks):
+    samples_dataset = get_ppc_details_simple()
 
     if samples_dataset.empty:
         table = None
     else:
-        # table = generate_dsaDataTable(samples_dataset)
-        table = generate_graph_DataTable(samples_dataset, id_val="dag-annotation-table", with_filt=False)
+        col_def_dict = {
+            "Created On": {
+                "field": "Created On",
+                "filter": "agDateColumnFilter",
+                "filterParams": {"debounceMs": 2500},
+                # "flex": 1,
+                "editable": True,
+                "valueGetter": {"function": "d3.timeParse('%Y-%m-%d')(params.data['Created On])"},
+            }
+        }
+
+        col_defs = [
+            ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in samples_dataset.columns
+        ]
+        table = generate_generic_DataTable(samples_dataset, id_val="simple-dag-annotation-table", col_defs=col_defs)
+
+    return [table]
+
+
+@callback(
+    [Output("specific-ppc-results-datatable-div", "children")],
+    [Input("specific_annots_accordion", "n_clicks")],
+)
+def populate_specific_annotations_datatable(n_clicks):
+    samples_dataset = get_ppc_details_specific()
+
+    if samples_dataset.empty:
+        table = None
+    else:
+        col_def_dict = {
+            "Created On": {
+                "field": "Created On",
+                "filter": "agDateColumnFilter",
+                "filterParams": {"debounceMs": 2500},
+                "flex": 1,
+                "editable": True,
+                "valueGetter": {"function": "d3.timeParse('%Y-%m-%d')(params.data['Created On])"},
+            }
+        }
+
+        col_defs = [
+            ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in samples_dataset.columns
+        ]
+        table = generate_generic_DataTable(samples_dataset, id_val="dag-specific-table", col_defs=col_defs)
 
     return [table]
 

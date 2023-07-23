@@ -3,26 +3,20 @@ from dash import html, dash_table
 import dash_ag_grid as dag
 
 
-def generate_graph_DataTable(df, id_val, with_filt=True):
-    default_col_def = (
-        {
-            "filter": "agSetColumnFilter",
-            "editable": True,
-            "flex": 1,
-            "filterParams": {"debounceMs": 2500},
-            "floatingFilter": True,
-        }
-        if with_filt
-        else {}
-    )
+def generate_main_DataTable(df, id_val):
     dsa_datatable = html.Div(
         [
             dag.AgGrid(
                 id=id_val,
                 enableEnterpriseModules=True,
                 className="ag-theme-alpine-dark",
-                defaultColDef=default_col_def,
-                # masterDetail=True,
+                defaultColDef={
+                    "filter": "agSetColumnFilter",
+                    "editable": True,
+                    "flex": 1,
+                    "filterParams": {"debounceMs": 2500},
+                    "floatingFilter": True,
+                },
                 columnDefs=[{"field": col} for col in df.columns],
                 rowData=df.to_dict("records"),
                 dashGridOptions={"pagination": True},
@@ -35,6 +29,25 @@ def generate_graph_DataTable(df, id_val, with_filt=True):
                 #     "width": "100%",  # Adjust as needed
                 # },
                 # ------------------------------------------------------------
+            ),
+        ]
+    )
+
+    return dsa_datatable
+
+
+def generate_generic_DataTable(df, id_val, default_col_def={}, col_defs={}):
+    col_defs = [{"field": col} for col in df.columns] if not col_defs else col_defs
+    dsa_datatable = html.Div(
+        [
+            dag.AgGrid(
+                id=id_val,
+                enableEnterpriseModules=True,
+                className="ag-theme-alpine-dark",
+                defaultColDef=default_col_def,
+                columnDefs=col_defs,
+                rowData=df.to_dict("records"),
+                dashGridOptions={"pagination": True},
             ),
         ]
     )

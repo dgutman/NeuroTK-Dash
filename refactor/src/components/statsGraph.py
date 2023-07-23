@@ -7,7 +7,7 @@ import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 from dash import callback_context
 
-from ..utils.helpers import generate_graph_DataTable
+from ..utils.helpers import generate_main_DataTable
 
 ### Using dash blueprints as an example, will determine if I want to do that
 ### or if I use the @dash.callback operator.  Currently not sure what is easier.
@@ -117,11 +117,11 @@ def populate_graph_data(graph1_switch, graph2_switch, data):
 
         if graph1_switch:
             currentStain_ds = samples_dataset.groupby("stainID")["_id"].count().reset_index(name="count")
-            currentStain = generate_graph_DataTable(currentStain_ds, id_val="graph_dataTable1")
+            currentStain = generate_main_DataTable(currentStain_ds, id_val="graph_dataTable1")
 
         if graph2_switch:
             currentRegion_ds = samples_dataset.groupby("regionName")["_id"].count().reset_index(name="count")
-            currentRegion = generate_graph_DataTable(currentRegion_ds, id_val="graph_dataTable2")
+            currentRegion = generate_main_DataTable(currentRegion_ds, id_val="graph_dataTable2")
 
     return [currentStain, currentRegion]
 
