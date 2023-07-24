@@ -18,12 +18,11 @@ from ..utils.api import getThumbnail
 # This will render a set of thumbnails from a given region or case depending on what input it receives
 
 def genRelatedImagePanel( imageInfo ):
-    print(imageInfo)
+    #print(imageInfo)
     imageId = imageInfo['_id']
 
-
-
-    card = dbc.Card(
+    card = dbc.Col([
+    dbc.Card(
         [
             dbc.CardImg(src=getThumbnail(imageId,return_format='b64img'), top=True),
             dbc.CardBody(
@@ -38,7 +37,7 @@ def genRelatedImagePanel( imageInfo ):
             ),
         ],
         style={"width": "18rem"},
-    )
+    )],width=2)
     return card
 
 

@@ -20,6 +20,7 @@ from ..utils.database import insert_records, get_all_records_df
 from dash_iconify import DashIconify
 from ..components.statsGraph import stats_graphs_layout
 from ..components.imageSetViewer import imageSetViewer_layout
+from ..components.annotationViewPanel import plotImageAnnotations
 # from ..utils.dsa_login import LoginSystem
 
 dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
@@ -79,7 +80,8 @@ multi_acc = dmc.AccordionMultiple(
 layout = dmc.MantineProvider(
     dmc.NotificationsProvider(
         [
-            html.Div("Place Holder for Image Set",id="relatedImageSet_layout"),         
+            html.Div("Place Holder for Image Set",id="relatedImageSet_layout"),
+            html.Div("Annotation stuff here",id="curImage_annotations"),         
 
                                     html.Div(
                 [
@@ -152,7 +154,8 @@ def populate_main_datatable(data):
 
 ## CReating callback function for when a user clicks on an image....This is.. confusing!
 @callback(
-        [Output("relatedImageSet_layout","children")],
+        [Output("relatedImageSet_layout","children"),
+         Output("curImage_annotations","children")],
     [Input("datatable-interactivity", "active_cell")],
     # (A) pass table as data input to get current value from active cell "coordinates"
     [State("datatable-interactivity", "data")],
@@ -176,14 +179,14 @@ def updateRelatedImageSet( active_cell, data ):
         df = pd.DataFrame().from_dict(data)
         ### TO REDO to validate that blockID, caseID, etc actually exist.. and also cleanup
 
-        df = df[(df.blockID=="12") & (df.caseID=='E20-17')]
+        df = df[(df.blockID==blockID) & (df.caseID==caseID)]
 
         #print(df.head)
 
-        return [imageSetViewer_layout(df.to_dict(orient="records"))]
+        return [imageSetViewer_layout(df.to_dict(orient="records"))],[plotImageAnnotations(imgId)]
 
 
-    return [html.Div("YOO")]
+    return [html.Div("")],html.Div()
 
 # @callback(
 #     # [Output("cur-hover-image", "children"), Output("cur-image-for-ppc", "children")],

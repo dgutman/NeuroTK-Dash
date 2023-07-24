@@ -66,13 +66,33 @@ def getThumbnail(item_id,return_format="PNG"):
 
     if return_format=="b64img":
         img_io = BytesIO()
-        Image.fromarray(thumb).convert("RGB").save(img_io, "JPEG", quality=95)
+        Image.fromarray(thumb).convert("RGB").save(img_io, "PNG", quality=95)
         b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
 
-        return "data:image/jpeg;base64," + b64image
+        return "data:image/png;base64," + b64image
 
     return thumb
 
+
+def get_largeImageInfo( imageId):
+    ### This will return the large image info in terms of tile size, base size, etc..
+    liInfo = gc.get(f"item/{imageId}/tiles")
+    return liInfo
+
+    # def get_item_wsi_dims(item_id):    details = gc.get(f"/item/{item_id}/tiles/")    return (details["sizeY"], details["sizeX"])
+
+
+def get_item_rois(item_id, annot_name=None):
+    annots = gc.get(f"annotation/item/{item_id}")
+
+    item_records = [
+        element
+        for annot in annots
+        for element in annot["annotation"]["elements"]
+        if (annot_name is None) or (annot["annotation"]["name"] == annot_name)
+    ]
+
+    return item_records
 ## Just going to return the default height&height={height}"
 
 # def getThumbnail(imgId):
