@@ -94,7 +94,7 @@ stats_graphs_layout = html.Div(
     #   [State("store", "data")],
 )
 def populate_graph_data(graph1_switch, graph2_switch, data):
-    print(ctx.triggered, data)
+    #print(ctx.triggered, data)
     if data is None:
         return None, None
     else:

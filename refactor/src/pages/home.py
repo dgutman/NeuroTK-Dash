@@ -19,7 +19,7 @@ from ..utils.api import getItemSetData, getThumbnail, getItemAnnotations
 from ..utils.database import insert_records, get_all_records_df
 from dash_iconify import DashIconify
 from ..components.statsGraph import stats_graphs_layout
-
+from ..components.imageSetViewer import imageSetViewer_layout
 # from ..utils.dsa_login import LoginSystem
 
 dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
@@ -75,10 +75,13 @@ multi_acc = dmc.AccordionMultiple(
 )
 
 
+
 layout = dmc.MantineProvider(
     dmc.NotificationsProvider(
         [
-            html.Div(
+            html.Div("Place Holder for Image Set",id="relatedImageSet_layout"),         
+
+                                    html.Div(
                 [
                     dbc.Modal(
                         [
@@ -147,6 +150,40 @@ def populate_main_datatable(data):
 
     return [table]
 
+## CReating callback function for when a user clicks on an image....This is.. confusing!
+@callback(
+        [Output("relatedImageSet_layout","children")],
+    [Input("datatable-interactivity", "active_cell")],
+    # (A) pass table as data input to get current value from active cell "coordinates"
+    [State("datatable-interactivity", "data")],
+    prevent_initial_call=True
+) 
+def updateRelatedImageSet( active_cell, data ):
+    if active_cell:
+#         # cell = json.dumps(active_cell, indent=2)
+        row = active_cell["row"]
+        col = active_cell["column_id"]
+        # value = table_data[row][col]
+        imgId = data[row]["_id"]
+        imgName = data[row]["name"]
+        blockID = data[row]["blockID"]
+        caseID = data[row]["caseID"]
+       
+        print(imgName,row,col,imgId)
+        ## Now I need to actually.. get all the related images.. this is probably easiest in pandas..
+        ## We need to find all the images with the same case_id, and block_id and return the list of items with the other stains
+
+        df = pd.DataFrame().from_dict(data)
+        ### TO REDO to validate that blockID, caseID, etc actually exist.. and also cleanup
+
+        df = df[(df.blockID=="12") & (df.caseID=='E20-17')]
+
+        #print(df.head)
+
+        return [imageSetViewer_layout(df.to_dict(orient="records"))]
+
+
+    return [html.Div("YOO")]
 
 # @callback(
 #     # [Output("cur-hover-image", "children"), Output("cur-image-for-ppc", "children")],

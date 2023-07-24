@@ -10,16 +10,18 @@ import os
 import requests
 import json
 import girder_client
-
+import numpy as np
 # local imports
-from .settings import DSA_BASE_Url, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE
-
+from .settings import DSA_BASE_Url, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE, API_KEY
+from PIL import Image
+from io import BytesIO
+import base64
 
 ### SIGNIFICANT CHANGE TO DO
 ### NEED TO USE THE girder_client API to pull all of the data instead of requests, makes life much easier
 
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_Url)
-
+print(gc.authenticate(apiKey=API_KEY))
 
 def getItemAnnotations(itemId):
     ### Given an item ID from the DSA, grabs relevant annotation data
@@ -31,18 +33,48 @@ def getItemAnnotations(itemId):
 
 
 def getItemSetData(num_of_items=0):
-    url = f"{DSA_BASE_Url}/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
-    # print(url)
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        # Process the data as needed
-        return data
+    #url = f"{DSA_BASE_Url}/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
+    url = f"/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
+    
+    
+    # # print(url)
+    # response = requests.get(url)
+    response = gc.get(url)
+
+    if response:
+        return response
     else:
         print("Error:", response.status_code)
         return None
 
 
-def getThumbnail(imgId):
-    url = f"{DSA_BASE_Url}/item/{imgId}/tiles/thumbnail"
-    return url
+def getThumbnail(item_id,return_format="PNG"):
+    """
+    Gets thumbnail image associated with provided item_id and with specified height
+    The aspect ratio is retained, so the width may not be equal to the height
+    Thumbnail is returned as a numpy array, after dropping alpha channel
+    Thumbnail encoding is specified as PNG, but that may not be relevant
+    
+    ToDo:  Redo so it pulls as a numpy array.. this conversion is a bit extraneous
+
+    """
+    thumb_download_endpoint = f"/item/{item_id}/tiles/thumbnail?encoding=PNG" 
+    thumb = gc.get(thumb_download_endpoint, jsonResp=False).content
+    thumb = np.array(Image.open(BytesIO(thumb)))
+    # dropping alpha channel and keeping only rgb
+    thumb = thumb[:, :, :3]
+
+    if return_format=="b64img":
+        img_io = BytesIO()
+        Image.fromarray(thumb).convert("RGB").save(img_io, "JPEG", quality=95)
+        b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
+
+        return "data:image/jpeg;base64," + b64image
+
+    return thumb
+
+## Just going to return the default height&height={height}"
+
+# def getThumbnail(imgId):
+#     url = f"{DSA_BASE_Url}/item/{imgId}/tiles/thumbnail"
+#     return url
