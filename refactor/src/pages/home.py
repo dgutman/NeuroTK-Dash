@@ -11,6 +11,7 @@ from ..utils.helpers import getSampleDataset, generate_main_DataTable, generate_
 from ..utils.api import getItemSetData, get_ppc_details_simple, get_ppc_details_specific
 from ..utils.database import insert_records, get_all_records_df
 from ..components.statsGraph import stats_graphs_layout
+from ..components.responsive_statsGraph import responsive_stats_graphs_layout
 from ..components.imageSetViewer import imageSetViewer_layout
 from ..components.annotationViewPanel import plotImageAnnotations
 
@@ -93,6 +94,13 @@ multi_acc = dmc.AccordionMultiple(
                 dmc.AccordionPanel(stats_graphs_layout),
             ],
             value="flexibility",
+        ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("Responsive Stats Graphs"),
+                dmc.AccordionPanel(responsive_stats_graphs_layout),
+            ],
+            value="flexibility_1",
         ),
     ]
 )
