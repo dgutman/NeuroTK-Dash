@@ -33,6 +33,16 @@ def getItemAnnotations(itemId):
     return annotationSet
 
 
+def getAllItemAnnotations(annotationName=None):
+    ## This grabs/caches all of the annotations that a user has access too.. can be filtered based on annotation Name
+    ## This will also have functionality to normalize/cleanup results that are stored in the annotation object
+    ## For now I am focusing on pulling out the PPC data
+    annotationItemSet = gc.listResource("annotation")
+    annotationItemSet = list(annotationItemSet)
+    print("You have retrieved %d annotations from the DSA for the current API KEY" % len(annotationItemSet))
+    return annotationItemSet
+
+
 def getItemSetData(num_of_items=0):
     # url = f"{DSA_BASE_Url}/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
     url = f"/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
