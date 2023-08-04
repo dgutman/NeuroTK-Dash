@@ -17,7 +17,8 @@ from ..components.responsive_statsGraph import responsive_stats_graphs_layout
 from ..components.imageSetViewer import imageSetViewer_layout
 from ..components.annotationViewPanel import plotImageAnnotations
 from ..components.ppc_results_panel import ppc_results_interface_panel
-from ..components.annotationTableView import update_annotation_button
+
+# from ..components.annotationTableView import update_annotation_button
 
 
 # NOTE: start mongo db with: sudo serivice mongodb start
@@ -99,7 +100,7 @@ multi_acc = dmc.AccordionMultiple(
 layout = dmc.MantineProvider(
     dmc.NotificationsProvider(
         [
-            html.Div([], id='annotationData_layout'),
+            html.Div([], id="annotationData_layout"),
             html.Div([], id="relatedImageSet_layout"),
             html.Div([], id="curImage_annotations"),
             html.Div(
@@ -131,7 +132,7 @@ layout = dmc.MantineProvider(
                                             ),
                                         ],
                                     ),
-                              update_annotation_button
+                                    #   update_annotation_button
                                 ],
                                 className="twelve columns process-btn-div",
                             ),
