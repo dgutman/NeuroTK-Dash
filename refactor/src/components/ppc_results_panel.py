@@ -186,14 +186,20 @@ def make_ppc_box_chart(metadata_df):
     metadata_df["Braak Stage"] = metadata_df["Braak Stage"].str.replace("(", "").str.replace(")", "")
 
     meta_cols = ["caseID", "ABC", "Braak Stage", "CERAD", "Thal", "Percent Strong Positive"]
-    metadata_df = metadata_df[meta_cols]
+    metadata_df = metadata_df[meta_cols].copy()
 
     metadata_df.dropna(subset=meta_cols[1:-1], how="all", inplace=True)
 
     metadata_df = metadata_df.groupby(meta_cols[:-1], group_keys=False).mean()
     metadata_df.reset_index(inplace=True, drop=False)
 
-    fig = make_subplots(rows=2, cols=2, subplot_titles=meta_cols[1:-1], shared_yaxes=True)
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=meta_cols[1:-1],
+        shared_yaxes=True,
+        y_title="Percent Strong Positive",
+    )
     mapping = {"ABC": (1, 1), "Braak Stage": (1, 2), "CERAD": (2, 1), "Thal": (2, 2)}
 
     psp = metadata_df["Percent Strong Positive"].tolist()
