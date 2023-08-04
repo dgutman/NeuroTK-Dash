@@ -1,26 +1,13 @@
 from dash_extensions.enrich import html, Output, Input, State
-from dash import dcc, ctx
+from dash import dcc
 import dash
 import plotly.express as px
 import pandas as pd
-import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
-from dash import callback_context
 
 from plotly import graph_objects as go
 
 from ..utils.helpers import generate_main_DataTable
-
-### Using dash blueprints as an example, will determine if I want to do that
-### or if I use the @dash.callback operator.  Currently not sure what is easier.
-# # bp = DashBlueprint()
-# # bp.layout = html.Div([html.Button("Click me!", id="btn"), html.Div(id="log")])
-
-
-# @bp.callback(Output("log", "children"), Input("btn", "n_clicks"))
-# def on_click(n_clicks):
-#     return f"Hello world {n_clicks}!"
-
 
 responsive_stats_graphs_layout = html.Div(
     html.Div(
@@ -62,22 +49,12 @@ responsive_stats_graphs_layout = html.Div(
                     "align-items": "center",
                 },
                 className="six columns",
-            )
-            # html.Div([], className="four columns", id="graph3-div"),
+            ),
         ],
         style={"padding-top": "30px"},
     ),
     className="twelve columns",
 )
-
-
-### This callback should only update the graphs when data in the main data store changes
-## Not sure if I have the proper call back structure to make sure these get populated
-
-# TODO: rewrite how this is done such that toggling the switch of one data subset won't reset
-# the data of the other. currently filtering one, then toggling the other resets both
-
-# probably make graphs by default and have toggle be independent functions, etc.
 
 
 @dash.callback(
@@ -181,28 +158,3 @@ def update_region_div_data(filterModel, data, virtualRowData):
     figure = go.Figure(px.histogram(data, x="regionName", y="count"))
 
     return data.to_dict(orient="records"), {}, figure
-
-
-# NOTE: below commented out because I didn't want to mess with the buttons since that wasn't really important
-# focus was on decoupling the tables/graphs for stain/region so that messing with one doesn't impact the other
-
-# @dash.callback(
-#     [
-#         Output("modal-body", "children"),
-#         Output("modal", "is_open"),
-#     ],
-#     [
-#         Input("graph1-fullscreen-btn", "n_clicks"),
-#         Input("graph2-fullscreen-btn", "n_clicks"),
-#         State("graph1-div", "children"),
-#         State("graph2-div", "children"),
-#     ],
-#     prevent_initial_call=True,
-# )
-# def make_graph_fullscreen(nclicks1, nclicks2, graph1, graph2):
-#     trigger = callback_context.triggered[0]
-#     btn_id = trigger["prop_id"].split(".")[0]
-#     if btn_id == "graph1-fullscreen-btn":
-#         return [graph1, True]
-#     elif btn_id == "graph2-fullscreen-btn":
-#         return [graph2, True]

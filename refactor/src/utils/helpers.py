@@ -48,6 +48,7 @@ def generate_generic_DataTable(df, id_val, default_col_def={}, col_defs={}):
                 columnDefs=col_defs,
                 rowData=df.to_dict("records"),
                 dashGridOptions={"pagination": True},
+                columnSize="sizeToFit",
             ),
         ]
     )

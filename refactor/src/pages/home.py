@@ -1,39 +1,33 @@
 # package imports
 import dash
-from dash import html, dcc, callback, Output, Input, State
+from dash import html, dcc, callback, Output, Input, State, ctx
 import dash_bootstrap_components as dbc  # Useful set of layout widgets
 import pandas as pd
 import dash_mantine_components as dmc
 import dash_leaflet as dl
 
+from datetime import date
+
 
 from ..utils.helpers import getSampleDataset, generate_main_DataTable, generate_generic_DataTable
-from ..utils.api import getItemSetData, get_ppc_details_simple, get_ppc_details_specific
+from ..utils.api import getItemSetData, get_ppc_details_simple
 from ..utils.database import insert_records, get_all_records_df
 from ..components.statsGraph import stats_graphs_layout
 from ..components.responsive_statsGraph import responsive_stats_graphs_layout
 from ..components.imageSetViewer import imageSetViewer_layout
 from ..components.annotationViewPanel import plotImageAnnotations
+from ..components.ppc_results_panel import ppc_results_interface_panel
 
-# from ..utils.dsa_login import LoginSystem
+# NOTE: start mongo db with: sudo serivice mongodb start
+
 
 dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
-
-
-## For development I am checking to see if I am in a docker environment or not..
-
-# dsa_login = LoginSystem("SOME_URL_GOES_HERE") # TO BE DONE
-
-### This contains high level stats graphs for stain and regionName
 
 
 cur_image_annotationTable = html.Div(id="curImageAnnotation-div")
 
 cur_image_viz = dbc.Col(
     [
-        # html.Div(id="cur-image-for-ppc", className="cur-image-for-ppc three columns"),
-        # html.Div(cur_image_annotationTable, className="seven columns"),
-        # html.Div(id="cur-image-with-annotation", className="two columns"),
         html.Div(
             id="leaflet-map",
             className="twelve columns leaflet-map",
@@ -48,11 +42,6 @@ simple_ppc_results_datatable = html.Div(
     [],
     className="twelve columns item_datatable",
     id="simple-ppc-results-datatable-div",
-)
-specific_ppc_results_datatable = html.Div(
-    [],
-    className="twelve columns item_datatable",
-    id="specific-ppc-results-datatable-div",
 )
 
 
@@ -75,10 +64,9 @@ multi_acc = dmc.AccordionMultiple(
         ),
         dmc.AccordionItem(
             [
-                dmc.AccordionControl("Specific (Dunn) PPC Results Datatable"),
-                dmc.AccordionPanel(specific_ppc_results_datatable),
+                dmc.AccordionControl("Specific PPC Results Datatable"),
+                dmc.AccordionPanel(ppc_results_interface_panel),
             ],
-            id="specific_annots_accordion",
             value="focus_2",
         ),
         dmc.AccordionItem(
@@ -109,8 +97,8 @@ multi_acc = dmc.AccordionMultiple(
 layout = dmc.MantineProvider(
     dmc.NotificationsProvider(
         [
-            html.Div("Place Holder for Image Set", id="relatedImageSet_layout"),
-            html.Div("Annotation stuff here", id="curImage_annotations"),
+            html.Div([], id="relatedImageSet_layout"),
+            html.Div([], id="curImage_annotations"),
             html.Div(
                 [
                     dbc.Modal(
@@ -155,9 +143,6 @@ layout = dmc.MantineProvider(
 )
 
 
-### What's the best way to make this also update the graphs... do I have to explicitly also include
-### The function that updates the graphs here?  or is there some other better way to do it..
-## I'd rather the call back function just live in the statsGraph.py file..
 @callback(
     [
         Output("dag-main-table", "rowData"),
@@ -181,7 +166,7 @@ def update_on_filter(filterModel, virtualRowData, data):
     return data, {}
 
 
-# ### This callback should only populate the datatable
+# This callback should only populate the datatable
 @callback(
     [Output("datatable-div", "children")],
     [Input("store", "data")],
@@ -195,7 +180,7 @@ def populate_main_datatable(data):
     if samples_dataset.empty:
         table = None
     else:
-        table = generate_main_DataTable(samples_dataset, id_val="dag-annotation-table")
+        table = generate_main_DataTable(samples_dataset, id_val="dag-main-table")
 
     return [table]
 
@@ -229,36 +214,7 @@ def populate_simple_annotations_datatable(n_clicks):
     return [table]
 
 
-@callback(
-    [Output("specific-ppc-results-datatable-div", "children")],
-    [Input("specific_annots_accordion", "n_clicks")],
-)
-def populate_specific_annotations_datatable(n_clicks):
-    samples_dataset = get_ppc_details_specific()
-
-    if samples_dataset.empty:
-        table = None
-    else:
-        col_def_dict = {
-            "Created On": {
-                "field": "Created On",
-                "filter": "agDateColumnFilter",
-                "filterParams": {"debounceMs": 2500},
-                "flex": 1,
-                "editable": True,
-                "valueGetter": {"function": "d3.timeParse('%Y-%m-%d')(params.data['Created On])"},
-            }
-        }
-
-        col_defs = [
-            ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in samples_dataset.columns
-        ]
-        table = generate_generic_DataTable(samples_dataset, id_val="dag-specific-table", col_defs=col_defs)
-
-    return [table]
-
-
-## CReating callback function for when a user clicks on an image....This is.. confusing!
+## Creating callback function for when a user clicks on an image
 @callback(
     [
         Output("relatedImageSet_layout", "children"),
@@ -291,13 +247,9 @@ def updateRelatedImageSet(cellClicked, rowData, data):
         caseId = rowData[row]["caseID"]
 
         print(imgName, row, col, imgId)
-        ## Now I need to actually.. get all the related images.. this is probably easiest in pandas..
-        ## We need to find all the images with the same case_id, and block_id and return the list of items with the other stains
 
         # NOTE: this will be done a lot so might be worth figuring out approach which caches df or something
         df = pd.DataFrame().from_dict(data)
-        ### TO REDO to validate that blockID, caseID, etc actually exist.. and also cleanup
-
         df = df[(df.blockID == blockId) & (df.caseID == caseId) & (df.stainID != stainId)]
 
         out_vals = (
@@ -311,10 +263,11 @@ def updateRelatedImageSet(cellClicked, rowData, data):
 
 
 @callback(
-    Output("store", "data"),
-    Output("loading", "children"),
+    [
+        Output("store", "data"),
+        Output("loading", "children"),
+    ],
     [Input("update-btn", "n_clicks")],
-    ## prevent_initial_call=True,
 )
 def update_data(n_clicks):
     # n_clicks by default 0 (never observed None), so can do below as if not n_clicks

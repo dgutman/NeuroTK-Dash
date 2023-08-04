@@ -199,24 +199,21 @@ def update_metadata_df(metadata_df, records_df):
     return metadata_df
 
 
-# default folder_id is for Dunn study
-def get_ppc_details_specific(folder_id="6464e04c6df8ba8751afabb3", annotation_name="Positive Pixel Count"):
-    ppc_params = {
-        "hue_value": "0.1",
-        "hue_width": "0.5",
-        "saturation_minimum": "0.2",
-        "intensity_upper_limit": f"{197/255}",
-        "intensity_weak_threshold": f"{175/255}",
-        "intensity_strong_threshold": f"{100/255}",
-        "intensity_lower_limit": "0.0",
-    }
-
+def get_ppc_details_specific(
+    folder_id,
+    daterange,
+    keep_regions,
+    stains_of_interest,
+    ppc_params,
+    annotation_name="Positive Pixel Count",
+):
     # get all items with annotations which match the provided name
     # using this as a proxy filter to target only relevant images for PPC data aggregation
 
     dunn_items = get_items_in_folder(gc, folder_id)
+    folder_item_count = len(dunn_items)
 
-    filt = dunn_items["stainID"] == "aBeta"
+    filt = dunn_items["stainID"].isin(stains_of_interest)
     dunn_items = dunn_items[filt]
 
     # get all items with annotations which match the provided name
@@ -224,7 +221,7 @@ def get_ppc_details_specific(folder_id="6464e04c6df8ba8751afabb3", annotation_na
 
     annots = gc.get(f"annotation?text={annotation_name}&limit=0")
 
-    ppc_create_date = ["2023-06-22", "2023-07-06", "2023-07-05", "2023-07-04", "2023-07-03"]
+    ppc_create_date = pd.date_range(start=daterange[0], end=daterange[1])
     ppc_records, metadata = dict(), dict()
 
     # filtering for any that were run with the same params
@@ -264,38 +261,29 @@ def get_ppc_details_specific(folder_id="6464e04c6df8ba8751afabb3", annotation_na
     ppc_records.rename(columns={"index": "item_id"}, inplace=True)
     metadata_df = pd.DataFrame.from_dict(metadata, orient="index")
 
-    keep_regions = [
-        "Frontal cortex",
-        "Temporal cortex",
-        "Parietal cortex",
-        "Occipital cortex",
-        "Cingulate cortex",
-        "Insular cortex",
-        "Hippocampus",
-        "Amygdala",
-    ]
+    req_cols = ["caseID", "stainID", "regionName", "ABC", "Braak Stage", "CERAD", "Thal"]
 
-    filt = metadata_df["regionName"].isin(keep_regions)
-    metadata_df = metadata_df[filt]
+    if all([val in metadata_df.columns for val in req_cols]):
+        filt = metadata_df["regionName"].isin(keep_regions)
+        metadata_df = metadata_df[filt]
 
-    metadata_df = update_metadata_df(metadata_df, ppc_records)
+        metadata_df = update_metadata_df(metadata_df, ppc_records)
 
-    # removing control slides
-    cont_filt = metadata_df["stainID"] == "control"
-    metadata_df = metadata_df[~cont_filt]
+        # removing control slides
+        cont_filt = metadata_df["stainID"] == "control"
+        metadata_df = metadata_df[~cont_filt]
 
-    metadata_df.reset_index(inplace=True)
-    metadata_df.rename(columns={"index": "item_id", "RatioStrongToPixels": "Percent Strong Positive"}, inplace=True)
+        metadata_df.reset_index(inplace=True)
+        metadata_df.rename(
+            columns={"index": "item_id", "RatioStrongToPixels": "Percent Strong Positive"}, inplace=True
+        )
 
-    keep_cols = [
-        "item_id",
-        "caseID",
-        "Percent Strong Positive",
-        "regionName",
-        "Braak Stage",
-        "CERAD",
-    ]
+        req_cols.insert(0, "item_id")
+        req_cols.insert(2, "Percent Strong Positive")
 
-    metadata_df = metadata_df[keep_cols]
+        metadata_df = metadata_df[req_cols]
+        final_item_count = metadata_df.shape[0]
 
-    return metadata_df
+        return metadata_df, (final_item_count, folder_item_count)
+
+    return pd.DataFrame(), (0, folder_item_count)

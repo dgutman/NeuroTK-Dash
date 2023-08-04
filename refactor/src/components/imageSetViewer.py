@@ -3,19 +3,10 @@ import dash_bootstrap_components as dbc
 from dash import html
 from ..utils.api import get_thumbnail_as_b64
 
-## We have to pull the images from the DSA and use base64 encoding to actually set them as an iamge source
-
-
-# def load_image(image_path):
-#     image = Image.open(image_path)
-#     return np.array(image)
-
-
 # This will render a set of thumbnails from a given region or case depending on what input it receives
 
 
 def genRelatedImagePanel(imageInfo):
-    # print(imageInfo)
     imageId = imageInfo["_id"]
 
     stainId = imageInfo["stainID"]
