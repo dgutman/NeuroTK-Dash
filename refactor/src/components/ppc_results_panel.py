@@ -161,15 +161,6 @@ def make_stacked_ppc_bar_chart(metadata_df):
     Each bar chart is itself representative of Percent Strong Positive for each region of a particular case
     Which is given as a single bar for each case, subdivided into, and color coded by, region (recreating Dunn fig 4)
     """
-    # getting unique stains since this is on a stain by stain, case by case basis
-    # stains = metadata_df["stainID"].unique()
-
-    # figs = []
-
-    # for stain in stains:
-    #     # making df unique to stain of interest
-    #     filt = metadata_df["stainID"] == stain
-    #     df = metadata_df[filt].copy()
 
     fig = px.bar(
         metadata_df,
@@ -199,34 +190,8 @@ def make_ppc_box_chart(metadata_df):
 
     metadata_df.dropna(subset=meta_cols[1:-1], how="all", inplace=True)
 
-    # NOTE: the grouped approach is a better way to do this because it averages PSP within a case
-    # the other way below doesn't do this averaging, so could be updated to do so, but if there's a way to just
-    # use the grouped approach, that might be ideal -- however, this doesn't yet solve the issue that these
-    # staging frameworks differ in their range (some go to 6 others don't, etc.) and how the represent it
-    # (some use roman numerals, others arabic). will need to either resolve this or find a way to build each
-    # individually and then combine them back into a multifigure, since there doesn't seem to be a way to do this
-    # while also using the easiest appraoch to multifigure, which is just using the facet_col argument to the plot constructor
     metadata_df = metadata_df.groupby(meta_cols[:-1], group_keys=False).mean()
     metadata_df.reset_index(inplace=True, drop=False)
-
-    # titles = [
-    #     "Percent Strong Positive by Ante-Mortem Stage of ABC",
-    #     "Percent Strong Positive by Ante-Mortem Braak Stage",
-    # ]
-
-    # test_0 = px.box(
-    #     grouped,
-    #     x="ABC",
-    #     y="Percent Strong Positive",
-    #     category_orders={"ABC": sorted(grouped["ABC"].unique())},
-    # )
-
-    # test_1 = px.box(
-    #     grouped,
-    #     x="Braak Stage",
-    #     y="Percent Strong Positive",
-    #     category_orders={"Braak Stage": sorted(grouped["Braak Stage"].unique())},
-    # )
 
     fig = make_subplots(rows=2, cols=2, subplot_titles=meta_cols[1:-1], shared_yaxes=True)
     mapping = {"ABC": (1, 1), "Braak Stage": (1, 2), "CERAD": (2, 1), "Thal": (2, 2)}
@@ -235,51 +200,15 @@ def make_ppc_box_chart(metadata_df):
 
     for col, loc in mapping.items():
         fig.add_trace(go.Box(x=metadata_df[col].tolist(), y=psp), row=loc[0], col=loc[1])
-        fig.update_xaxes(title_text="Stage", tickvals=sorted(metadata_df[col].unique()), row=loc[0], col=loc[1])
+        fig.update_xaxes(
+            title_text="Stage",
+            categoryorder="array",
+            categoryarray=sorted(metadata_df[col].unique()),
+            row=loc[0],
+            col=loc[1],
+        )
 
     fig.update_layout(showlegend=False, title_text="Percent Strong Positive by Stage of Given Diagnostic Framework")
-
-    # new_fig.add_trace(
-    #     test_0["data"][0],
-    #     row=1,
-    #     col=1,
-    # )
-    # new_fig.add_trace(
-    #     test_1["data"][0],
-    #     row=1,
-    #     col=2,
-    # )
-
-    # holder = grouped.copy()
-
-    # holder.set_index(["caseID"], inplace=True, drop=True)
-    # holder = holder[meta_cols[1:-1]].stack()
-
-    # holder = holder.reset_index()
-    # holder.rename(columns={"caseID": "Percent Strong Positive", "level_1": "Framework", 0: "Stage"}, inplace=True)
-
-    # replace_dict = {
-    #     key: val for key, val in zip(grouped["caseID"].tolist(), grouped["Percent Strong Positive"].tolist())
-    # }
-
-    # holder["Percent Strong Positive"].replace(replace_dict, inplace=True)
-
-    # stage_dict = {"I": "1", "II": "2", "III": "3", "IV": "4", "V": "5", "VI": "6"}
-    # holder["Stage"].replace(stage_dict, inplace=True)
-
-    # print(holder["Stage"].unique())
-
-    # holder["Stage"] = holder["Stage"].astype(int)
-
-    # fig = px.box(
-    #     holder,
-    #     x="Stage",
-    #     y="Percent Strong Positive",
-    #     facet_col="Framework",
-    #     category_orders={"Framework": sorted(holder["Framework"].unique()), "Stage": sorted(holder["Stage"].unique())},
-    #     title=f"Percent Strong Positive by Stage of Given Framework",
-    # )
-    # fig.update_layout(xaxis_tickangle=-90)
 
     return dcc.Graph(figure=fig)
 
