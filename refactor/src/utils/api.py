@@ -210,11 +210,12 @@ def get_ppc_details_specific(
     # get all items with annotations which match the provided name
     # using this as a proxy filter to target only relevant images for PPC data aggregation
 
-    dunn_items = get_items_in_folder(gc, folder_id)
-    folder_item_count = len(dunn_items)
+    original_items = get_items_in_folder(gc, folder_id)
 
-    filt = dunn_items["stainID"].isin(stains_of_interest)
-    dunn_items = dunn_items[filt]
+    filt = (original_items["stainID"].isin(stains_of_interest)) & (original_items["regionName"].isin(keep_regions))
+    original_items = original_items[filt]
+
+    folder_item_count = len(original_items)
 
     # get all items with annotations which match the provided name
     # using this as a proxy filter to allow removal of any which already have positive pixel count
@@ -237,7 +238,7 @@ def get_ppc_details_specific(
 
         if (
             (details == ppc_params)
-            and (item_id in dunn_items["item_id"].values)
+            and (item_id in original_items["item_id"].values)
             and (annot.get("created").split("T")[0] in ppc_create_date)
         ):
             annot = json.loads(
@@ -264,14 +265,7 @@ def get_ppc_details_specific(
     req_cols = ["caseID", "stainID", "regionName", "ABC", "Braak Stage", "CERAD", "Thal"]
 
     if all([val in metadata_df.columns for val in req_cols]):
-        filt = metadata_df["regionName"].isin(keep_regions)
-        metadata_df = metadata_df[filt]
-
         metadata_df = update_metadata_df(metadata_df, ppc_records)
-
-        # removing control slides
-        cont_filt = metadata_df["stainID"] == "control"
-        metadata_df = metadata_df[~cont_filt]
 
         metadata_df.reset_index(inplace=True)
         metadata_df.rename(
@@ -284,6 +278,12 @@ def get_ppc_details_specific(
         metadata_df = metadata_df[req_cols]
         final_item_count = metadata_df.shape[0]
 
-        return metadata_df, (final_item_count, folder_item_count)
+        filt = original_items["item_id"].isin(metadata_df["item_id"])
+        absent = original_items[~filt]
 
-    return pd.DataFrame(), (0, folder_item_count)
+        abs_cols = ["item_id", "blockID", "caseID", "regionName", "stainID"]
+        absent = absent[abs_cols]
+
+        return metadata_df, absent, (final_item_count, folder_item_count)
+
+    return pd.DataFrame(), pd.DataFrame(), (0, folder_item_count)

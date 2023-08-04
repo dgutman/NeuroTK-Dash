@@ -36,7 +36,7 @@ def generate_main_DataTable(df, id_val):
     return dsa_datatable
 
 
-def generate_generic_DataTable(df, id_val, default_col_def={}, col_defs={}):
+def generate_generic_DataTable(df, id_val, default_col_def={}, col_defs={}, exportable=False):
     col_defs = [{"field": col} for col in df.columns] if not col_defs else col_defs
     dsa_datatable = html.Div(
         [
@@ -49,6 +49,11 @@ def generate_generic_DataTable(df, id_val, default_col_def={}, col_defs={}):
                 rowData=df.to_dict("records"),
                 dashGridOptions={"pagination": True},
                 columnSize="sizeToFit",
+                csvExportParams={
+                    "fileName": f"{id_val.replace('-', '_')}.csv",
+                }
+                if exportable
+                else {},
             ),
         ]
     )

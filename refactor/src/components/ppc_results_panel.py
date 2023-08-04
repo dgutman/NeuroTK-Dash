@@ -93,6 +93,16 @@ specific_ppc_results_box_chart = html.Div(
     [],
     id="specific_table_box_chart",
 )
+specific_absent_ppc_export_button = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="specific-absent-ppc-results-export-button-div",
+)
+specific_absent_ppc_results_datatable = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="specific-absent-ppc-results-datatable-div",
+)
 
 ppc_results_interface_panel = html.Div(
     [
@@ -134,6 +144,10 @@ ppc_results_interface_panel = html.Div(
         html.Br(),
         dbc.Row([dbc.Col(specific_ppc_results_bar_chart, width="auto")]),
         dbc.Row([dbc.Col(specific_ppc_results_box_chart, width="auto")]),
+        html.Br(),
+        specific_absent_ppc_results_datatable,
+        html.Br(),
+        specific_absent_ppc_export_button,
     ]
 )
 
@@ -172,6 +186,10 @@ def make_stacked_ppc_bar_chart(metadata_df):
         title=f"Percent Strong Positive by Region and Case",
         labels={"caseID": "Case ID", "regionName": "Region", "stainID": "Stain"},
     )
+    # NOTE: below update_xaxes can be ommited if desired. only included to force plotly to show all x axis labels
+    # if not included, all x axis labels are still there, but some are left out for readability, though will be
+    # loaded if a user zooms in to a particular part of the graph or hovers over a given bar
+    fig.update_xaxes(tickmode="linear")
     fig.update_layout(xaxis_tickangle=-90)
 
     return dcc.Graph(figure=fig)
@@ -199,6 +217,7 @@ def make_ppc_box_chart(metadata_df):
         subplot_titles=meta_cols[1:-1],
         shared_yaxes=True,
         y_title="Percent Strong Positive",
+        x_title="Stage",
     )
     mapping = {"ABC": (1, 1), "Braak Stage": (1, 2), "CERAD": (2, 1), "Thal": (2, 2)}
 
@@ -207,7 +226,6 @@ def make_ppc_box_chart(metadata_df):
     for col, loc in mapping.items():
         fig.add_trace(go.Box(x=metadata_df[col].tolist(), y=psp), row=loc[0], col=loc[1])
         fig.update_xaxes(
-            title_text="Stage",
             categoryorder="array",
             categoryarray=sorted(metadata_df[col].unique()),
             row=loc[0],
@@ -222,6 +240,8 @@ def make_ppc_box_chart(metadata_df):
 @callback(
     [
         Output("specific-ppc-results-datatable-div", "children"),
+        Output("specific-absent-ppc-results-datatable-div", "children"),
+        Output("specific-absent-ppc-results-export-button-div", "children"),
         Output("detail_text", "children"),
         Output("specific_table_bar_chart", "children"),
         Output("specific_table_box_chart", "children"),
@@ -248,7 +268,7 @@ def populate_specific_annotations_datatable(
         for key, val in param_states.items()
     }
 
-    samples_dataset, counts = get_ppc_details_specific(
+    samples_dataset, absent_dataset, counts = get_ppc_details_specific(
         folder_id_val,
         daterange_val,
         regions,
@@ -273,14 +293,38 @@ def populate_specific_annotations_datatable(
         col_defs = [
             ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in samples_dataset.columns
         ]
-
         table = generate_generic_DataTable(samples_dataset, id_val="dag-specific-table", col_defs=col_defs)
+
+        col_defs = [
+            ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in absent_dataset.columns
+        ]
+        absent_table = generate_generic_DataTable(
+            absent_dataset, id_val="dag-absent-table", col_defs=col_defs, exportable=True
+        )
+        export_button = dmc.Button(
+            "Export CSV",
+            id="absent_table_button",
+            n_clicks=0,
+            variant="outline",
+            compact=True,
+            style={"width": "18rem"},
+        )
+
         bar_charts = make_stacked_ppc_bar_chart(samples_dataset)
         box_charts = make_ppc_box_chart(samples_dataset)
 
     return (
         [table],
-        f"Showing {counts[0]} of {counts[1]} original, given current filter criteria",
+        [absent_table],
+        [export_button],
+        f"Showing {counts[0]} of {counts[1]} original, given stain(s) and region(s) criteria provided",
         bar_charts,
         box_charts,
     )
+
+
+@callback(Output("dag-absent-table", "exportDataAsCsv"), Input("absent_table_button", "n_clicks"))
+def download_csv(n_clicks):
+    if n_clicks:
+        return True
+    return False
