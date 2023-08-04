@@ -145,8 +145,7 @@ ppc_results_interface_panel = html.Div(
         dbc.Row([dbc.Col(specific_ppc_results_bar_chart, width="auto")]),
         dbc.Row([dbc.Col(specific_ppc_results_box_chart, width="auto")]),
         specific_absent_ppc_results_datatable,
-        html.Br(),
-        specific_absent_ppc_export_button,
+        dbc.Row([dbc.Col(specific_absent_ppc_export_button, width="auto")]),
     ]
 )
 
@@ -310,7 +309,7 @@ def populate_specific_annotations_datatable(
             style={"width": "18rem"},
         )
         absent_text = dmc.Text(
-            "Below table shows all items which matched on stainID and regionName, but did not otherwise match PPC Params or which have never had PPC run. Scroll below the table and select the 'Export CSV' option for a local copy.",
+            f"Below table shows all items which matched on stainID and regionName, but did not otherwise match PPC Params or which have never had PPC run (total: {absent_dataset.shape[0]}). Scroll below the table and select the 'Export CSV' option for a local copy.",
             size="md",
             weight=500,
         )
@@ -320,7 +319,7 @@ def populate_specific_annotations_datatable(
 
     return (
         [table],
-        [absent_text, html.Br(), absent_table],
+        [absent_text, absent_table],
         [export_button],
         f"Showing {counts[0]} of {counts[1]} original, given stain(s) and region(s) criteria provided",
         bar_charts,
