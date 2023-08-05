@@ -336,6 +336,8 @@ def run_ppc(data, params, run=False):
     annotation_name = "gray-matter-from-xmls"
     annots = gc.get(f"annotation?text={annotation_name}&limit=0")
 
+    print(set([annot["annotation"]["name"] for annot in annots]))
+
     annot_records = {
         annot["_id"]: itemId
         for annot in annots
@@ -351,8 +353,6 @@ def run_ppc(data, params, run=False):
 
         # transforming the rois into a format that DSA will accept for PPC
         points = get_points(rois)
-
-        print(f"RUNNING ITEM: {item_id}")
 
         # finally get details of the image/item to run PPC on
         item = gc.get(f"item/{item_id}")
@@ -371,6 +371,8 @@ def run_ppc(data, params, run=False):
         item.update(params)
 
         if run:
+            print(f"RUNNING ITEM: {item_id}")
+
             # posting the job to DSA and getting the job extension for future reference
             returned_val = gc.post(ppc_ext, data=item)
 
