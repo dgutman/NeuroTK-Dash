@@ -1,13 +1,10 @@
 # package imports
 import dash
-from dash import html, dcc, callback, Output, Input, State, ctx
+from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc  # Useful set of layout widgets
 import pandas as pd
 import dash_mantine_components as dmc
 import dash_leaflet as dl
-
-from datetime import date
-
 
 from ..utils.helpers import getSampleDataset, generate_main_DataTable, generate_generic_DataTable
 from ..utils.api import getItemSetData, get_ppc_details_simple
@@ -41,10 +38,11 @@ cur_image_viz = dbc.Col(
 )
 
 main_item_datatable = html.Div([], className="twelve columns item_datatable", id="datatable-div")
-simple_ppc_results_datatable = html.Div(
+
+all_annotations_datatable = html.Div(
     [],
     className="twelve columns item_datatable",
-    id="simple-ppc-results-datatable-div",
+    id="all-annotations-datatable-div",
 )
 
 
@@ -58,19 +56,14 @@ multi_acc = dmc.AccordionMultiple(
             value="focus",
         ),
         dmc.AccordionItem(
-            [
-                dmc.AccordionControl("HistomcsUI"),
-                dmc.AccordionPanel(histomicsui_layout)
-            ],
-            value="histomcsui"
+            [dmc.AccordionControl("HistomcsUI"), dmc.AccordionPanel(histomicsui_layout)], value="histomcsui"
         ),
-
         dmc.AccordionItem(
             [
-                dmc.AccordionControl("Simple PPC Results Datatable"),
-                dmc.AccordionPanel(simple_ppc_results_datatable),
+                dmc.AccordionControl("All Annotations Datatable"),
+                dmc.AccordionPanel(all_annotations_datatable),
             ],
-            id="simple_annots_accordion",
+            id="all_annots_accordion",
             value="focus_1",
         ),
         dmc.AccordionItem(
@@ -108,10 +101,8 @@ multi_acc = dmc.AccordionMultiple(
 layout = dmc.MantineProvider(
     dmc.NotificationsProvider(
         [
-            html.Div([], id="annotationData_layout"),
             html.Div([], id="relatedImageSet_layout"),
             html.Div([], id="curImage_annotations"),
-         
             html.Div(
                 [
                     dbc.Modal(
@@ -141,10 +132,10 @@ layout = dmc.MantineProvider(
                                             ),
                                         ],
                                     ),
-                                   update_annotation_button
+                                    update_annotation_button,
                                 ],
                                 className="twelve columns process-btn-div",
-                            )
+                            ),
                         ],
                         className="content__card",
                     ),
@@ -199,41 +190,12 @@ def populate_main_datatable(data):
     return [table]
 
 
-@callback(
-    [Output("simple-ppc-results-datatable-div", "children")],
-    [Input("simple_annots_accordion", "n_clicks")],
-)
-def populate_simple_annotations_datatable(n_clicks):
-    samples_dataset = get_ppc_details_simple()
-
-    if samples_dataset.empty:
-        table = None
-    else:
-        col_def_dict = {
-            "Created On": {
-                "field": "Created On",
-                "filter": "agDateColumnFilter",
-                "filterParams": {"debounceMs": 2500},
-                # "flex": 1,
-                "editable": True,
-                "valueGetter": {"function": "d3.timeParse('%Y-%m-%d')(params.data['Created On])"},
-            }
-        }
-
-        col_defs = [
-            ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in samples_dataset.columns
-        ]
-        table = generate_generic_DataTable(samples_dataset, id_val="simple-dag-annotation-table", col_defs=col_defs)
-
-    return [table]
-
-
 ## Creating callback function for when a user clicks on an image
 @callback(
     [
         Output("relatedImageSet_layout", "children"),
         Output("curImage_annotations", "children"),
-        Output("histomicsui_iframe","src")
+        Output("histomicsui_iframe", "src"),
     ],
     [
         Input("dag-main-table", "cellClicked"),
@@ -267,14 +229,13 @@ def updateRelatedImageSet(cellClicked, rowData, data):
         df = pd.DataFrame().from_dict(data)
         df = df[(df.blockID == blockId) & (df.caseID == caseId) & (df.stainID != stainId)]
 
-
-        iframe_src =  f"https://megabrain.neurology.emory.edu/histomicstk#?image={imgId}"
+        iframe_src = f"https://megabrain.neurology.emory.edu/histomicstk#?image={imgId}"
         print(iframe_src)
 
         out_vals = (
             [imageSetViewer_layout(df.to_dict(orient="records"))],
             [html.H3(f"{caseId}: {regionName.title()}, Stained with {stainId}"), plotImageAnnotations(imgId)],
-            iframe_src
+            iframe_src,
         )
 
         return out_vals

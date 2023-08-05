@@ -286,7 +286,7 @@ def populate_specific_annotations_datatable(
     )
 
     if samples_dataset.empty:
-        table, figs = None, None
+        table = None
     else:
         col_def_dict = {
             "Created On": {

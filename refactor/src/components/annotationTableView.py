@@ -1,11 +1,13 @@
 ### This module creates a layout to view the annotation data from the DSA that is cached locally in a mongo table
 ## We can add all the filters and fun stuff here related to showing annotations, as well as overlaying annotations on images
 ### For now we will simply display a datatable... but cooler stuff.. coming soon!
-from dash import html, callback, Output, Input, State
+from dash import html, callback, Output, Input
 from ..utils.api import getAllItemAnnotations
 from ..utils.database import insertAnnotationData, getAnnotationData_fromDB
+from ..utils.helpers import generate_generic_DataTable
 import dash_ag_grid as dag
 import pandas as pd
+import json
 
 update_annotation_button = html.Button(
     "Update Annotation DataSet",
@@ -44,38 +46,74 @@ def generate_annotation_table(df, id_val, colsToDisplay=None):
     return annotation_table
 
 
-
 projectName = "evanPPC"
 debug = False
 
 
+def parse_PPC(record):
+    created = record["created"].split("T")[0]
+
+    description = json.loads(
+        record["annotation"]["description"]
+        .replace("Used params: ", "{'params':")
+        .replace("\nResults:", ',"Results":')
+        .replace("'", '"')
+        .replace("None", "null")
+        + "}"
+    )
+
+    description["Results"].update({"Created On": created})
+    record["annotation"]["description"] = description
+
+    return record
+
+
+# def format_annotation_for_df(record):
+#     if record["annotation"]["name"] == "Positive Pixel Count":
+#         record = parse_PPC(record)
+
+#     print(record)
+
+
 @callback(
-    Output("annotationData_layout", "children"),
+    Output("update-annotations-btn", "n_clicks"),
     Input("update-annotations-btn", "n_clicks"),
 )
-def updateAnnotationDataFromGirder(n_clicks):
-    ### Project name and annotationName will matter going forward... we ma only want to pull PPC results or something for speed
-    ### Pull the annotation Data from girder and load it into the mongo database, we will then return a table as well...
-
+def update_all_annots_cache(n_clicks):
     ## This should update the annotations if clicked, otherwise, just get the current data in the database..
     if n_clicks:
         annotationItemSet = getAllItemAnnotations()
+        # annotationItemSet = [format_annotation_for_df(item) for item in annotationItemSet]
+        annotationItemSet = [
+            (item if item["annotation"]["name"] != "Positive Pixel Count" else parse_PPC(item))
+            for item in annotationItemSet
+        ]
+
         ### Now update the database...
         status = insertAnnotationData(annotationItemSet, projectName)
         if debug:
             print(status)
 
+    return 0
+
+
+@callback(
+    [Output("all-annotations-datatable-div", "children")],
+    [Input("all_annots_accordion", "n_clicks")],
+)
+def updateAnnotationDataFromGirder(n_clicks):
+    ### Project name and annotationName will matter going forward... we ma only want to pull PPC results or something for speed
+    ### Pull the annotation Data from girder and load it into the mongo database, we will then return a table as well...
+
     annotationItemData = getAnnotationData_fromDB(projectName=projectName)
-    print(annotationItemData[0])
-    # return generate_annotation_table(pd.DataFrame(annotationItemData), "annotorious")
 
     if annotationItemData:
+        # df = pd.DataFrame(annotationItemData)
+        df = pd.json_normalize(annotationItemData, sep="_")
+        keep_cols = [item for item in df.columns if not item.startswith("annotation_attributes__")]
+        df = df[keep_cols]
+        print([item for item in df.columns])
 
+        return [generate_generic_DataTable(df, id_val="dag_all_annotations_table")]
 
-        df = pd.json_normalize(annotationItemData, sep=".")
-        print(df.columns)
-        ppcDefaultCols = ['_id','annotation.attributes.stats.NumberStrongPositive']
-    
-        return generate_annotation_table(df,"annotorious",colsToDisplay=ppcDefaultCols)
-    
     return None
