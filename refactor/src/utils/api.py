@@ -297,3 +297,85 @@ def get_ppc_details_specific(
         return metadata_df, absent, (final_item_count, folder_item_count)
 
     return pd.DataFrame(), pd.DataFrame(), (0, folder_item_count)
+
+
+def get_points(rois, delineator=["-1, -1"]):
+    """
+    Takes rois as a list of list of integers and returns them properly formatted for PPC via DSA
+    Can also handle cases where rois is a list of dictionaries with a "points" key
+    All rois have form [[int, int, int], [int, int, int], ..., [int, int, int]]
+    This is true even of those rois stored in a dictionary
+    Assumes the points exist in a 2D plane and so only takes the first two values from each sub-list/point
+    There are cases where the rois can be of the same from but already be in 2D form (i.e. [int, int])
+    The function is not impacted by this difference and will behave the same
+    Points are returned as a string representation of the list with each roi delineated by the provided delineator
+    """
+    points = []
+    region_count = len(rois)
+
+    delineate = region_count > 1
+
+    for ind, roi in enumerate(rois, start=1):
+        if isinstance(roi, list):
+            [points.extend([str(item) for item in val[:2]]) for val in roi]
+        else:
+            # getting all non-zero points, converting to string and adding to points liste
+            [points.extend([str(item) for item in val[:2]]) for val in roi["points"]]
+
+        # don't want to add delineator to the last roi since it doesn't need to be delineated
+        if (delineate) and (ind != region_count):
+            points.extend(delineator)
+
+    points = f"[{', '.join(points)}]"
+    return points
+
+
+def run_ppc(data, params):
+    ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
+
+    annotation_name = "gray-matter-from-xmls"
+    annots = gc.get(f"annotation?text={annotation_name}&limit=0")
+
+    annot_records = {
+        annot["_id"]: itemId
+        for annot in annots
+        if (annot["annotation"]["name"] == annotation_name) and ((itemId := annot["itemId"]) in data["item_id"].values)
+    }
+
+    # retrieve the full annotation details and transform the returned values into a format that is accepted by PPC
+    # then run PPC on the item using the annotation bounds as ROI
+    for annot_id, item_id in annot_records.items():
+        # getting rois from grey matter annotation
+        annotation = gc.get(f"annotation/{annot_id}")
+        rois = annotation["annotation"]["elements"]
+
+        # transforming the rois into a format that DSA will accept for PPC
+        points = get_points(rois)
+
+        print(f"RUNNING ITEM: {item_id}")
+
+        # finally get details of the image/item to run PPC on
+        item = gc.get(f"item/{item_id}")
+
+        item = {
+            "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
+            "outputLabelImage": f"{item['name']}_ppc.tiff",
+            "outputLabelImage_folder": "645a5fb76df8ba8751a8dd7d",
+            "outputAnnotationFile": f"{item['name']}_ppc.anot",
+            "outputAnnotationFile_folder": "645a5fb76df8ba8751a8dd7d",
+            "region": points,
+            "returnparameterfile": f"{item['name']}_ppc.params",
+            "returnparameterfile_folder": "645a5fb76df8ba8751a8dd7d",
+        }
+
+        item.update(params)
+
+        # posting the job to DSA and getting the job extension for future reference
+        returned_val = gc.post(ppc_ext, data=item)
+        # job_ext = returned_val["jobInfoSpec"]["url"].split("v1/")[-1]
+
+        # # checking job status post-submission
+        # holder = gc.get(job_ext)
+        # status = holder["status"]
+
+        # print(f"STATUS: {status}")

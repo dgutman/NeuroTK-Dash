@@ -6,8 +6,8 @@ import dash_bootstrap_components as dbc
 from plotly.subplots import make_subplots
 
 from datetime import date
-from ..utils.api import get_ppc_details_specific
 from ..utils.helpers import generate_generic_DataTable
+from ..utils.api import get_ppc_details_specific, run_ppc
 from dash import html, dcc, callback, Output, Input, State
 
 
@@ -98,6 +98,11 @@ specific_absent_ppc_export_button = html.Div(
     className="twelve columns item_datatable",
     id="specific-absent-ppc-results-export-button-div",
 )
+specific_absent_ppc_run_button = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="specific-absent-ppc-results-run-button-div",
+)
 specific_absent_ppc_results_datatable = html.Div(
     [],
     className="twelve columns item_datatable",
@@ -145,7 +150,12 @@ ppc_results_interface_panel = html.Div(
         dbc.Row([dbc.Col(specific_ppc_results_bar_chart, width="auto")]),
         dbc.Row([dbc.Col(specific_ppc_results_box_chart, width="auto")]),
         specific_absent_ppc_results_datatable,
-        dbc.Row([dbc.Col(specific_absent_ppc_export_button, width="auto")]),
+        dbc.Row(
+            [
+                dbc.Col(specific_absent_ppc_export_button, width="auto"),
+                dbc.Col(specific_absent_ppc_run_button, width="auto"),
+            ]
+        ),
     ]
 )
 
@@ -240,6 +250,7 @@ def make_ppc_box_chart(metadata_df):
         Output("specific-ppc-results-datatable-div", "children"),
         Output("specific-absent-ppc-results-datatable-div", "children"),
         Output("specific-absent-ppc-results-export-button-div", "children"),
+        Output("specific-absent-ppc-results-run-button-div", "children"),
         Output("detail_text", "children"),
         Output("specific_table_bar_chart", "children"),
         Output("specific_table_box_chart", "children"),
@@ -302,7 +313,15 @@ def populate_specific_annotations_datatable(
 
         export_button = dmc.Button(
             "Export CSV",
-            id="absent_table_button",
+            id="absent_table_export_button",
+            n_clicks=0,
+            variant="outline",
+            compact=True,
+            style={"width": "18rem"},
+        )
+        run_button = dmc.Button(
+            "Run PPC",
+            id="absent_table_run_button",
             n_clicks=0,
             variant="outline",
             compact=True,
@@ -321,14 +340,31 @@ def populate_specific_annotations_datatable(
         [table],
         [absent_text, absent_table],
         [export_button],
+        [run_button],
         f"Showing {counts[0]} of {counts[1]} original, given stain(s) and region(s) criteria provided",
         bar_charts,
         box_charts,
     )
 
 
-@callback(Output("dag-absent-table", "exportDataAsCsv"), Input("absent_table_button", "n_clicks"))
+@callback(Output("dag-absent-table", "exportDataAsCsv"), Input("absent_table_export_button", "n_clicks"))
 def download_csv(n_clicks):
     if n_clicks:
         return True
     return False
+
+
+@callback(
+    Output("absent_table_run_button", "n_clicks"),
+    [
+        Input("absent_table_run_button", "n_clicks"),
+        State("dag-absent-table", "virtualRowData"),
+    ],
+    [
+        {key: State(key, "value") for key in ppc_params_dict.keys()},
+    ],
+)
+def trigger_ppc(n_clicks, data, param_states):
+    data = pd.DataFrame(data)
+    run_ppc(data, param_states)
+    return 0
