@@ -330,7 +330,7 @@ def get_points(rois, delineator=["-1, -1"]):
     return points
 
 
-def run_ppc(data, params):
+def run_ppc(data, params, run=False):
     ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
 
     annotation_name = "gray-matter-from-xmls"
@@ -370,8 +370,10 @@ def run_ppc(data, params):
 
         item.update(params)
 
-        # posting the job to DSA and getting the job extension for future reference
-        returned_val = gc.post(ppc_ext, data=item)
+        if run:
+            # posting the job to DSA and getting the job extension for future reference
+            returned_val = gc.post(ppc_ext, data=item)
+
         # job_ext = returned_val["jobInfoSpec"]["url"].split("v1/")[-1]
 
         # # checking job status post-submission

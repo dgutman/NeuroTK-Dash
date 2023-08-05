@@ -366,5 +366,6 @@ def download_csv(n_clicks):
 )
 def trigger_ppc(n_clicks, data, param_states):
     data = pd.DataFrame(data)
+    # NOTE: pass run=True below to actually submit jobs to be run, otherwise will not submit
     run_ppc(data, param_states)
     return 0
