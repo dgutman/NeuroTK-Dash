@@ -22,8 +22,10 @@ def generate_annotation_table(df, id_val, colsToDisplay=None):
     """df: pandas dataframe
     id_val: ID for the component that is generated
     colsToDisplay: wants a list.. these are cols to display or hide"""
+
     annotation_table = dag.AgGrid(
         id=id_val,
+        enableEnterpriseModules=True,
         className="ag-theme-alpine-dask",
         defaultColDef={
             "filter": "agSetColumnFilter",
@@ -35,6 +37,7 @@ def generate_annotation_table(df, id_val, colsToDisplay=None):
         columnDefs=[{"field": col} for col in df.columns],
         rowData=df.to_dict("records"),
         dashGridOptions={"pagination": True},
+        columnSize="sizeToFit",
     )
 
     return annotation_table
@@ -58,5 +61,4 @@ def updateAnnotationDataFromGirder(n_clicks):
 
     annotationItemData = getAnnotationData_fromDB(projectName=projectName)
     print(annotationItemData[0])
-    return generate_annotation_table(pd.DataFrame(annotationItemData),"annotorious")
-    
+    return generate_annotation_table(pd.DataFrame(annotationItemData), "annotorious")

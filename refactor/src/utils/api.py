@@ -336,8 +336,6 @@ def run_ppc(data, params, run=False):
     annotation_name = "gray-matter-from-xmls"
     annots = gc.get(f"annotation?text={annotation_name}&limit=0")
 
-    print(set([annot["annotation"]["name"] for annot in annots]))
-
     annot_records = {
         annot["_id"]: itemId
         for annot in annots
