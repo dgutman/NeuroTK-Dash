@@ -17,8 +17,8 @@ from ..components.responsive_statsGraph import responsive_stats_graphs_layout
 from ..components.imageSetViewer import imageSetViewer_layout
 from ..components.annotationViewPanel import plotImageAnnotations
 from ..components.ppc_results_panel import ppc_results_interface_panel
-
-# from ..components.annotationTableView import update_annotation_button
+from ..components.annotationTableView import update_annotation_button
+from ..components.viewhistomcsUI import histomicsui_layout
 
 
 # NOTE: start mongo db with: sudo serivice mongodb start
@@ -57,6 +57,14 @@ multi_acc = dmc.AccordionMultiple(
             ],
             value="focus",
         ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("HistomcsUI"),
+                dmc.AccordionPanel(histomicsui_layout)
+            ],
+            value="histomcsui"
+        ),
+
         dmc.AccordionItem(
             [
                 dmc.AccordionControl("Simple PPC Results Datatable"),
@@ -103,6 +111,7 @@ layout = dmc.MantineProvider(
             html.Div([], id="annotationData_layout"),
             html.Div([], id="relatedImageSet_layout"),
             html.Div([], id="curImage_annotations"),
+         
             html.Div(
                 [
                     dbc.Modal(
@@ -224,6 +233,7 @@ def populate_simple_annotations_datatable(n_clicks):
     [
         Output("relatedImageSet_layout", "children"),
         Output("curImage_annotations", "children"),
+        Output("histomicsui_iframe","src")
     ],
     [
         Input("dag-main-table", "cellClicked"),
@@ -252,19 +262,24 @@ def updateRelatedImageSet(cellClicked, rowData, data):
         caseId = rowData[row]["caseID"]
 
         print(imgName, row, col, imgId)
-
+        print("Trying to also uppdate the iframe...")
         # NOTE: this will be done a lot so might be worth figuring out approach which caches df or something
         df = pd.DataFrame().from_dict(data)
         df = df[(df.blockID == blockId) & (df.caseID == caseId) & (df.stainID != stainId)]
 
+
+        iframe_src =  f"https://megabrain.neurology.emory.edu/histomicstk#?image={imgId}"
+        print(iframe_src)
+
         out_vals = (
             [imageSetViewer_layout(df.to_dict(orient="records"))],
             [html.H3(f"{caseId}: {regionName.title()}, Stained with {stainId}"), plotImageAnnotations(imgId)],
+            iframe_src
         )
 
         return out_vals
 
-    return [html.Div("")], html.Div()
+    return [html.Div("")], html.Div(), "https://megabrain.neurology.emory.edu/histomicstk"
 
 
 @callback(
