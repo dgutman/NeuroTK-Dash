@@ -5,7 +5,6 @@ from dash import html, callback, Output, Input
 from ..utils.api import getAllItemAnnotations
 from ..utils.database import insertAnnotationData, getAnnotationData_fromDB
 from ..utils.helpers import generate_generic_DataTable
-import dash_ag_grid as dag
 import pandas as pd
 import json
 
@@ -15,43 +14,16 @@ update_annotation_button = html.Button(
     n_clicks=0,
 )
 
-
-def generate_annotation_table(df, id_val, colsToDisplay=None):
-    """df: pandas dataframe
-    id_val: ID for the component that is generated
-    colsToDisplay: wants a list.. these are cols to display or hide"""
-
-    if colsToDisplay:
-        cdefs = [{"field": col} for col in colsToDisplay]
-    else:
-        cdefs = [{"field": col} for col in df.columns]
-
-    annotation_table = dag.AgGrid(
-        id=id_val,
-        enableEnterpriseModules=True,
-        className="ag-theme-alpine-dask",
-        defaultColDef={
-            "filter": "agSetColumnFilter",
-            "editable": True,
-            "flex": 1,
-            "filterParams": {"debounceMs": 2500},
-            "floatingFilter": True,
-        },
-        columnDefs=cdefs,
-        rowData=df.to_dict("records"),
-        dashGridOptions={"pagination": True},
-        columnSize="sizeToFit",
-    )
-
-    return annotation_table
-
-
 projectName = "evanPPC"
 debug = False
 
 
+def clean_groups(groups):
+    return {f"group_{count}": val for count, val in enumerate(groups, 1) if val is not None}
+
+
 def parse_PPC(record):
-    created = record["created"].split("T")[0]
+    record["created"] = record["created"].split("T")[0]
 
     description = json.loads(
         record["annotation"]["description"]
@@ -62,17 +34,31 @@ def parse_PPC(record):
         + "}"
     )
 
-    description["Results"].update({"Created On": created})
     record["annotation"]["description"] = description
+
+    if record["groups"] is not None:
+        record.update(clean_groups(record["groups"]))
+
+    record.pop("groups")
 
     return record
 
 
-# def format_annotation_for_df(record):
-#     if record["annotation"]["name"] == "Positive Pixel Count":
-#         record = parse_PPC(record)
+def parse_annot(record):
+    record["created"] = record["created"].split("T")[0]
 
-#     print(record)
+    # NOTE: this is just placeholder because there are some that have Used params but which have no relevant data
+    # this will likely change as we do more/different interogations of the data/these images, so this will
+    # likely need to be updated in the near future
+    if (desc := record["annotation"].get("description", False)) and desc.startswith("Used params"):
+        record["annotation"]["description"] = None
+
+    if record["groups"]:
+        record.update(clean_groups(record["groups"]))
+
+    record.pop("groups")
+
+    return record
 
 
 @callback(
@@ -83,9 +69,9 @@ def update_all_annots_cache(n_clicks):
     ## This should update the annotations if clicked, otherwise, just get the current data in the database..
     if n_clicks:
         annotationItemSet = getAllItemAnnotations()
-        # annotationItemSet = [format_annotation_for_df(item) for item in annotationItemSet]
+
         annotationItemSet = [
-            (item if item["annotation"]["name"] != "Positive Pixel Count" else parse_PPC(item))
+            (parse_annot(item) if item["annotation"]["name"] != "Positive Pixel Count" else parse_PPC(item))
             for item in annotationItemSet
         ]
 
@@ -102,17 +88,37 @@ def update_all_annots_cache(n_clicks):
     [Input("all_annots_accordion", "n_clicks")],
 )
 def updateAnnotationDataFromGirder(n_clicks):
-    ### Project name and annotationName will matter going forward... we ma only want to pull PPC results or something for speed
     ### Pull the annotation Data from girder and load it into the mongo database, we will then return a table as well...
 
     annotationItemData = getAnnotationData_fromDB(projectName=projectName)
 
     if annotationItemData:
-        # df = pd.DataFrame(annotationItemData)
         df = pd.json_normalize(annotationItemData, sep="_")
-        keep_cols = [item for item in df.columns if not item.startswith("annotation_attributes__")]
+
+        keep_cols = [
+            "_id",
+            "itemId",
+            "created",
+            "projectName",
+            "annotation_name",
+            "annotation_description",
+            "annotation_attributes_stats_RatioStrongToPixels",
+        ]
+
+        keep_cols.extend([col for col in df.columns if col.startswith("group")])
         df = df[keep_cols]
-        print([item for item in df.columns])
+
+        mapped_vals = {
+            "itemId": "item ID",
+            "_id": "annotation ID",
+            "annotation_name": "Annotation Name",
+            "annotation_description": "Annotation Description",
+            "annotation_attributes_stats_RatioStrongToPixels": "Percent Strong Positive",
+        }
+        df.rename(columns=mapped_vals, inplace=True)
+
+        df.dropna(how="all", inplace=True)
+        df.dropna(axis=1, how="all", inplace=True)
 
         return [generate_generic_DataTable(df, id_val="dag_all_annotations_table")]
 

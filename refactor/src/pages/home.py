@@ -16,26 +16,25 @@ from ..components.annotationViewPanel import plotImageAnnotations
 from ..components.ppc_results_panel import ppc_results_interface_panel
 from ..components.annotationTableView import update_annotation_button
 from ..components.viewhistomcsUI import histomicsui_layout
-from ..components.annotationTableView import update_annotation_button
 
-# NOTE: start mongo db with: sudo serivice mongodb start
+# NOTE: start mongo db with: sudo service mongodb start
 
 
 dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
 
 
-cur_image_annotationTable = html.Div(id="curImageAnnotation-div")
+# cur_image_annotationTable = html.Div(id="curImageAnnotation-div")
 
-cur_image_viz = dbc.Col(
-    [
-        html.Div(
-            id="leaflet-map",
-            className="twelve columns leaflet-map",
-            children=[dl.Map(dl.TileLayer(), style={"width": "1000px", "height": "500px", "marginTop": "25px"})],
-        )
-    ],
-    className="cur-image-viz-tab",
-)
+# cur_image_viz = dbc.Col(
+#     [
+#         html.Div(
+#             id="leaflet-map",
+#             className="twelve columns leaflet-map",
+#             children=[dl.Map(dl.TileLayer(), style={"width": "1000px", "height": "500px", "marginTop": "25px"})],
+#         )
+#     ],
+#     className="cur-image-viz-tab",
+# )
 
 main_item_datatable = html.Div([], className="twelve columns item_datatable", id="datatable-div")
 
@@ -73,13 +72,13 @@ multi_acc = dmc.AccordionMultiple(
             ],
             value="focus_2",
         ),
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl("Cur Image Viz"),
-                dmc.AccordionPanel(cur_image_viz),
-            ],
-            value="customization",
-        ),
+        # dmc.AccordionItem(
+        #     [
+        #         dmc.AccordionControl("Cur Image Viz"),
+        #         dmc.AccordionPanel(cur_image_viz),
+        #     ],
+        #     value="customization",
+        # ),
         dmc.AccordionItem(
             [
                 dmc.AccordionControl("Stats Graphs"),
