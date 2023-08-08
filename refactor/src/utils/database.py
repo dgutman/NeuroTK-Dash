@@ -5,6 +5,7 @@ from flask import Flask
 import pymongo
 from pymongo import UpdateOne
 from pprint import pprint
+from .api import get_ppc_details_simple
 # initialize the app with the extension
 
 db = MongoEngine()
@@ -20,14 +21,12 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
-def insertAnnotationData( annotationItems, projectName):
+def insertAnnotationData( annotationItems, projectName,debug=False):
     ### This will insert all of the annotations pulled from the DSA and also insert a projectName to keep things bundled/separate
     ## Add the projectName to all of the annotations as well
     annotationItems = [dict(item, **{'projectName':projectName}) for item in annotationItems]
     ### The collection for annotations is called.. annotations!
     print(len(annotationItems),'to be inserted or upserted into the mongo table..')
-    
-
     ## See this:
     ## print(len(annot)) returns 4099
     ## len(set(x["_id"] for x in annot)) returns 1814
@@ -36,13 +35,23 @@ def insertAnnotationData( annotationItems, projectName):
     ## Because an annotation can be copied between items.. meaning the same annotation is associated with many images..
 
     ## Evan you could/would add your code to see if the annotation is named PPC and "fix" it using our de
+
+    ### EVAN ADD IN YOUR CODE THAT TWEAKS/DEALS WITH PPC STATS BEFORE WE INSERT THE DATA
+    # for a in annotationItems:
+    #     if a['annotation']['name'].contains('PPC'):
+    #         then:
+    #         add_ppc_stuff_to_item
+    #         ['description']:
+    #         pass
+
+
+
     operations = []
     for a in annotationItems:
         operations.append(UpdateOne({'_id': a['_id']},{"$set":a},upsert=True))
-    print(len(annotationItems),"items should be getting chunkified")
     for chunk in chunks(operations,500):
         result = mc['annotationData'].bulk_write(chunk)
-        pprint(result.bulk_api_result)
+        if debug: pprint(result.bulk_api_result)
     return result
 
 

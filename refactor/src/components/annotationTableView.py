@@ -14,14 +14,15 @@ update_annotation_button = html.Button(
 )
 
 
-projectName = "evanPPC"
-debug = False
-
-
 def generate_annotation_table(df, id_val, colsToDisplay=None):
     """df: pandas dataframe
     id_val: ID for the component that is generated
     colsToDisplay: wants a list.. these are cols to display or hide"""
+
+    if colsToDisplay:
+        cdefs = [{"field": col} for col in colsToDisplay]
+    else:
+        cdefs = [{"field": col} for col in df.columns]
 
     annotation_table = dag.AgGrid(
         id=id_val,
@@ -34,13 +35,18 @@ def generate_annotation_table(df, id_val, colsToDisplay=None):
             "filterParams": {"debounceMs": 2500},
             "floatingFilter": True,
         },
-        columnDefs=[{"field": col} for col in df.columns],
+        columnDefs=cdefs,
         rowData=df.to_dict("records"),
         dashGridOptions={"pagination": True},
         columnSize="sizeToFit",
     )
 
     return annotation_table
+
+
+
+projectName = "evanPPC"
+debug = False
 
 
 @callback(
@@ -61,4 +67,15 @@ def updateAnnotationDataFromGirder(n_clicks):
 
     annotationItemData = getAnnotationData_fromDB(projectName=projectName)
     print(annotationItemData[0])
-    return generate_annotation_table(pd.DataFrame(annotationItemData), "annotorious")
+    # return generate_annotation_table(pd.DataFrame(annotationItemData), "annotorious")
+
+    if annotationItemData:
+
+
+        df = pd.json_normalize(annotationItemData, sep=".")
+        print(df.columns)
+        ppcDefaultCols = ['_id','annotation.attributes.stats.NumberStrongPositive']
+    
+        return generate_annotation_table(df,"annotorious",colsToDisplay=ppcDefaultCols)
+    
+    return None
