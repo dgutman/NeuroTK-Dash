@@ -122,4 +122,4 @@ def updateAnnotationDataFromGirder(n_clicks):
 
         return [generate_generic_DataTable(df, id_val="dag_all_annotations_table")]
 
-    return None
+    return [None]

@@ -15,12 +15,14 @@ import pandas as pd
 from .settings import DSA_BASE_Url, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE, API_KEY
 from PIL import Image
 from io import BytesIO
+from time import sleep
 import base64
 
 ### SIGNIFICANT CHANGE TO DO
 ### NEED TO USE THE girder_client API to pull all of the data instead of requests, makes life much easier
 
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_Url)
+# print(DSA_BASE_Url)
 print(gc.authenticate(apiKey=API_KEY))
 
 
@@ -29,7 +31,7 @@ def getItemAnnotations(itemId):
     ## This will also have functionality to normalize/cleanup results that are stored in the annotation object
     ## For now I am focusing on pulling out the PPC data
     annotationSet = gc.get(f"annotation?itemId={itemId}")
-    print(annotationSet)
+    # print(annotationSet)
     return annotationSet
 
 
@@ -333,7 +335,8 @@ def get_points(rois, delineator=["-1, -1"]):
 def run_ppc(data, params, run=False):
     ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
 
-    annotation_name = "gray-matter-from-xmls"
+    # annotation_name = "gray-matter-from-xmls"
+    annotation_name = "gray-matter-fixed"
     annots = gc.get(f"annotation?text={annotation_name}&limit=0")
 
     annot_records = {
@@ -374,10 +377,13 @@ def run_ppc(data, params, run=False):
             # posting the job to DSA and getting the job extension for future reference
             returned_val = gc.post(ppc_ext, data=item)
 
-        # job_ext = returned_val["jobInfoSpec"]["url"].split("v1/")[-1]
+            job_ext = returned_val["jobInfoSpec"]["url"].split("v1/")[-1]
 
-        # # checking job status post-submission
-        # holder = gc.get(job_ext)
-        # status = holder["status"]
+            sleep(5)
 
-        # print(f"STATUS: {status}")
+            # checking job status post-submission
+            holder = gc.get(job_ext)
+            status = holder["status"]
+
+            # status codes -- 4: fail, 3: success, 0: inactive, 1/2: queued/running
+            print(f"STATUS: {status}")

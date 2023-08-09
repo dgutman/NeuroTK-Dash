@@ -285,6 +285,9 @@ def populate_specific_annotations_datatable(
         param_states,
     )
 
+    samples_dataset.rename({"item_id": "item ID"}, inplace=True)
+    absent_dataset.rename({"item_id": "item ID"}, inplace=True)
+
     if samples_dataset.empty:
         table = None
     else:
@@ -363,9 +366,17 @@ def download_csv(n_clicks):
     [
         {key: State(key, "value") for key in ppc_params_dict.keys()},
     ],
+    prevent_initial_call=True,
 )
 def trigger_ppc(n_clicks, data, param_states):
+    param_states = {
+        ("_".join(key.split("_")[-2:]) if "intensity" not in key else "_".join(key.split("_")[-3:])): f"{float(val)}"
+        for key, val in param_states.items()
+    }
+
     data = pd.DataFrame(data)
+
     # NOTE: pass run=True below to actually submit jobs to be run, otherwise will not submit
-    run_ppc(data, param_states)
+    run_ppc(data, param_states, run=True)
+
     return 0
