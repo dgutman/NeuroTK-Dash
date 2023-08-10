@@ -37,21 +37,24 @@ def createAnnotationNameCountTable( projectName ):
                 'columnLimits': [{'key':'count','maxWidth': 160}]
             },
             dashGridOptions={"toolTipShowDelay":10,"rowSelection":"single"}
-        ),width=5),paramSets])
+        ),width=5),dbc.Col(paramSets,width=4)])
     # print(annotationCount)
 
     @callback(Output("paramSet","children"),
           Input("annotationNameCounts-table","selectedRows"))
     def showUniqueParamSets( selected ):
+        ##  I only allow one row to be selected, but this call back returns an array..
         if selected:
-            return html.Div("Put param set here.")
+            print(selected)
+            # getUniqueParamSets("Positive Pixel Count")
+
+            paramSets = getUniqueParamSets("Positive Pixel Count")
+            print(paramSets)
+            return html.Div(selected[0]['annotationName'])
         else:
             return html.Div("No params for this thinger")
 
     return annotationCountPanel
-
-
-
 
 
 

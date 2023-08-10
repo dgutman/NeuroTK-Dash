@@ -79,9 +79,9 @@ def getUniqueParamSets( annotationName ):
     results = list(collection.aggregate(pipeline))
 
     # Print the results
-    for result in results:
-        print(result)
-    return None
+    # for result in results:
+    #     print(result)
+    return results
 
 
 

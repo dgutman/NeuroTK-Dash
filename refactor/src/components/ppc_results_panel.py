@@ -21,7 +21,7 @@ specific_ppc_results_datepicker = dmc.DateRangePicker(
     id="specific_table_daterange",
     label="Provide Date Range",
     minDate=date(1970, 1, 1),  # year, month, day
-    value=[date(2023, 6, 22), date(2023, 7, 6)],  # range for Dunn Study replicate
+    value=[date(2023, 6, 22), date(2023, 10, 6)],  # range for Dunn Study replicate
     style={"width": "auto"},
 )
 specific_ppc_results_region_multiselect = (
