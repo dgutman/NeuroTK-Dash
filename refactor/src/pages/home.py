@@ -16,7 +16,7 @@ from ..components.annotationViewPanel import plotImageAnnotations
 from ..components.ppc_results_panel import ppc_results_interface_panel
 from ..components.annotationTableView import update_annotation_button
 from ..components.viewhistomcsUI import histomicsui_layout
-
+from ..components.annotationStats import annotationStats_layout
 # NOTE: start mongo db with: sudo service mongodb start
 
 
@@ -102,6 +102,7 @@ layout = dmc.MantineProvider(
         [
             html.Div([], id="relatedImageSet_layout"),
             html.Div([], id="curImage_annotations"),
+            html.Div([annotationStats_layout], id="annotationStats"),
             html.Div(
                 [
                     dbc.Modal(
