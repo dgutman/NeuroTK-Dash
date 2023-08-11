@@ -335,7 +335,7 @@ def get_points(rois, delineator=["-1, -1"]):
 def run_ppc(data, params, run=False):
     ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
 
-    # annotation_name = "gray-matter-from-xmls"
+    # annotation_name = "gray-matter-fixed"
     annotation_name = "gray-matter-fixed"
     annots = gc.get(f"annotation?text={annotation_name}&limit=0")
 
