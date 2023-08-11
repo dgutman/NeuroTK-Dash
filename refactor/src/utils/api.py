@@ -342,7 +342,7 @@ def run_ppc(data, params, run=False):
     annot_records = {
         annot["_id"]: itemId
         for annot in annots
-        if (annot["annotation"]["name"] == annotation_name) and ((itemId := annot["itemId"]) in data["item_id"].values)
+        if (annot["annotation"]["name"] == annotation_name) and ((itemId := annot["itemId"]) in data["Item ID"].values)
     }
 
     # retrieve the full annotation details and transform the returned values into a format that is accepted by PPC

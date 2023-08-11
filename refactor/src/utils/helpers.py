@@ -36,7 +36,7 @@ def generate_main_DataTable(df, id_val):
     return dsa_datatable
 
 
-def generate_generic_DataTable(df, id_val, default_col_def={}, col_defs={}, exportable=False):
+def generate_generic_DataTable(df, id_val, default_col_def={"resizable": True}, col_defs={}, exportable=False):
     col_defs = [{"field": col} for col in df.columns] if not col_defs else col_defs
     dsa_datatable = html.Div(
         [

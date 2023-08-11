@@ -1,11 +1,9 @@
 import pandas as pd
 from flask_mongoengine import MongoEngine
 from .settings import MONGO_URI, MONGODB_DB
-from flask import Flask
 import pymongo
 from pymongo import UpdateOne
 from pprint import pprint
-from .api import get_ppc_details_simple
 
 # initialize the app with the extension
 
@@ -16,6 +14,63 @@ db = MongoEngine()
 
 mc = pymongo.MongoClient(MONGO_URI)
 mc = mc[MONGODB_DB]  ### Attach the mongo client object to the database I want to store everything
+
+
+def getUniqueParamSets(annotationName):
+    ### Given an annotationName, this will generate a list of unique parameter sets that were used for the analysis
+    ### One thing to think about, not all annotations were algorithmically generated so will need to come up with logic
+    ### To figure this out in the future..
+    print(annotationName)
+    # # Select your collection
+    collection = mc["annotationData"]
+
+    pipeline = [
+        {"$match": {"annotation.name": annotationName}},
+        {
+            "$group": {
+                "_id": {
+                    "hue_value": "$annotation.description.params.hue_value",
+                    "hue_width": "$annotation.description.params.hue_width",
+                    "saturation_minimum": "$annotation.description.params.saturation_minimum",
+                    "intensity_upper_limit": "$annotation.description.params.intensity_upper_limit",
+                },
+                "count": {"$sum": 1},
+            }
+        },
+        {
+            "$project": {
+                "hue_value": "$_id.hue_value",
+                "hue_width": "$_id.hue_width",
+                "saturation_minimum": "$_id.saturation_minimum",
+                "intensity_upper_limit": "$_id.intensity_upper_limit",
+                "count": 1,
+                "_id": 0,
+            }
+        },
+        {"$sort": {"count": -1}},
+    ]
+
+    # Execute the aggregation pipeline
+    results = list(collection.aggregate(pipeline))
+
+    return results
+
+
+def getAnnotationNameCount(projectName):
+    """This will query the mongo database directly and get the distinct annotation names and the associated counts"""
+
+    # # Select your collection
+    collection = mc["annotationData"]
+
+    # Define the aggregation pipeline
+    pipeline = [
+        {"$group": {"_id": "$annotation.name", "count": {"$sum": 1}}},
+        {"$project": {"annotationName": "$_id", "count": 1, "_id": 0}},
+        {"$sort": {"count": -1}},
+    ]
+    # Execute the aggregation pipeline
+    results = list(collection.aggregate(pipeline))
+    return results
 
 
 def chunks(lst, n):

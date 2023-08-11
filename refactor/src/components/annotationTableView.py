@@ -62,8 +62,8 @@ def parse_annot(record):
 
 
 @callback(
-    Output("update-annotations-btn", "n_clicks"),
-    Input("update-annotations-btn", "n_clicks"),
+    [Output("loading_annots", "children")],
+    [Input("update-annotations-btn", "n_clicks")],
 )
 def update_all_annots_cache(n_clicks):
     ## This should update the annotations if clicked, otherwise, just get the current data in the database..
@@ -80,7 +80,7 @@ def update_all_annots_cache(n_clicks):
         if debug:
             print(status)
 
-    return 0
+    return [html.Button("Update Annotation DataSet", id="update-annotations-btn", n_clicks=0)]
 
 
 @callback(
