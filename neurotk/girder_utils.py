@@ -217,3 +217,19 @@ def get_thumbnail_with_mask(
     )
 
     return thumbnail, mask
+
+
+def get_collection(gc: GirderClient, collection_name: str) -> dict:
+    """Get DSA collection by name.
+    
+    Args:
+        gc: Girder client.
+        collection_name: Name of collection.
+        
+    Returns:
+        DSA metadata.
+        
+    """
+    for collection in gc.get(f'collection?text={collection_name}&limit=50'):
+        if collection['name'] == collection_name:
+            return collection

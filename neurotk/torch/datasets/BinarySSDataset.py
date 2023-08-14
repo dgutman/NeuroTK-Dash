@@ -13,7 +13,6 @@ class BinarySSDataset(Dataset):
         data: DataFrame,
         transforms: Optional[Callable] = None,
         image_color_mode: str = 'rgb',
-        norm: Optional[Callable] = None
     ) -> None:
         """
         Args:
@@ -21,8 +20,6 @@ class BinarySSDataset(Dataset):
                 filepaths to the image and mask label.
             transforms: Image transforms to apply to the image and mask.
             image_color_mode: mode of image, 'rgb' or 'grayscale'
-            norm: A normalization transform to apply to the images after
-                all the other transforms.
         
         Raises:
             ValueError: If image_color_mode is not 'rgb' or 'grayscale'.
@@ -43,7 +40,6 @@ class BinarySSDataset(Dataset):
         self.data = data
         self.transforms = transforms
         self.image_color_mode = image_color_mode
-        self.norm = norm
 
     def __len__(self) -> int:
         return len(self.data)
@@ -64,28 +60,25 @@ class BinarySSDataset(Dataset):
         mask_path = self.data.iloc[index].label
 
         # Open files with automatic closing when done.
-        with open(image_path, "rb") as image_file, open(mask_path,
-                                                        "rb") as mask_file:
+        with open(image_path, 'rb') as image_file, open(mask_path,
+                                                        'rb') as mask_file:
             # Image is read as RGB and mask as grayscale for binary problem.
             image = Image.open(image_file)
                                                             
-            if self.image_color_mode == "rgb":
-                image = image.convert("RGB")
+            if self.image_color_mode == 'rgb':
+                image = image.convert('RGB')
             else:
-                image = image.convert("L")
+                image = image.convert('L')
             
             mask = Image.open(mask_file).convert('L')
 
             # Apply transforms
-            sample = {"image": image, "mask": mask,
+            sample = {'image': image, 'mask': mask,
                       'info': self.data.iloc[index].to_dict()}
                                                             
             if self.transforms:
-                sample["image"] = self.transforms(sample["image"])
-                sample["mask"] = self.transforms(sample["mask"])
-
-            if self.norm:
-                # Color normalize the image.
-                sample['image'] = self.norm(sample['image'])
+                sample['image'], sample['mask'] = self.transforms(
+                    sample['image'], sample['mask']
+                )
             
             return sample
