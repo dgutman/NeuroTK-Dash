@@ -11,7 +11,7 @@ import dash_bootstrap_components as dbc
 
 
 project_selection = html.Div([
-    dbc.Col(dcc.Store(id='projects-store', data=get_projects(gc, PROJECTS_FLD_ID))),
+    dcc.Store(id='projects-store', data=get_projects(gc, PROJECTS_FLD_ID)),
     dbc.Row([
         dbc.Col(html.Div('Select project: ', style={'fontWeight': 'bold'}), 
                 align='start', width='auto'),

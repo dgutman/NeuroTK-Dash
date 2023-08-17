@@ -8,9 +8,10 @@ from ..utils import get_projects
 from ..settings import gc, PROJECTS_FLD_ID
 # from . import project_selection
 from .project_selection import project_selection
+from .task_selection import task_selection
 from dash_mantine_components import Select
 
 
 projects_frame = html.Div([
-    project_selection
+    project_selection, task_selection
 ], id='projects-frame')
