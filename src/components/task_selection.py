@@ -37,6 +37,13 @@ task_selection = html.Div(
 )
 
 
+@callback(Output("create-task-panel", "is_open"), Input("create-task", "n_clicks"), prevent_initial_call=True)
+def open_create_task_panel(nclicks):
+    """ """
+    if nclicks:
+        return True
+
+
 @callback(
     [
         Output("tasks-dropdown", "data"),
