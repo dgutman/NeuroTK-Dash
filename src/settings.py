@@ -7,7 +7,7 @@ DSA_BASE_URL = "https://megabrain.neurology.emory.edu/api/v1"
 # DSA_API_KEY = os.getenv("DSAKEY")
 
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
-gc.authenticate(apiKey='LiPFeVUMZdyvR5Ivg1mVid0kDyRlvKM9NzV1T5IC')
+gc.authenticate(apiKey='')  # add your API key
 
 # Hard code the user for now.
 USER = 'jvizcar'
