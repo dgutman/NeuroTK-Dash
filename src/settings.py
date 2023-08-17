@@ -7,13 +7,13 @@ DSA_BASE_URL = "https://megabrain.neurology.emory.edu/api/v1"
 # DSA_API_KEY = os.getenv("DSAKEY")
 
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
-gc.authenticate(apiKey='')  # add your API key
+gc.authenticate(apiKey="v1hpkI3hZSxMoYCOyvCILx3NFKG8MfNBgxr2Ue4V")  # add your API key
 
 # Hard code the user for now.
-USER = 'jvizcar'
+USER = "jvizcar"
 
 # ID to the Projects folder in the NeuroTK collection.
-PROJECTS_FLD_ID = '64dbd2667920606b462e5b83'
+PROJECTS_FLD_ID = "64dbd2667920606b462e5b83"
 
 # SAMPLE_PROJECT_FOLDER = "64dbd2a87920606b462e5b85"
 
