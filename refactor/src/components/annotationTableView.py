@@ -7,45 +7,7 @@ from ..utils.database import insertAnnotationData, getAnnotationData_fromDB
 from ..utils.helpers import generate_generic_DataTable
 import pandas as pd
 import json
-
-update_annotation_button = html.Button(
-    "Update Annotation DataSet",
-    id="update-annotations-btn",
-    n_clicks=0,
-)
-
-
-colsToIgnore = ['_accessLevel','_modelType','_version','created','creatorId']
-
-
-def generate_annotation_table(df, id_val, colsToDisplay=None):
-    """df: pandas dataframe
-    id_val: ID for the component that is generated
-    colsToDisplay: wants a list.. these are cols to display or hide"""
-
-    if colsToDisplay:
-        cdefs = [{"field": col} for col in colsToDisplay if col not in colsToIgnore]
-    else:
-        cdefs = [{"field": col} for col in df.columns if col not in colsToIgnore]
-
-    annotation_table = dag.AgGrid(
-        id=id_val,
-        enableEnterpriseModules=True,
-        className="ag-theme-alpine-dask",
-        defaultColDef={
-            "filter": "agSetColumnFilter",
-            "editable": True,
-            "flex": 1,
-            "filterParams": {"debounceMs": 2500},
-            "floatingFilter": True,
-        },
-        columnDefs=cdefs,
-        rowData=df.to_dict("records"),
-        dashGridOptions={"pagination": True},
-        columnSize="sizeToFit",
-    )
-
-    return annotation_table
+import dash_mantine_components as dmc
 
 
 projectName = "evanPPC"
@@ -95,9 +57,20 @@ def parse_annot(record):
     return record
 
 
+update_annotation_button = dmc.Button(
+    "Update Annotation DataSet",
+    id="update-annotations-btn",
+    n_clicks=0,
+    variant="outline",
+    compact=True,
+    style={"width": "auto", "margin-left": "15px"},
+)
+
+
 @callback(
     [Output("loading_annots", "children")],
     [Input("update-annotations-btn", "n_clicks")],
+    prevent_intial_call=True,
 )
 def update_all_annots_cache(n_clicks):
     ## This should update the annotations if clicked, otherwise, just get the current data in the database..
@@ -114,7 +87,7 @@ def update_all_annots_cache(n_clicks):
         if debug:
             print(status)
 
-    return [html.Button("Update Annotation DataSet", id="update-annotations-btn", n_clicks=0)]
+    return [update_annotation_button]
 
 
 @callback(

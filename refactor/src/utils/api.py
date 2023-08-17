@@ -18,12 +18,53 @@ from io import BytesIO
 from time import sleep
 import base64
 
-### SIGNIFICANT CHANGE TO DO
-### NEED TO USE THE girder_client API to pull all of the data instead of requests, makes life much easier
-
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_Url)
-# print(DSA_BASE_Url)
 print(gc.authenticate(apiKey=API_KEY))
+
+
+def get_all_containers():
+    holder = []
+    for collection in gc.get("/collection?limit=0"):
+        collection_id = collection["_id"]
+
+        holder.extend(
+            [
+                {"item_id": item["_id"], "parent_folder_id": item["folderId"]}
+                for item in gc.get(f"resource/{collection_id}/items?type=collection&limit=0")
+            ]
+        )
+
+    df = pd.DataFrame.from_dict(holder)
+    df.drop_duplicates(subset=["parent_folder_id"], inplace=True)
+
+    temp = pd.concat([get_item_path_details(item) for item in df["item_id"].to_list()])
+    temp.drop_duplicates(inplace=True)
+
+    filt = temp["item_type"] == "collection"
+
+    temp.loc[filt, "parent_name"] = "Collection"
+    temp.loc[~filt, "parent_name"] = temp[~filt].apply(
+        (lambda x: temp.loc[temp["_id"] == x["parent_id"], "item_name"].item()), axis=1
+    )
+
+    return temp.to_dict(orient="records")
+
+
+def get_item_path_details(item):
+    details = [
+        {
+            "_id": object_dict["_id"],
+            "item_type": object_dict["_modelType"],
+            "item_name": object_dict["name"],
+            "item_size": object_dict["size"],
+            "parent_type": object_dict.get("parentCollection"),
+            "parent_id": object_dict.get("parentId"),
+        }
+        for item in gc.get(f"item/{item}/rootpath")
+        if (object_dict := item.get("object", False))
+    ]
+
+    return pd.DataFrame(details)
 
 
 def getItemAnnotations(itemId):
@@ -159,11 +200,24 @@ def get_ppc_details_simple():
     return ppc_records
 
 
-def get_folder_items(gc, parent_id):
+def get_items_in_container(parent_id, container_type="folder"):
     """Recursively gets items in a folder.
 
     Args:
-        gc: Authenticated girder client instance.
+        parent_id: The id of the folder to get all items under.
+        container_type: Either folder or collection.
+
+    Returns:
+        List of items in parent folder.
+
+    """
+    return gc.get(f"resource/{parent_id}/items?type={container_type}&limit=0&sort=_id&sortdir=1")
+
+
+def get_folder_items(parent_id):
+    """Recursively gets items in a folder.
+
+    Args:
         parent_id: The id of the folder to get all items under.
 
     Returns:
@@ -173,9 +227,9 @@ def get_folder_items(gc, parent_id):
     return gc.get(f"resource/{parent_id}/items?type=folder&limit=0&sort=_id&sortdir=1")
 
 
-def get_items_in_folder(gc, folder_id):
+def get_items_in_folder(folder_id):
     metadata = dict()
-    items = get_folder_items(gc, folder_id)
+    items = get_folder_items(folder_id)
 
     for item in items:
         if not item["meta"]:
@@ -222,7 +276,7 @@ def get_ppc_details_specific(
     # get all items with annotations which match the provided name
     # using this as a proxy filter to target only relevant images for PPC data aggregation
 
-    original_items = get_items_in_folder(gc, folder_id)
+    original_items = get_items_in_folder(folder_id)
 
     filt = (original_items["stainID"].isin(stains_of_interest)) & (original_items["regionName"].isin(keep_regions))
     original_items = original_items[filt]
@@ -387,3 +441,99 @@ def run_ppc(data, params, run=False):
 
             # status codes -- 4: fail, 3: success, 0: inactive, 1/2: queued/running
             print(f"STATUS: {status}")
+
+
+# NOTE: below deprecated because it takes ~2 minutes longer on average than the above
+# HOWEVER, it may be of value in the future because it gets *ALL* folders and not just
+# those which contain items
+
+# def get_all_containers_recursive(temp=False):
+#     collections = gc.get("/collection?limit=0")
+
+#     top_folders = []
+#     all_collections = []
+
+#     for collection in collections:
+#         collection_id = collection["_id"]
+#         collection_name = collection["name"]
+
+#         all_collections.append(
+#             {
+#                 "parent_id": None,
+#                 "parent_name": None,
+#                 "child_id": collection_id,
+#                 "child_name": collection_name,
+#                 "item_count": 0,
+#             }
+#         )
+
+#         top_folders.extend(
+#             [
+#                 {
+#                     "parent_id": collection_id,
+#                     "parent_name": collection_name,
+#                     "child_id": folder["_id"],
+#                     "child_name": folder_name,
+#                     "item_count": 0,
+#                 }
+#                 for folder in gc.get(f"folder?limit=0&parentType=collection&parentId={collection_id}")
+#                 if not (folder_name := folder["name"]).startswith(".")
+#             ]
+#         )
+
+#     deep_folders = []
+#     for folder in top_folders:
+#         deep_folders.extend(recurse_folders(folder["child_id"], folder["child_name"]))
+
+#     all_collections.extend(top_folders)
+#     all_collections.extend(deep_folders)
+
+#     # having to drop duplicates means there may be a bug in here somewhere or I'm not fully understanding
+#     # how the back end is organized. It could be the case that say two collections both point to a given folder
+#     # which could end up duplicating that folder's contents in this process
+#     # if this can be avoided, we can drop the transform to DF, drop duplicates, then transform back to list of dicts
+#     # and should also shave off significant I/O wait time, etc.
+#     all_collections = pd.DataFrame(all_collections)
+#     all_collections.drop_duplicates(inplace=True)
+
+#     if temp:
+#         return all_collections
+
+#     return all_collections.to_dict(orient="records")
+
+
+# @lru_cache(maxsize=None)
+# def recurse_folders(parent_id, parent_name):
+#     print(parent_id)
+#     child_folders = list(gc.get(f"folder?limit=0&parentType=folder&parentId={parent_id}"))
+
+#     if child_folders:
+#         recursed = [
+#             {
+#                 "parent_id": parent_id,
+#                 "parent_name": parent_name,
+#                 "child_id": folder["_id"],
+#                 "child_name": folder_name,
+#                 "item_count": 0,
+#             }
+#             for folder in child_folders
+#             if not (folder_name := folder["name"]).startswith(".")
+#         ]
+
+#         [
+#             recursed.extend(recurse_folders(child_id, val["child_name"]))
+#             for val in recursed
+#             if ((child_id := val["child_id"]) is not None)
+#         ]
+
+#         return recursed
+
+#     else:
+#         base_case_data = {
+#             "parent_id": parent_id,
+#             "parent_name": parent_name,
+#             "child_id": None,
+#             "child_name": None,
+#             "item_count": gc.get(f"/folder/{parent_id}/details")["nItems"],
+#         }
+#         return [base_case_data]

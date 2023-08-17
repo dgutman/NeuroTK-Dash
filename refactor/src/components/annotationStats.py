@@ -9,8 +9,8 @@ debug = False
 #### First I will create a control / table that lists all of the annotationNames and counts
 
 
-unique_annots_datatable = html.Div(id="unique_annots_datatable_div")
-unique_params_datatable = html.Div(id="unique_params_datatable_div")
+unique_annots_datatable = html.Div([], id="unique_annots_datatable_div")
+unique_params_datatable = html.Div([], id="unique_params_datatable_div")
 
 
 annotations_stats_interface_panel = html.Div(
@@ -25,7 +25,7 @@ annotations_stats_interface_panel = html.Div(
 
 @callback(
     [Output("unique_annots_datatable_div", "children")],
-    [Input("unique_annots_accordion", "n_clicks")],
+    [Input("annotation_and_param_count_accordion", "n_clicks")],
 )
 def createAnnotationNameCountTable(n_clicks, projectName="evanPPC"):
     """This gets the list of distinct annotation names and returns a table with the numer and names of annotations"""

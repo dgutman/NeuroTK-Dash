@@ -1,5 +1,6 @@
 """ This will be a viewer that displays one or more related images.. for example all of the images for a specific tissue block"""
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 from dash import html
 from ..utils.api import get_thumbnail_as_b64
 
@@ -22,7 +23,17 @@ def genRelatedImagePanel(imageInfo):
                         [
                             html.H4(imageInfo["stainID"], className="card-title"),
                             html.P(image_details, className="card-text"),
-                            dbc.Button("GetAnnotationForThis", color="primary"),
+                            dbc.Row(
+                                [
+                                    dmc.Button(
+                                        "Get Annotation(s)",
+                                        n_clicks=None,
+                                        variant="outline",
+                                        compact=True,
+                                        style={"width": "18rem"},
+                                    ),
+                                ]
+                            ),
                         ]
                     ),
                 ],

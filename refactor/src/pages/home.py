@@ -16,25 +16,13 @@ from ..components.ppc_results_panel import ppc_results_interface_panel
 from ..components.annotationTableView import update_annotation_button
 from ..components.viewhistomcsUI import histomicsui_layout
 from ..components.annotationStats import annotations_stats_interface_panel
+from ..components.flexible_annot_pannel import update_containers_button, guided_annots_panel
 
 # NOTE: start mongo db with: sudo service mongodb start
 
 
 dash.register_page(__name__, path="/", redirect_from=["/home"], title="Home")
 
-
-# cur_image_annotationTable = html.Div(id="curImageAnnotation-div")
-
-# cur_image_viz = dbc.Col(
-#     [
-#         html.Div(
-#             id="leaflet-map",
-#             className="twelve columns leaflet-map",
-#             children=[dl.Map(dl.TileLayer(), style={"width": "1000px", "height": "500px", "marginTop": "25px"})],
-#         )
-#     ],
-#     className="cur-image-viz-tab",
-# )
 
 main_item_datatable = html.Div([], className="twelve columns item_datatable", id="datatable-div")
 
@@ -55,7 +43,11 @@ multi_acc = dmc.AccordionMultiple(
             value="focus",
         ),
         dmc.AccordionItem(
-            [dmc.AccordionControl("HistomcsUI"), dmc.AccordionPanel(histomicsui_layout)], value="histomcsui"
+            [
+                dmc.AccordionControl("HistomcsUI"),
+                dmc.AccordionPanel(histomicsui_layout),
+            ],
+            value="histomcsui",
         ),
         dmc.AccordionItem(
             [
@@ -74,19 +66,20 @@ multi_acc = dmc.AccordionMultiple(
         ),
         dmc.AccordionItem(
             [
-                dmc.AccordionControl("Testing Holder for Annots"),
-                dmc.AccordionPanel(annotations_stats_interface_panel),
+                dmc.AccordionControl("Guided Annotation and Param Explorer"),
+                dmc.AccordionPanel(guided_annots_panel),
             ],
-            id="unique_annots_accordion",
+            id="guided_annots_accordion",
             value="focus_3",
         ),
-        # dmc.AccordionItem(
-        #     [
-        #         dmc.AccordionControl("Cur Image Viz"),
-        #         dmc.AccordionPanel(cur_image_viz),
-        #     ],
-        #     value="customization",
-        # ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("Annotation/Param Counts"),
+                dmc.AccordionPanel(annotations_stats_interface_panel),
+            ],
+            id="annotation_and_param_count_accordion",
+            value="focus_4",
+        ),
         dmc.AccordionItem(
             [
                 dmc.AccordionControl("Stats Graphs"),
@@ -102,6 +95,15 @@ multi_acc = dmc.AccordionMultiple(
             value="flexibility_1",
         ),
     ]
+)
+
+update_items_button = dmc.Button(
+    "Update Item Data",
+    id="update_items_button",
+    n_clicks=0,
+    variant="outline",
+    compact=True,
+    style={"width": "auto"},
 )
 
 
@@ -133,11 +135,7 @@ layout = dmc.MantineProvider(
                                         id="loading_items",
                                         type="default",
                                         children=[
-                                            html.Button(
-                                                "Update Item Data",
-                                                id="update-btn",
-                                                n_clicks=0,
-                                            ),
+                                            update_items_button,
                                         ],
                                     ),
                                     dcc.Loading(
@@ -147,6 +145,13 @@ layout = dmc.MantineProvider(
                                             update_annotation_button,
                                         ],
                                     ),
+                                    dcc.Loading(
+                                        id="loading_container_structure",
+                                        type="default",
+                                        children=[
+                                            update_containers_button,
+                                        ],
+                                    ),
                                 ],
                                 className="twelve columns process-btn-div",
                             ),
@@ -154,6 +159,7 @@ layout = dmc.MantineProvider(
                         className="content__card",
                     ),
                     dcc.Store(id="store", storage_type="memory"),
+                    dcc.Store(id="container_store", storage_type="memory"),
                     html.Div(id="notification-container"),
                 ]
             ),
@@ -263,17 +269,16 @@ def updateRelatedImageSet(cellClicked, rowData, data):
         Output("store", "data"),
         Output("loading_items", "children"),
     ],
-    [Input("update-btn", "n_clicks")],
+    [Input("update_items_button", "n_clicks")],
 )
 def update_data(n_clicks):
-    button = html.Button("Update Item Data", id="update-btn", n_clicks=0)
-    # n_clicks by default 0 (never observed None), so can do below as if not n_clicks
     if n_clicks is None or n_clicks == 0:  ## Need this to initially load data set
         samples_dataset_records = get_all_records_df().to_dict(orient="records")
-        return samples_dataset_records, button
+        return samples_dataset_records, update_items_button
+
     else:
         item_set = getItemSetData()
         samples_dataset = getSampleDataset(item_set)
         samples_dataset_records = samples_dataset.to_dict(orient="records")
         insert_records(samples_dataset_records)
-        return samples_dataset_records, button
+        return samples_dataset_records, update_items_button

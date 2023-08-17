@@ -33,11 +33,13 @@ stats_graphs_layout = html.Div(
                         checked=False,
                     ),
                     html.Div([], className="graph_div", id="graph1-div"),
-                    dbc.Button(
+                    dmc.Button(
                         "Full Screen",
                         id="graph1-fullscreen-btn",
-                        color="primary",
                         n_clicks=0,
+                        variant="outline",
+                        compact=True,
+                        style={"width": "18rem"},
                         className="fullScreenButton",
                     ),
                 ],
@@ -58,11 +60,13 @@ stats_graphs_layout = html.Div(
                         checked=False,
                     ),
                     html.Div([], className="graph_div", id="graph2-div"),
-                    dbc.Button(
+                    dmc.Button(
                         "Full Screen",
                         id="graph2-fullscreen-btn",
-                        color="primary",
                         n_clicks=0,
+                        variant="outline",
+                        compact=True,
+                        style={"width": "18rem"},
                         className="fullScreenButton",
                     ),
                 ],

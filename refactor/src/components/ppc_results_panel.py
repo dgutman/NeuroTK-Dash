@@ -153,7 +153,11 @@ ppc_results_interface_panel = html.Div(
             id="detail_text",
         ),
         html.Br(),
-        dbc.Row([dbc.Col(specific_ppc_results_submit_button, width="auto")]),
+        dbc.Row(
+            [
+                dbc.Col(specific_ppc_results_submit_button, width="auto"),
+            ]
+        ),
         specific_ppc_results_datatable,
         html.Br(),
         dbc.Row(
