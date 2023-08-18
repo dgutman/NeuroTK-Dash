@@ -32,6 +32,7 @@ Another service at http://127.0.0.1:8888 is running a jupyter notebook instance.
 
 docker compose up
 
+*NOTE:* If the app hangs after running `python3 app.py` and gives no error, etc. ensure you are in the network and/or VPN is on and running as expected.
 
 ## Files by Function
 

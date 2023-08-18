@@ -1,9 +1,11 @@
-from dash_extensions.enrich import html, Output, Input, State
-from dash import dcc
 import dash
 import plotly.express as px
 import pandas as pd
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
+
+from dash import dcc
+from dash_extensions.enrich import html, Output, Input, State
 
 from plotly import graph_objects as go
 
@@ -15,11 +17,13 @@ responsive_stats_graphs_layout = html.Div(
             html.Div(
                 [
                     html.Div([], className="graph_div", id="stain_graph_div"),
-                    dbc.Button(
+                    dmc.Button(
                         "Full Screen",
                         id="graph1-fullscreen-btn",
-                        color="primary",
                         n_clicks=0,
+                        variant="outline",
+                        compact=True,
+                        style={"width": "18rem"},
                         className="fullScreenButton",
                     ),
                     html.Div([], className="table_div", id="stain_table_div", style={"padding-top": "10px"}),
@@ -34,11 +38,13 @@ responsive_stats_graphs_layout = html.Div(
             html.Div(
                 [
                     html.Div([], className="graph_div", id="region_graph_div"),
-                    dbc.Button(
+                    dmc.Button(
                         "Full Screen",
                         id="graph2-fullscreen-btn",
-                        color="primary",
                         n_clicks=0,
+                        variant="outline",
+                        compact=True,
+                        style={"width": "18rem"},
                         className="fullScreenButton",
                     ),
                     html.Div([], className="table_div", id="region_table_div", style={"padding-top": "10px"}),

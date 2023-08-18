@@ -6,8 +6,8 @@ import dash_bootstrap_components as dbc
 from plotly.subplots import make_subplots
 
 from datetime import date
-from ..utils.api import get_ppc_details_specific
 from ..utils.helpers import generate_generic_DataTable
+from ..utils.api import get_ppc_details_specific, run_ppc
 from dash import html, dcc, callback, Output, Input, State
 
 
@@ -21,7 +21,7 @@ specific_ppc_results_datepicker = dmc.DateRangePicker(
     id="specific_table_daterange",
     label="Provide Date Range",
     minDate=date(1970, 1, 1),  # year, month, day
-    value=[date(2023, 6, 22), date(2023, 7, 6)],  # range for Dunn Study replicate
+    value=[date(2023, 6, 22), date(2023, 10, 6)],  # range for Dunn Study replicate
     style={"width": "auto"},
 )
 specific_ppc_results_region_multiselect = (
@@ -72,14 +72,21 @@ ppc_params = [
     )
     for key, val in ppc_params_dict.items()
 ]
-specific_ppc_results_submit_button = dmc.Button(
-    "Submit",
-    id="specific_table_button",
-    n_clicks=None,
-    variant="outline",
-    compact=True,
-    style={"width": "18rem"},
+specific_ppc_results_submit_button = dcc.Loading(
+    id="loading_specific_table",
+    type="default",
+    children=[
+        dmc.Button(
+            "Submit",
+            id="specific_table_button",
+            n_clicks=None,
+            variant="outline",
+            compact=True,
+            style={"width": "18rem"},
+        )
+    ],
 )
+
 specific_ppc_results_datatable = html.Div(
     [],
     className="twelve columns item_datatable",
@@ -92,6 +99,21 @@ specific_ppc_results_bar_chart = html.Div(
 specific_ppc_results_box_chart = html.Div(
     [],
     id="specific_table_box_chart",
+)
+specific_absent_ppc_export_button = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="specific-absent-ppc-results-export-button-div",
+)
+specific_absent_ppc_run_button = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="specific-absent-ppc-results-run-button-div",
+)
+specific_absent_ppc_results_datatable = html.Div(
+    [],
+    className="twelve columns item_datatable",
+    id="specific-absent-ppc-results-datatable-div",
 )
 
 ppc_results_interface_panel = html.Div(
@@ -120,7 +142,9 @@ ppc_results_interface_panel = html.Div(
             ]
         ),
         html.Br(),
-        dbc.Row([dbc.Col(ppc_param, width="auto") for ppc_param in ppc_params]),
+        dbc.Row(
+            [dbc.Col(ppc_param, width="auto") for ppc_param in ppc_params],
+        ),
         html.Br(),
         dmc.Text(
             "Hit submit without adding/changing any input/default values to return the relevant entries from the Dunn Study folder.",
@@ -129,11 +153,30 @@ ppc_results_interface_panel = html.Div(
             id="detail_text",
         ),
         html.Br(),
-        specific_ppc_results_submit_button,
+        dbc.Row(
+            [
+                dbc.Col(specific_ppc_results_submit_button, width="auto"),
+            ]
+        ),
         specific_ppc_results_datatable,
         html.Br(),
-        dbc.Row([dbc.Col(specific_ppc_results_bar_chart, width="auto")]),
-        dbc.Row([dbc.Col(specific_ppc_results_box_chart, width="auto")]),
+        dbc.Row(
+            [
+                dbc.Col(specific_ppc_results_bar_chart, width="auto"),
+            ]
+        ),
+        dbc.Row(
+            [
+                dbc.Col(specific_ppc_results_box_chart, width="auto"),
+            ]
+        ),
+        specific_absent_ppc_results_datatable,
+        dbc.Row(
+            [
+                dbc.Col(specific_absent_ppc_export_button, width="auto"),
+                dbc.Col(specific_absent_ppc_run_button, width="auto"),
+            ]
+        ),
     ]
 )
 
@@ -172,6 +215,10 @@ def make_stacked_ppc_bar_chart(metadata_df):
         title=f"Percent Strong Positive by Region and Case",
         labels={"caseID": "Case ID", "regionName": "Region", "stainID": "Stain"},
     )
+    # NOTE: below update_xaxes can be ommited if desired. only included to force plotly to show all x axis labels
+    # if not included, all x axis labels are still there, but some are left out for readability, though will be
+    # loaded if a user zooms in to a particular part of the graph or hovers over a given bar
+    fig.update_xaxes(tickmode="linear")
     fig.update_layout(xaxis_tickangle=-90)
 
     return dcc.Graph(figure=fig)
@@ -199,6 +246,7 @@ def make_ppc_box_chart(metadata_df):
         subplot_titles=meta_cols[1:-1],
         shared_yaxes=True,
         y_title="Percent Strong Positive",
+        x_title="Stage",
     )
     mapping = {"ABC": (1, 1), "Braak Stage": (1, 2), "CERAD": (2, 1), "Thal": (2, 2)}
 
@@ -207,7 +255,6 @@ def make_ppc_box_chart(metadata_df):
     for col, loc in mapping.items():
         fig.add_trace(go.Box(x=metadata_df[col].tolist(), y=psp), row=loc[0], col=loc[1])
         fig.update_xaxes(
-            title_text="Stage",
             categoryorder="array",
             categoryarray=sorted(metadata_df[col].unique()),
             row=loc[0],
@@ -222,9 +269,13 @@ def make_ppc_box_chart(metadata_df):
 @callback(
     [
         Output("specific-ppc-results-datatable-div", "children"),
+        Output("specific-absent-ppc-results-datatable-div", "children"),
+        Output("specific-absent-ppc-results-export-button-div", "children"),
+        Output("specific-absent-ppc-results-run-button-div", "children"),
         Output("detail_text", "children"),
         Output("specific_table_bar_chart", "children"),
         Output("specific_table_box_chart", "children"),
+        Output("loading_specific_table", "children"),
     ],
     [
         Input("specific_table_button", "n_clicks"),
@@ -248,7 +299,9 @@ def populate_specific_annotations_datatable(
         for key, val in param_states.items()
     }
 
-    samples_dataset, counts = get_ppc_details_specific(
+    # print(folder_id_val, param_states, daterange_val, regions, stains)
+
+    samples_dataset, absent_dataset, counts = get_ppc_details_specific(
         folder_id_val,
         daterange_val,
         regions,
@@ -256,8 +309,11 @@ def populate_specific_annotations_datatable(
         param_states,
     )
 
+    samples_dataset.rename(columns={"item_id": "Item ID"}, inplace=True)
+    absent_dataset.rename(columns={"item_id": "Item ID"}, inplace=True)
+
     if samples_dataset.empty:
-        table, figs = None, None
+        table = None
     else:
         col_def_dict = {
             "Created On": {
@@ -273,14 +329,124 @@ def populate_specific_annotations_datatable(
         col_defs = [
             ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in samples_dataset.columns
         ]
-
         table = generate_generic_DataTable(samples_dataset, id_val="dag-specific-table", col_defs=col_defs)
+
+        col_defs = [
+            ({"field": col} if col not in col_def_dict else col_def_dict[col]) for col in absent_dataset.columns
+        ]
+        absent_table = generate_generic_DataTable(
+            absent_dataset, id_val="dag-absent-table", col_defs=col_defs, exportable=True
+        )
+
+        export_button = dcc.Loading(
+            id="loading_absent_table_export",
+            type="default",
+            children=[
+                dmc.Button(
+                    "Export CSV",
+                    id="absent_table_export_button",
+                    n_clicks=0,
+                    variant="outline",
+                    compact=True,
+                    style={"width": "18rem"},
+                )
+            ],
+        )
+        run_button = dcc.Loading(
+            id="loading_absent_table_run",
+            type="default",
+            children=[
+                dmc.Button(
+                    "Run PPC",
+                    id="absent_table_run_button",
+                    n_clicks=0,
+                    variant="outline",
+                    compact=True,
+                    style={"width": "18rem"},
+                )
+            ],
+        )
+        absent_text = dmc.Text(
+            f"Below table shows all items which matched on stainID and regionName, but did not otherwise match PPC Params or which have never had PPC run (total: {absent_dataset.shape[0]}). Scroll below the table and select the 'Export CSV' option for a local copy.",
+            size="md",
+            weight=500,
+        )
+
         bar_charts = make_stacked_ppc_bar_chart(samples_dataset)
         box_charts = make_ppc_box_chart(samples_dataset)
 
+    specific_table_button = dmc.Button(
+        "Submit",
+        id="specific_table_button",
+        n_clicks=None,
+        variant="outline",
+        compact=True,
+        style={"width": "18rem"},
+    )
+
     return (
         [table],
-        f"Showing {counts[0]} of {counts[1]} original, given current filter criteria",
+        [absent_text, absent_table],
+        [export_button],
+        [run_button],
+        f"Showing {counts[0]} of {counts[1]} original, given stain(s) and region(s) criteria provided",
         bar_charts,
         box_charts,
+        [specific_table_button],
     )
+
+
+@callback(
+    [
+        Output("dag-absent-table", "exportDataAsCsv"),
+        Output("loading_absent_table_export", "children"),
+    ],
+    Input("absent_table_export_button", "n_clicks"),
+)
+def download_csv(n_clicks):
+    button = dmc.Button(
+        "Export CSV",
+        id="absent_table_export_button",
+        n_clicks=0,
+        variant="outline",
+        compact=True,
+        style={"width": "18rem"},
+    )
+    if n_clicks:
+        return True, button
+
+    return False, button
+
+
+@callback(
+    [Output("loading_absent_table_run", "children")],
+    [
+        Input("absent_table_run_button", "n_clicks"),
+        State("dag-absent-table", "virtualRowData"),
+    ],
+    [
+        {key: State(key, "value") for key in ppc_params_dict.keys()},
+    ],
+    prevent_initial_call=True,
+)
+def trigger_ppc(n_clicks, data, param_states):
+    param_states = {
+        ("_".join(key.split("_")[-2:]) if "intensity" not in key else "_".join(key.split("_")[-3:])): f"{float(val)}"
+        for key, val in param_states.items()
+    }
+
+    data = pd.DataFrame(data)
+
+    # NOTE: pass run=True below to actually submit jobs to be run, otherwise will not submit
+    run_ppc(data, param_states, run=True)
+
+    button = dmc.Button(
+        "Run PPC",
+        id="absent_table_run_button",
+        n_clicks=0,
+        variant="outline",
+        compact=True,
+        style={"width": "18rem"},
+    )
+
+    return [button]

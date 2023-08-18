@@ -14,7 +14,6 @@ import os
 # from src.components.statsGraph import bp as stats_bp, stats_graphs_layout
 from dash_extensions.enrich import DashBlueprint, DashProxy
 
-
 # local imports
 from src.utils.settings import (
     APP_HOST,
@@ -82,7 +81,6 @@ def serve_layout():
         ],
         className="app__container",
     )
-
 
 app.layout = serve_layout()  # set the layout to the serve_layout function
 server = app.server  # the server is needed to deploy the application
