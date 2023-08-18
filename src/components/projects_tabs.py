@@ -25,24 +25,24 @@ tab_style = {
 projects_tabs = html.Div(
     [
         dcc.Tabs(
-            id='projects-tabs',
-            value='projects',
-            style={'height': tab_height},
+            id="projects-tabs",
+            value="projects",
+            style={"height": tab_height},
             children=[
                 dcc.Tab(
                     label="Projects",
                     value="projects",
                     style=tab_style,
                     selected_style=selected_style,
-                    children=[projects_frame]
+                    children=[projects_frame],
                 ),
                 dcc.Tab(
-                    label='Analysis',
-                    value='analysis',
+                    label="Analysis",
+                    value="analysis",
                     style=tab_style,
                     selected_style=selected_style,
-                    children=[analysis_frame]
-                )
+                    children=[analysis_frame],
+                ),
             ],
         ),
     ]

@@ -9,8 +9,14 @@ from ..utils.helpers import generate_generic_DataTable
 from ..utils.api import get_all_containers, get_items_in_container
 from ..utils.database import upsert_dsa_container_structure, get_dsa_container_structure
 
-DSA_BASE_Url = "https://megabrain.neurology.emory.edu/api/v1"
-API_KEY = "P4SNeJ1zWdcNHLAi82ICLUFnObX0VWCiHJoafR9E"
+import os
+import girder_client
+
+API_KEY = os.environ.get("API_KEY", None)
+DSA_BASE_Url = os.environ.get("DSA_BASE_Url", None)
+
+gc = girder_client.GirderClient(apiUrl=DSA_BASE_Url)
+print(gc.authenticate(apiKey=API_KEY))
 
 
 # NOTE can pull all cli functions using /cli then use the get xml api extension to get the details

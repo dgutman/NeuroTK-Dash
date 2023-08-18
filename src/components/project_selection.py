@@ -10,41 +10,50 @@ from dash_mantine_components import Select
 import dash_bootstrap_components as dbc
 
 
-project_selection = html.Div([
-    dcc.Store(id='projects-store', data=get_projects(gc, PROJECTS_FLD_ID)),
-    dbc.Row([
-        dbc.Col(html.Div('Select project: ', style={'fontWeight': 'bold'}), 
-                align='start', width='auto'),
-        dbc.Col(html.Div(Select(data=[], id='projects-dropdown'))),
-        dbc.Col(html.Div(
-            html.Button([html.I(className="fa-solid fa-plus" )], 
-                        title='create new project')
-        ), align='end', width='auto'),
-        dbc.Col(html.Div(html.Button(
-            [html.I(className="fa-solid fa-trash" )], 
-            title='delete selected project', id='delete-project')
-            ), align='end', width='auto')
-])
-], id='project-selection')
+project_selection = html.Div(
+    [
+        dcc.Store(id="projects-store", data=get_projects(gc, PROJECTS_FLD_ID)),
+        dbc.Row(
+            [
+                dbc.Col(html.Div("Select project: ", style={"fontWeight": "bold"}), align="start", width="auto"),
+                dbc.Col(html.Div(Select(data=[], id="projects-dropdown"))),
+                dbc.Col(
+                    html.Div(html.Button([html.I(className="fa-solid fa-plus")], title="create new project")),
+                    align="end",
+                    width="auto",
+                ),
+                dbc.Col(
+                    html.Div(
+                        html.Button(
+                            [html.I(className="fa-solid fa-trash")],
+                            title="delete selected project",
+                            id="delete-project",
+                        )
+                    ),
+                    align="end",
+                    width="auto",
+                ),
+            ]
+        ),
+    ],
+    id="project-selection",
+)
 
 
 @callback(
     [
-        Output('projects-dropdown', 'data'), 
-        Output('projects-dropdown', 'value'),
-        Output('projects-dropdown', 'placeholder'), 
-        Output('delete-project', 'disabled')
+        Output("projects-dropdown", "data"),
+        Output("projects-dropdown", "value"),
+        Output("projects-dropdown", "placeholder"),
+        Output("delete-project", "disabled"),
     ],
-    Input('projects-store', 'data')
+    Input("projects-store", "data"),
 )
 def populate_projects(data):
     """Add values to the project dropdown."""
-    options = []
-
-    for project in data:
-        options.append({'value': project['key'], 'label': project['key']})
+    options = [{"value": project["_id"], "label": project["key"]} for project in data]
 
     if len(options):
-        return options, options[0]['value'], '', False
+        return options, options[0]["value"], "", False
     else:
-        return [], '', 'No projects found.', True
+        return [], "", "No projects found.", True
