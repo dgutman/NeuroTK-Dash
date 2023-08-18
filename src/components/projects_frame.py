@@ -3,14 +3,13 @@ This is the div / frame where we will put the project dropdown, create new
 project button, task dropdown, create new task button, and the dataset 
 components.
 """
-from dash import html, Output, Input, State, dcc, callback, no_update
+from dash import html, Output, Input, callback
 from ..settings import gc
 
 from .project_selection import project_selection
 from .task_selection import task_selection
 from ..utils.helpers import generate_generic_DataTable
-from ..utils.database import upsert_image_records, get_records_with_images, fetch_and_cache_image_thumb
-from .imageSetViewer import generate_imageSetViewer_layout, create_card_content
+from .imageSetViewer import generate_imageSetViewer_layout
 
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc

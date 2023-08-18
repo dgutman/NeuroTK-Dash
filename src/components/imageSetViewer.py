@@ -1,11 +1,9 @@
 """ This will be a viewer that displays one or more related images.. for example all of the images for a specific tissue block"""
 import dash_bootstrap_components as dbc
-import dash_mantine_components as dmc
 from dash import html
 from tqdm import tqdm
 from functools import lru_cache
 from ..utils.database import fetch_and_cache_image_thumb
-import numpy as np
 
 # This will render a set of thumbnails from a given region or case depending on what input it receives
 

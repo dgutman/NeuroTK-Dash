@@ -6,10 +6,7 @@ from pymongo import UpdateOne
 from pprint import pprint
 from ..utils.api import get_thumbnail_as_b64
 
-# initialize the app with the extension
-
 db = MongoEngine()
-## Since the annotations do not have a very rigid schema and have weird fields, not sure if I want a class or not
 mc = pymongo.MongoClient(MONGO_URI)
 mc = mc[MONGODB_DB]  ### Attach the mongo client object to the database I want to store everything
 
@@ -45,8 +42,6 @@ def get_records_with_images():
 
 
 def fetch_and_cache_image_thumb(imageId):
-    # print(list(mc["image_cache"].find({"_id": imageId})))
-    # print(list(mc["image_cache"].find({"$and": [{"_id": ObjectId(imageId)}, {"thumbnail": {"$exists": "true"}}]})))
     if item := list(mc["image_cache"].find({"$and": [{"_id": imageId}, {"thumbnail": {"$exists": "true"}}]})):
         thumb = item[0]["thumbnail"]
 

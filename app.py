@@ -1,13 +1,9 @@
 # Imports
-from os.path import join, dirname
 import dash_bootstrap_components as dbc
-from girder_client import GirderClient
-from typing import List
 
 import dash
-from dash import html, dcc, Output, Input, callback
+from dash import html
 
-import src.settings as settings
 from src.components import banner, projects_tabs
 
 
