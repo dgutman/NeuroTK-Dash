@@ -12,13 +12,13 @@ import numpy as np
 import pandas as pd
 
 # local imports
-from .settings import DSA_BASE_Url, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE, API_KEY
+from .settings import DSA_BASE_URL, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE, API_KEY
 from PIL import Image
 from io import BytesIO
 from time import sleep
 import base64
 
-gc = girder_client.GirderClient(apiUrl=DSA_BASE_Url)
+gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
 print(gc.authenticate(apiKey=API_KEY))
 
 
