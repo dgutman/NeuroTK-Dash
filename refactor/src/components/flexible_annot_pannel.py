@@ -1,5 +1,3 @@
-import girder_client
-
 import pandas as pd
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
@@ -34,7 +32,6 @@ from ..utils.database import upsert_dsa_container_structure, get_dsa_container_s
 #     className="twelve columns item_datatable",
 #     id="all_containers_datatable_div",
 # )
-
 
 all_containers_interface_div = html.Div([], id="all_containers_interface_div")
 selected_container_items_datatable_div = html.Div([], id="selected_container_items_datatable_div")
@@ -147,7 +144,7 @@ def store_all_container_data(n_clicks, debug=False):
     [Input("collection_transfer_list", "value")],
     prevent_initial_call=True,
 )
-def return_transfer_list_buttons(n_clicks):
+def return_transfer_list_buttons(value):
     buttons = html.Div(
         dbc.Row(
             [
