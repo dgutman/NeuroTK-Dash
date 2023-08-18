@@ -13,10 +13,13 @@ import pandas as pd
 
 # local imports
 from .settings import DSA_BASE_URL, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE, API_KEY
+from .settings import DSA_BASE_URL, ROOT_FOLDER_ID, ROOT_FOLDER_TYPE, API_KEY
 from PIL import Image
 from io import BytesIO
 from time import sleep
 import base64
+import urllib
+
 
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
 print(gc.authenticate(apiKey=API_KEY))
@@ -100,18 +103,39 @@ def getItemSetData(num_of_items=0):
         print("Error:", response.status_code)
         return None
 
+    # simpleThumb = {'bands': [
+    #     {'frame': 0, 'palette': ['#000000', '#0000ff'],
+    #         'min': 'auto', 'max': 'auto'},
+    #     {'frame': 1, 'palette': ['#000000', '#00ff00'], 'max': 'auto'},
+    #     {'frame': 2, 'palette': ['#000000', '#ff0000'], 'max': 'auto'}]}
+    # return simpleThumb
 
-def pull_thumbnail_array(item_id, height=1000, encoding="PNG"):
+
+def pull_thumbnail_array(item_id, height=1000, encoding="PNG", style=None):
     """
     Gets thumbnail image associated with provided item_id and with specified height
     The aspect ratio is retained, so the width may not be equal to the height
     Thumbnail is returned as a numpy array, after dropping alpha channel
     Thumbnail encoding is specified as PNG by default
     """
-    thumb_download_endpoint = f"/item/{item_id}/tiles/thumbnail?encoding={encoding}&height={height}"
+    print("Received %s" % style)
+    thumb_download_endpoint = f"item/{item_id}/tiles/thumbnail?encoding={encoding}&height={height}"
+
+    passed_style = urllib.parse.quote(json.dumps(style))
+
+    ## The URL encoding is very finicky...
+    sample_style = "%7B%22bands%22%3A%20%5B%7B%22frame%22%3A%200%2C%20%22palette%22%3A%20%5B%22%23000000%22%2C%20%22%230000ff%22%5D%2C%20%22min%22%3A%20%22auto%22%2C%20%22max%22%3A%20%22auto%22%7D%2C%20%7B%22frame%22%3A%201%2C%20%22palette%22%3A%20%5B%22%23000000%22%2C%20%22%2300ff00%22%5D%2C%20%22max%22%3A%20%22auto%22%7D%2C%20%7B%22frame%22%3A%202%2C%20%22palette%22%3A%20%5B%22%23000000%22%2C%20%22%23ff0000%22%5D%2C%20%22max%22%3A%20%22auto%22%7D%5D%7D"
+
+    ## The URL encoding is very finicky.. this is here for debugging
+
+    if style:
+        thumb_download_endpoint += "&style=%s" % passed_style
+
     thumb = gc.get(thumb_download_endpoint, jsonResp=False).content
     thumb = np.array(Image.open(BytesIO(thumb)))
     # dropping alpha channel and keeping only rgb
+    print(thumb.shape)
+
     thumb = thumb[:, :, :3]
     return thumb
 
@@ -185,7 +209,13 @@ def get_ppc_details_simple():
     ppc_records = pd.DataFrame.from_dict(ppc_records, orient="index")
     ppc_records.reset_index(inplace=True)
 
-    keep_cols = ["index", "Created On", "NumberStrongPositive", "NumberTotalPixels", "RatioStrongToPixels"]
+    keep_cols = [
+        "index",
+        "Created On",
+        "NumberStrongPositive",
+        "NumberTotalPixels",
+        "RatioStrongToPixels",
+    ]
     ppc_records = ppc_records[keep_cols]
 
     ppc_records.rename(
@@ -328,14 +358,26 @@ def get_ppc_details_specific(
     ppc_records.rename(columns={"index": "item_id"}, inplace=True)
     metadata_df = pd.DataFrame.from_dict(metadata, orient="index")
 
-    req_cols = ["caseID", "stainID", "regionName", "ABC", "Braak Stage", "CERAD", "Thal"]
+    req_cols = [
+        "caseID",
+        "stainID",
+        "regionName",
+        "ABC",
+        "Braak Stage",
+        "CERAD",
+        "Thal",
+    ]
 
     if all([val in metadata_df.columns for val in req_cols]):
         metadata_df = update_metadata_df(metadata_df, ppc_records)
 
         metadata_df.reset_index(inplace=True)
         metadata_df.rename(
-            columns={"index": "item_id", "RatioStrongToPixels": "Percent Strong Positive"}, inplace=True
+            columns={
+                "index": "item_id",
+                "RatioStrongToPixels": "Percent Strong Positive",
+            },
+            inplace=True,
         )
 
         req_cols.insert(0, "item_id")
