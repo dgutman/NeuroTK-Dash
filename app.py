@@ -23,16 +23,11 @@ app = dash.Dash(
 
 def serve_layout():
     """Define the layout of the application."""
-    return html.Div(
-        [banner, projects_tabs]
-    )
+    return html.Div([banner, projects_tabs])
 
 
 # Assign the layout to the app.
 app.layout = serve_layout()
 
 if __name__ == "__main__":
-    app.run_server(
-        debug=True,
-        threaded=True
-    )
+    app.run_server(debug=True, threaded=True)

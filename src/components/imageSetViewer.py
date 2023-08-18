@@ -2,42 +2,31 @@
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import html
-from ..utils import get_thumbnail_as_b64
 from tqdm import tqdm
+from functools import lru_cache
+from ..utils.database import fetch_and_cache_image_thumb
+import numpy as np
 
 # This will render a set of thumbnails from a given region or case depending on what input it receives
 
 
-def genRelatedImagePanel(imageInfo):
-    imageId = imageInfo["_id"]
+def genRelatedImagePanel(image_info):
+    imageId = image_info["_id"]
 
-    stainId = imageInfo["stainID"]
-    regionName = imageInfo["regionName"]
+    stainId = image_info["stainID"]
+    regionName = image_info["regionName"]
     image_details = f"{regionName.title()}, Stained with {stainId}"
+
+    if thumb := fetch_and_cache_image_thumb(imageId):
+        image_card_content = create_card_content(image_info["name"], thumb, image_details)
+    else:
+        image_card_content = create_card_content(image_info["name"], None, image_details)
 
     card = dbc.Col(
         [
             dbc.Card(
-                [
-                    dbc.CardImg(src=get_thumbnail_as_b64(item_id=imageId), top=True),
-                    dbc.CardBody(
-                        [
-                            html.H4(imageInfo["name"], className="card-title"),
-                            html.P(image_details, className="card-text"),
-                            # dbc.Row(
-                            #     [
-                            #         dmc.Button(
-                            #             "Get Annotation(s)",
-                            #             n_clicks=None,
-                            #             variant="outline",
-                            #             compact=True,
-                            #             style={"width": "18rem"},
-                            #         ),
-                            #     ]
-                            # ),
-                        ]
-                    ),
-                ],
+                image_card_content,
+                id=imageId,
                 style={"width": "18rem"},
             )
         ],
@@ -49,3 +38,20 @@ def genRelatedImagePanel(imageInfo):
 def generate_imageSetViewer_layout(imageDataToDisplay):
     imageSetViewer_layout = dbc.Row([genRelatedImagePanel(img) for img in tqdm(imageDataToDisplay)])
     return imageSetViewer_layout
+
+
+@lru_cache(maxsize=None)
+def create_card_content(name, thumb, image_details):
+    image = dbc.CardImg(src=thumb, top=True)
+
+    card = [
+        image,
+        dbc.CardBody(
+            [
+                html.H4(name, className="card-title"),
+                html.P(image_details, className="card-text"),
+            ]
+        ),
+    ]
+
+    return card

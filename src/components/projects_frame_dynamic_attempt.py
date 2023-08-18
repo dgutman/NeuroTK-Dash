@@ -52,9 +52,7 @@ projects_frame = html.Div(
                     id="table_tab_panel",
                 ),
                 dmc.TabsPanel(
-                    [
-                        html.Div([dbc.Row(dmc.Loader(size="md", variant="oval"))], id="images_div"),
-                    ],
+                    [html.Div(id="images_tab_placeholder")],
                     value="images",
                     id="images_tab_panel",
                 ),
@@ -70,7 +68,7 @@ projects_frame = html.Div(
 @callback(
     [
         Output("datatable_div", "children"),
-        Output("images_div", "children"),
+        Output("images_tab_placeholder", "children"),
     ],
     [
         Input("projects-dropdown", "value"),
@@ -96,16 +94,9 @@ def get_item_datatable_and_images(project_id, task):
         items = pd.concat(items)
 
     else:
-        dataset_folderId = [item["_id"] for item in gc.listFolder(project_id) if item["name"] == "Datasets"]
-
-        if dataset_folderId:
-            dataset_folderId = dataset_folderId[0]
-            items = [pd.DataFrame(val["meta"]["data"]) for val in gc.listItem(dataset_folderId)]
-            items = pd.concat(items)
-
-        else:
-            text = "No datasets for this project available"
-            return [html.H3(text)], [html.H3(text)]
+        dataset_folderId = [item["_id"] for item in gc.listFolder(project_id) if item["name"] == "Datasets"][0]
+        items = [pd.DataFrame(val["meta"]["data"]) for val in gc.listItem(dataset_folderId)]
+        items = pd.concat(items)
 
     col_map = {"npSchema.caseID": "caseID", "npSchema.stainID": "stainID", "npSchema.regionName": "regionName"}
     items.rename(columns=col_map, inplace=True)
@@ -122,6 +113,76 @@ def get_item_datatable_and_images(project_id, task):
     datatable = [generate_generic_DataTable(items, f"task_and_project_data_table")]
 
     items_as_dict = items.to_dict(orient="records")
-    images = [generate_imageSetViewer_layout(items_as_dict)]
+    images = generate_imageSetViewer_layout(items_as_dict)
+    upsert_image_records(items_as_dict)
 
-    return datatable, images
+    interval = dcc.Interval(id="check_image_load_trigger", interval=1000, n_intervals=0)
+
+    return datatable, [images, interval]
+
+
+@callback(
+    [
+        Output("no_update_div", "children"),
+    ],
+    [
+        Input("images_tab_panel", "children"),
+        Input("task_and_project_data_table", "virtualRowData"),
+    ],
+    prevent_initial_call=True,
+)
+def dynamically_load_cached_images(children, virtualRowData):
+    data = pd.DataFrame(virtualRowData)
+    cached_thumbs = get_records_with_images()
+
+    if cached_thumbs:
+        cached = []
+        for item in cached_thumbs:
+            cached.append(item["_id"])
+
+            @callback(
+                [Output(item, "children")],
+                [
+                    Input("check_image_load_trigger", "n_intervals"),
+                    State(item, "id"),
+                    State("task_and_project_data_table", "virtualRowData"),
+                ],
+            )
+            def temp_func(n_intervals, id, rowData):
+                print("HERE_0")
+                name = item["name"]
+                thumb = item["thumbnail"]
+                stainId = item["stainID"]
+                regionName = item["regionName"]
+                image_details = f"{regionName.title()}, Stained with {stainId}"
+
+                return [create_card_content(name, thumb, image_details)]
+
+        filt = data["_id"].isin(cached)
+        data = data[~filt]
+
+    if not data.empty:
+        print("DATA NOT EMPTY")
+        for item in data.to_dict(orient="records"):
+            print("ALSO HERE")
+
+            @callback(
+                [Output(item, "children")],
+                [
+                    Input("check_image_load_trigger", "n_intervals"),
+                    State(item, "id"),
+                    State("task_and_project_data_table", "virtualRowData"),
+                ],
+            )
+            def temp_func(n_intervals):
+                print("HERE_1")
+                thumb = fetch_and_cache_image_thumb(item["_id"])
+
+                name = item["name"]
+                stainId = item["stainID"]
+                regionName = item["regionName"]
+                image_details = f"{regionName.title()}, Stained with {stainId}"
+
+                return create_card_content(name, thumb, image_details)
+
+    return no_update
