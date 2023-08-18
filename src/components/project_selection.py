@@ -16,14 +16,25 @@ project_selection = html.Div([
         dbc.Col(html.Div('Select project: ', style={'fontWeight': 'bold'}), 
                 align='start', width='auto'),
         dbc.Col(html.Div(Select(data=[], id='projects-dropdown'))),
-        dbc.Col(html.Div(html.Button('Create new project')), align='end', width='auto')
+        dbc.Col(html.Div(
+            html.Button([html.I(className="fa-solid fa-plus" )], 
+                        title='create new project')
+        ), align='end', width='auto'),
+        dbc.Col(html.Div(html.Button(
+            [html.I(className="fa-solid fa-trash" )], 
+            title='delete selected project', id='delete-project')
+            ), align='end', width='auto')
 ])
 ], id='project-selection')
 
 
-@callback([
-    Output('projects-dropdown', 'data'),
-    Output('projects-dropdown', 'value')],
+@callback(
+    [
+        Output('projects-dropdown', 'data'), 
+        Output('projects-dropdown', 'value'),
+        Output('projects-dropdown', 'placeholder'), 
+        Output('delete-project', 'disabled')
+    ],
     Input('projects-store', 'data')
 )
 def populate_projects(data):
@@ -33,4 +44,7 @@ def populate_projects(data):
     for project in data:
         options.append({'value': project['key'], 'label': project['key']})
 
-    return options, options[0]['value']
+    if len(options):
+        return options, options[0]['value'], '', False
+    else:
+        return [], '', 'No projects found.', True

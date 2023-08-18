@@ -16,14 +16,23 @@ task_selection = html.Div([
         dbc.Col(html.Div(Select(
             data=[], id='tasks-dropdown'))),
         dbc.Col(html.Div(html.Button(
-            'Create new task')
+            [html.I(className="fa-solid fa-plus" )], title='create new task'),
+            id='create-task'
+            ), align='end', width='auto'),
+        dbc.Col(html.Div(html.Button(
+            [html.I(className="fa-solid fa-trash" )], 
+            title='delete selected task', id='delete-task')
             ), align='end', width='auto')
     ])
 ], id='task-selection')
 
 
 @callback(
-    [Output('tasks-dropdown', 'data'), Output('tasks-dropdown', 'value')],
+    [
+        Output('tasks-dropdown', 'data'), Output('tasks-dropdown', 'value'),
+        Output('tasks-dropdown', 'placeholder'),
+        Output('delete-task', 'disabled')
+    ],
     [Input('projects-dropdown', 'value'), Input('projects-store', 'data')]
 )
 def populate_tasks(value, data):
@@ -36,6 +45,6 @@ def populate_tasks(value, data):
                 projects.append({'value': item['name'], 'label': item['name']})
 
     if len(projects):
-        return projects, projects[0]['value']
+        return projects, projects[0]['value'], '', False
     else:
-        return [], ''
+        return [], '', 'No tasks in project.', True
