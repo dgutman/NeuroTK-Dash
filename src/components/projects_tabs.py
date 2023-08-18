@@ -1,5 +1,6 @@
 from dash import html, dcc, Output, Input, callback
 from .projects_frame import projects_frame
+from .analysis_frame import analysis_frame
 
 # Parameters used in tabs.
 tab_height = "3vh"  # height of tab
@@ -40,7 +41,7 @@ projects_tabs = html.Div(
                     value='analysis',
                     style=tab_style,
                     selected_style=selected_style,
-                    children=[html.Div([html.H3('Analysis')])]
+                    children=[analysis_frame]
                 )
             ],
         ),
