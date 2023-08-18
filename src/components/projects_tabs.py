@@ -33,26 +33,16 @@ projects_tabs = html.Div(
                     value="projects",
                     style=tab_style,
                     selected_style=selected_style,
+                    children=[projects_frame]
                 ),
                 dcc.Tab(
                     label='Analysis',
                     value='analysis',
                     style=tab_style,
-                    selected_style=selected_style
+                    selected_style=selected_style,
+                    children=[html.Div([html.H3('Analysis')])]
                 )
             ],
         ),
     ]
 )
-
-
-@callback(
-    Output("projects-frame", "children"), 
-    Input("projects-tabs", "value")
-)
-def render_content(tab):
-    """"""
-    if tab == "projects":
-        return projects_frame
-    elif tab == "analysis":
-        return html.Div([html.H3("Analysis")])

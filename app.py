@@ -8,7 +8,7 @@ import dash
 from dash import html, dcc, Output, Input, callback
 
 import src.settings as settings
-from src.components import banner, projects_tabs, projects_frame
+from src.components import banner, projects_tabs
 
 
 app = dash.Dash(
@@ -24,7 +24,7 @@ app = dash.Dash(
 def serve_layout():
     """Define the layout of the application."""
     return html.Div(
-        [banner, projects_tabs, projects_frame],
+        [banner, projects_tabs]
     )
 
 
