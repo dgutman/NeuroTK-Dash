@@ -9,20 +9,20 @@ from dash import html
 import dash_bootstrap_components as dbc
 from flask import Flask
 
-from src.utils.settings import DEV_TOOLS_PROPS_CHECK, APP_HOST, APP_PORT
+from src.utils.settings import DEV_TOOLS_PROPS_CHECK, APP_HOST, APP_PORT, MONGODB_SETTINGS
 
-print(APP_PORT)
+from src.components.main_layout import app_layout
+from src.utils.database import db
 
 # from src.components.statsGraph import bp as stats_bp, stats_graphs_layout
 # local imports
-# from src.utils.settings import (
-#     APP_HOST,
-#     APP_PORT,
-#      DEV_TOOLS_PROPS_CHECK)
-
 # create the extension
 server = Flask(__name__)
 
+server.config["MONGODB_SETTINGS"] = MONGODB_SETTINGS
+# print(server.config["MONGODB_SETTINGS"])
+with server.app_context():
+    db.init_app(server)
 
 
 ## Was Dash Proxy, removing that functionality for now
@@ -43,9 +43,6 @@ app = dash.Dash(
     title="NeuroTK PPC Dashboard",
 )
 
-
-ppc_app_layout = html.Div("App Layout")
-
 def serve_layout():
     """Define the layout of the application"""
     return html.Div(
@@ -53,7 +50,8 @@ def serve_layout():
             html.Div(
                 [
                     # header,
-                    html.Div(ppc_app_layout, className="twelve columns"),
+
+                    html.Div(app_layout, className="twelve columns"),
                 ],
                 className="app__content",
             ),

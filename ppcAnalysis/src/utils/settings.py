@@ -40,3 +40,13 @@ else:
     MONGODB_PORT = 27017
     MONGODB_DB = "dsaCache"
     APP_IN_DOCKER = False
+
+
+## Create a single dictionary containing all the MONGODB_SETTINGS
+MONGODB_SETTINGS = {
+    "host": MONGODB_HOST,
+    "username": MONGODB_USERNAME,
+    "password": MONGODB_PASSWORD,
+    "port": int(MONGODB_PORT),
+    "db": MONGODB_DB,
+}  # Replace with your MongoDB connection URI
