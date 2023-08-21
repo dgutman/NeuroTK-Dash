@@ -71,6 +71,8 @@ def generate_slicer_cli_xml_view(dsa_task_name):
 def generate_dash_layout_from_slicer_cli(xml_string):
     root = ET.fromstring(xml_string)
 
+    ## TO DO:  Hide anything related to DASK and Frame and Style--- this is not reevant
+
     components = []
 
     for param in root.findall(".//parameters"):
@@ -172,7 +174,7 @@ def generate_dash_layout_from_slicer_cli(xml_string):
                         id=name,
                         value=float(default),
                         type="number",
-                        step=0.1,
+                        step=0.01,
                         readOnly=False,
                         style={"width": "100px"},
                     ),

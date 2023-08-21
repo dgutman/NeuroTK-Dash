@@ -46,42 +46,28 @@ project_selector = html.Div(
 
 project_header = dbc.Navbar([html.Div("NeuroTK PPC"), project_selector])
 
-
-accordion_panel = dmc.AccordionMultiple(
-    children=[
-        dmc.AccordionItem(
+tab_panel = dmc.Tabs(
+    [
+        dmc.TabsList(
             [
-                dmc.AccordionControl("Item Set Datatable"),
-                dmc.AccordionPanel(main_item_datatable),
-            ],
-            value="itemSet-tab",
+                dmc.Tab("Item Set Datatable", value="itemSet-tab"),
+                dmc.Tab("AnnotationSet Datatable", value="annotationTable-tab"),
+                dmc.Tab("Annotation Analysis", value="annotationAnalysis-tab"),
+                dmc.Tab("DSA Task Runner", value="cliList-tab"),
+            ]
         ),
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl("Annotations Datatable"),
-                dmc.AccordionPanel(annotation_datatable),
-            ],
-            value="annotation-tab",
-        ),
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl("Annotation Analysis Panel"),
-                dmc.AccordionPanel(annotation_analysis_layout),
-            ],
-            value="annotation-analysis-tab",
-        ),
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl("CLI Runner"),
-                dmc.AccordionPanel(dsa_cli_view_layout),
-            ],
-            value="cli-list-tab",
-        ),
+        dmc.TabsPanel(main_item_datatable, value="itemSet-tab"),
+        dmc.TabsPanel(annotation_datatable, value="annotationTable-tab"),
+        dmc.TabsPanel(annotation_analysis_layout, value="annotationAnalysis-tab"),
+        dmc.TabsPanel(dsa_cli_view_layout, value="cliList-tab"),
     ],
-    value="cli-list-tab",
+    color="blue",
+    variant="pills",
+    value="itemSet-tab",
 )
 
-app_layout = html.Div([project_header, accordion_panel])
+
+app_layout = html.Div([project_header, tab_panel])
 
 # multi_acc = dmc.AccordionMultiple(
 #     children=[

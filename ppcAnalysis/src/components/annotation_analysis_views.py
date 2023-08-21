@@ -18,6 +18,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from ..utils.api import getAllItemAnnotations
 
+projectName = "evanPPC"
 debug = False
 
 
