@@ -19,11 +19,11 @@ import dash_mantine_components as dmc
 # from ..components.flexible_annot_pannel import update_containers_button, guided_annots_panel
 from ..components.itemSet_datatable import main_item_datatable
 # # NOTE: start mongo db with: sudo service mongodb start
-
+from ..components.annotation_related_views  import annotation_layout
 
 
 all_annotations_datatable = html.Div(
-    [],
+    [annotation_layout],
     className="twelve columns item_datatable",
     id="all-annotations-datatable-div",
 )
