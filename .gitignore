@@ -162,4 +162,5 @@ cython_debug/
 
 .pyc
 .DS_Store
-bdsa-cache-directory
+refactor/bdsa-cache-directory*
+refactor/cache*
