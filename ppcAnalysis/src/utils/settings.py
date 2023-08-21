@@ -7,7 +7,11 @@ from pathlib import Path
 ## Adding code that if I am not running in a docker environment, it will use different MONGO_DB Credentials
 def is_docker():
     cgroup = Path("/proc/self/cgroup")
-    return Path("/.dockerenv").is_file() or cgroup.is_file() and "docker" in cgroup.read_text()
+    return (
+        Path("/.dockerenv").is_file()
+        or cgroup.is_file()
+        and "docker" in cgroup.read_text()
+    )
 
 
 cwd = os.getcwd()
@@ -50,3 +54,9 @@ MONGODB_SETTINGS = {
     "port": int(MONGODB_PORT),
     "db": MONGODB_DB,
 }  # Replace with your MongoDB connection URI
+
+
+AVAILABLE_CLI_TASKS = {
+    "PositivePixelCount": {"name": "Positive Pixel Count", "dsa_name": "PPC"},
+    "nft_detection": {"name": "NFT Detector", "dsa_name": "nft_detection"},
+}

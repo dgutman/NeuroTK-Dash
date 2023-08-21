@@ -4,6 +4,8 @@ from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc  # Useful set of layout widgets
 import pandas as pd
 import dash_mantine_components as dmc
+from ..utils.api import getAllItemAnnotations
+
 
 # from ..utils.helpers import getSampleDataset, generate_main_DataTable
 # from ..utils.api import getItemSetData
@@ -18,35 +20,68 @@ import dash_mantine_components as dmc
 # from ..components.annotationStats import annotations_stats_interface_panel
 # from ..components.flexible_annot_pannel import update_containers_button, guided_annots_panel
 from ..components.itemSet_datatable import main_item_datatable
+
 # # NOTE: start mongo db with: sudo service mongodb start
-from ..components.annotation_related_views  import annotation_layout
+from ..components.annotation_analysis_views import annotation_analysis_layout
+from ..components.annotation_datatable import annotation_datatable
+from ..components.dsa_cli_view import dsa_cli_view_layout
 
-
-all_annotations_datatable = html.Div(
-    [annotation_layout],
-    className="twelve columns item_datatable",
-    id="all-annotations-datatable-div",
+project_selector = html.Div(
+    [
+        dmc.Select(
+            label="Select project",
+            placeholder="Select one",
+            id="projects-select",
+            value="evanPPC",  ## Default project
+            data=[
+                {"value": "evanPPC", "label": "evanPPC"},
+                {"value": "nftDetector", "label": "NFT Detector"},
+            ],
+            style={"width": 200, "marginBottom": 10},
+        ),
+        dmc.Text(id="selected-value"),
+    ]
 )
+
+
+project_header = dbc.Navbar([html.Div("NeuroTK PPC"), project_selector])
+
 
 accordion_panel = dmc.AccordionMultiple(
     children=[
         dmc.AccordionItem(
             [
                 dmc.AccordionControl("Item Set Datatable"),
-                dmc.AccordionPanel(main_item_datatable)
-            ], value="itemSet-tab"
-        ),
-         dmc.AccordionItem(
-            [
-                dmc.AccordionControl("All Annotations Datatable"),
-                dmc.AccordionPanel(all_annotations_datatable),
+                dmc.AccordionPanel(main_item_datatable),
             ],
-                        value="annotation-tab",
-        )
-    ]
+            value="itemSet-tab",
+        ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("Annotations Datatable"),
+                dmc.AccordionPanel(annotation_datatable),
+            ],
+            value="annotation-tab",
+        ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("Annotation Analysis Panel"),
+                dmc.AccordionPanel(annotation_analysis_layout),
+            ],
+            value="annotation-analysis-tab",
+        ),
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl("CLI Runner"),
+                dmc.AccordionPanel(dsa_cli_view_layout),
+            ],
+            value="cli-list-tab",
+        ),
+    ],
+    value="cli-list-tab",
 )
 
-app_layout = html.Div([accordion_panel])
+app_layout = html.Div([project_header, accordion_panel])
 
 # multi_acc = dmc.AccordionMultiple(
 #     children=[
@@ -64,7 +99,7 @@ app_layout = html.Div([accordion_panel])
 #             ],
 #             value="histomcsui",
 #         ),
-#        
+#
 #         dmc.AccordionItem(
 #             [
 #                 dmc.AccordionControl("Specific PPC Results Datatable"),
@@ -103,15 +138,6 @@ app_layout = html.Div([accordion_panel])
 #             value="flexibility_1",
 #         ),
 #     ]
-# )
-
-# update_items_button = dmc.Button(
-#     "Update Item Data",
-#     id="update_items_button",
-#     n_clicks=0,
-#     variant="outline",
-#     compact=True,
-#     style={"width": "auto"},
 # )
 
 
