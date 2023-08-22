@@ -26,6 +26,18 @@ DSA_BASE_URL = os.environ.get("DSA_BASE_URL", None)
 ROOT_FOLDER_ID = os.environ.get("ROOT_FOLDER_ID", None)
 ROOT_FOLDER_TYPE = os.environ.get("ROOT_FOLDER_TYPE", None)
 
+PROJECTS_ROOT_FOLDER_ID = os.environ.get(
+    "PROJECTS_ROOT_FOLDER_ID", "64dbd2667920606b462e5b83"
+)
+
+
+gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
+# JC API Key
+# if debug:
+#     print("Trying to connect to %s with %s " % (DSA_BASE_URL, API_KEY))
+gc.authenticate(apiKey=API_KEY)
+
+JC_WINDOWS = False
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
 
