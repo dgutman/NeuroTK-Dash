@@ -5,20 +5,32 @@ create new projects via button.
 """
 from dash import html, dcc, Output, Input, callback
 from ..utils.api import get_projects
-from ..settings import gc, ROOT_FOLDER_ID
+from ..utils.settings import gc, PROJECTS_ROOT_FOLDER_ID
 from dash_mantine_components import Select
 import dash_bootstrap_components as dbc
 
 
 project_selection = html.Div(
     [
-        dcc.Store(id="projects-store", data=get_projects(gc, ROOT_FOLDER_ID)),
+        dcc.Store(
+            id="projects-store",
+            data=get_projects(gc, PROJECTS_ROOT_FOLDER_ID),
+        ),
         dbc.Row(
             [
-                dbc.Col(html.Div("Select project: ", style={"fontWeight": "bold"}), align="start", width="auto"),
+                dbc.Col(
+                    html.Div("Select project: ", style={"fontWeight": "bold"}),
+                    align="start",
+                    width="auto",
+                ),
                 dbc.Col(html.Div(Select(data=[], id="projects-dropdown"))),
                 dbc.Col(
-                    html.Div(html.Button([html.I(className="fa-solid fa-plus")], title="create new project")),
+                    html.Div(
+                        html.Button(
+                            [html.I(className="fa-solid fa-plus")],
+                            title="create new project",
+                        )
+                    ),
                     align="end",
                     width="auto",
                 ),

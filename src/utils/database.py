@@ -1,14 +1,16 @@
 import pandas as pd
 from flask_mongoengine import MongoEngine
-from ..settings import MONGO_URI, MONGODB_DB
+from ..utils.settings import MONGO_URI, MONGODB_DB
 import pymongo
 from pymongo import UpdateOne
 from pprint import pprint
-from ..utils.api import get_thumbnail_as_b64
+from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets
 
 db = MongoEngine()
 mc = pymongo.MongoClient(MONGO_URI)
-mc = mc[MONGODB_DB]  ### Attach the mongo client object to the database I want to store everything
+mc = mc[
+    MONGODB_DB
+]  ### Attach the mongo client object to the database I want to store everything
 
 # NOTE: to delete specific collection from mongo, in CLI use:
 # "mongo" -> "use [collection_name]" -> "db.dropDatabase()"
@@ -33,7 +35,9 @@ def upsert_image_records(records):
 
 
 def upsert_single_image_record(record):
-    mc["image_cache"].bulk_write([UpdateOne({"_id": record["_id"]}, {"$set": record}, upsert=True)])
+    mc["image_cache"].bulk_write(
+        [UpdateOne({"_id": record["_id"]}, {"$set": record}, upsert=True)]
+    )
 
 
 def get_records_with_images():
@@ -42,7 +46,11 @@ def get_records_with_images():
 
 
 def fetch_and_cache_image_thumb(imageId):
-    if item := list(mc["image_cache"].find({"$and": [{"_id": imageId}, {"thumbnail": {"$exists": "true"}}]})):
+    if item := list(
+        mc["image_cache"].find(
+            {"$and": [{"_id": imageId}, {"thumbnail": {"$exists": "true"}}]}
+        )
+    ):
         thumb = item[0]["thumbnail"]
 
     else:
@@ -95,6 +103,52 @@ def getUniqueParamSets(annotationName):
     # Execute the aggregation pipeline
     results = list(collection.aggregate(pipeline))
     return results
+
+
+def getProjectDataset(projectName, projectFolderId):
+    ### Given a projectName, this will check to see if we have items for this project already in a local mongo database
+    ### and if so return them, if we do not, I will query girder_client and pull the items instead..
+    collection = mc[
+        "projectImages"
+    ]  ## Creating a new collection for projectImages.. maybe to be merged late
+
+    projectImages = list(collection.find({"projectName": projectName}))
+
+    if projectImages:
+        return projectImages  ## Maybe do some fancier crap here... return as a dataframe? nah probably not
+
+    else:
+        ## #Now fetch the data from girder instead..
+
+        print(len(list(projectImages)), "images were found...")
+        projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
+        ## This is a dictionary keyed by the image itemId... needs to be flattened before mongo insert..
+        ## Also don't forget to add the projectName or things will go badly
+
+        ## This only will run if the project actually has datasets, it's possible
+        ## to create a blank project that has not been populated yet..
+        if projectDatasetDict:
+            projectDataSetItems = [
+                dict(projectDatasetDict[imageId], **{"projectName": projectName})
+                for imageId in projectDatasetDict
+            ]
+            print(len(projectDataSetItems), "items were detected in the project Set")
+
+            ### Now insert the bundle into mongo
+            debug = False
+            operations = []
+            for a in projectDataSetItems:
+                operations.append(
+                    UpdateOne({"_id": a["_id"]}, {"$set": a}, upsert=True)
+                )
+            for chunk in chunks(operations, 500):
+                result = collection.bulk_write(chunk)
+                if debug:
+                    pprint(result.bulk_api_result)
+            # return result
+            ## Going to return the just inserted item Set..
+            projectImages = list(collection.find({"projectName": projectName}))
+            return projectImages
 
 
 def getAnnotationNameCount(projectName):
@@ -177,7 +231,9 @@ def getAnnotationNameCount(projectName):
 def insertAnnotationData(annotationItems, projectName, debug=False):
     ### This will insert all of the annotations pulled from the DSA and also insert a projectName to keep things bundled/separate
     ## Add the projectName to all of the annotations as well
-    annotationItems = [dict(item, **{"projectName": projectName}) for item in annotationItems]
+    annotationItems = [
+        dict(item, **{"projectName": projectName}) for item in annotationItems
+    ]
     ### The collection for annotations is called.. annotations!
     print(len(annotationItems), "to be inserted or upserted into the mongo table..")
     ## See this:
@@ -229,7 +285,9 @@ def insert_records(records):
         name = record["name"]
         blockID = str(record["blockID"]) if not pd.isna(record["blockID"]) else None
         caseID = str(record["caseID"]) if not pd.isna(record["caseID"]) else None
-        regionName = str(record["regionName"]) if not pd.isna(record["regionName"]) else None
+        regionName = (
+            str(record["regionName"]) if not pd.isna(record["regionName"]) else None
+        )
         stainID = str(record["stainID"]) if not pd.isna(record["stainID"]) else None
 
         record_obj = Records(

@@ -161,3 +161,7 @@ cython_debug/
 .pyenv/
 
 .pyc
+bdsa-cache-directory*
+.DS_Store*
+refactor/.vscode/settings.json
+.gitignore

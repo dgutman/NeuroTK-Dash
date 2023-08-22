@@ -5,8 +5,27 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 from typing import List
-from ..settings import gc
+from ..utils.settings import gc
 from girder_client import GirderClient
+
+
+def get_neuroTK_projectDatasets(projectFolderId: str):
+    ## Given a projectFolder Id, this needs to find the datasets folder, and then grab metadata
+    ## From that...
+    for pjf in gc.listFolder(projectFolderId):
+        if pjf["name"] == "Datasets":
+            ### So the projectFolder should have metadata, and I am specifically looking for
+            #  ntkdata_ as the keys..
+
+            dataSetImages = {}
+            for k in pjf.get("meta", {}).keys():
+                if k.startswith("ntkdata_"):
+                    for i in pjf["meta"][k]:
+                        dataSetImages[i["_id"]] = i
+                        ## TO DO:  JC work on merging the dictionaries instead of overwriting..
+                    ## Just return a set of itemId's that are in the project.
+            return dataSetImages
+            ## Remember this is returning a dictionary, not a list of dictionaries
 
 
 def get_projects(gc: GirderClient, fld_id: str) -> List[dict]:
@@ -39,7 +58,9 @@ def pull_thumbnail_array(item_id, height=1000, encoding="PNG"):
     Thumbnail is returned as a numpy array, after dropping alpha channel
     Thumbnail encoding is specified as PNG by default
     """
-    thumb_download_endpoint = f"/item/{item_id}/tiles/thumbnail?encoding={encoding}&height={height}"
+    thumb_download_endpoint = (
+        f"/item/{item_id}/tiles/thumbnail?encoding={encoding}&height={height}"
+    )
     try:
         thumb = gc.get(thumb_download_endpoint, jsonResp=False).content
         thumb = np.array(Image.open(BytesIO(thumb)))

@@ -2,6 +2,19 @@
 
 Dashboard and plotly/dash app for interacting with DSA and NeuroTK functions
 
+## Getting started for debug and development
+
+python -m venv .pyenv
+source .pyenv/bin/activate
+
+pip install -r requirements.txt
+
+
+
+##### Updating package list during debug or if I added soemthing new and exciting
+pip freeze > requirements.txt
+
+
 ### Mean features
 
 Web application for applying computer vision (including AI) in neuropathology digital image cohorts.

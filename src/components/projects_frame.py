@@ -3,13 +3,14 @@ This is the div / frame where we will put the project dropdown, create new
 project button, task dropdown, create new task button, and the dataset 
 components.
 """
-from dash import html, Output, Input, callback
-from ..settings import gc
+from dash import html, Output, Input, State, callback, dcc
+from ..utils.settings import gc
 
 from .project_selection import project_selection
 from .task_selection import task_selection
 from ..utils.helpers import generate_generic_DataTable
 from .imageSetViewer import generate_imageSetViewer_layout
+from ..utils.database import getProjectDataset
 
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
@@ -29,11 +30,20 @@ np.random.seed(42)
 # and have placeholder/filler for cases where the image isn't already cached and an option to sync images
 # either writ large or just those it noticed were missing from the current selection
 
+simple_dev_tab = html.Div(
+    [
+        dbc.Button("Refresh Cache?"),
+        dcc.Store("projectItem_store"),
+        html.Div(id="devDiv"),
+    ]
+)
+
 
 projects_frame = html.Div(
     [
         project_selection,
         task_selection,
+        simple_dev_tab,
         html.Br(id="no_update_div"),
         dmc.Tabs(
             [
@@ -45,14 +55,20 @@ projects_frame = html.Div(
                 ),
                 dmc.TabsPanel(
                     [
-                        html.Div([dbc.Row(dmc.Loader(size="md", variant="oval"))], id="datatable_div"),
+                        html.Div(
+                            [dbc.Row(dmc.Loader(size="md", variant="oval"))],
+                            id="datatable_div",
+                        ),
                     ],
                     value="table",
                     id="table_tab_panel",
                 ),
                 dmc.TabsPanel(
                     [
-                        html.Div([dbc.Row(dmc.Loader(size="md", variant="oval"))], id="images_div"),
+                        html.Div(
+                            [dbc.Row(dmc.Loader(size="md", variant="oval"))],
+                            id="images_div",
+                        ),
                     ],
                     value="images",
                     id="images_tab_panel",
@@ -66,61 +82,118 @@ projects_frame = html.Div(
 )
 
 
+### Adding call back function for development purposes
 @callback(
-    [
-        Output("datatable_div", "children"),
-        Output("images_div", "children"),
-    ],
-    [
-        Input("projects-dropdown", "value"),
-        Input("tasks-dropdown", "value"),
-    ],
+    [Output("devDiv", "children")],
+    Input("projects-dropdown", "value"),
+    Input("projects-dropdown", "data"),
 )
-def get_item_datatable_and_images(project_id, task):
-    if task:
-        task_details = gc.getItem(task)
-        task_folderId, task_name = task_details["folderId"], task_details["meta"].get("datasets")
+def simplifyProjectLoading(projectId, projectData):
+    ### Will call the database and see if there's any data already existing given the projectName
+    ## TO REFACTOR, but basically now have to find the ID for the folder which is in the data
 
-        if task_name is None:
-            text = "No datasets for this task available"
-            return [html.H3(text)], [html.H3(text)]
+    projectName = None
+    for x in projectData:
+        if x["value"] == projectId:
+            print(x)
+            projectName = x["label"]
+    print(projectId, projectData, projectName)
 
-        task_parentId = gc.getFolder(task_folderId)["parentId"]
-
-        dataset_folderId = [item["_id"] for item in gc.listFolder(task_parentId) if item["name"] == "Datasets"][0]
-
-        items = [
-            pd.DataFrame(val["meta"]["data"]) for val in gc.listItem(dataset_folderId) if val["name"] in task_name
+    projectItemSet = getProjectDataset(projectName, projectId)
+    ## Now let's get clever and query our local database, will make it that if the projectFlag returns nothing
+    ## It will get the data from Girder instead...
+    if projectItemSet:
+        return [
+            generate_generic_DataTable(
+                pd.json_normalize(projectItemSet, sep="-"), "project-itemSet-table"
+            ),  ## TO DO?? make the column name mappings prettier?
         ]
-        items = pd.concat(items)
+    return [html.Div()]
 
-    else:
-        dataset_folderId = [item["_id"] for item in gc.listFolder(project_id) if item["name"] == "Datasets"]
 
-        if dataset_folderId:
-            dataset_folderId = dataset_folderId[0]
-            items = [pd.DataFrame(val["meta"]["data"]) for val in gc.listItem(dataset_folderId)]
-            items = pd.concat(items)
+# @callback(
+#     [
+#         Output("datatable_div", "children"),
+#         Output("images_div", "children"),
+#     ],
+#     [
+#         Input("projects-dropdown", "value"),
+#         Input("tasks-dropdown", "value"),
+#     ],
+# )
+# def get_item_datatable_and_images(project_id, task):
+#     print("I received the following project_id", project_id)
+#     if project_id:
+#         if task:
+#             task_details = gc.getItem(task)
+#             task_folderId, task_name = task_details["folderId"], task_details[
+#                 "meta"
+#             ].get("datasets")
 
-        else:
-            text = "No datasets for this project available"
-            return [html.H3(text)], [html.H3(text)]
+#             if task_name is None:
+#                 text = "No datasets for this task available"
+#                 return [html.H3(text)], [html.H3(text)]
 
-    col_map = {"npSchema.caseID": "caseID", "npSchema.stainID": "stainID", "npSchema.regionName": "regionName"}
-    items.rename(columns=col_map, inplace=True)
+#             task_parentId = gc.getFolder(task_folderId)["parentId"]
 
-    # Added for testing the case where some images are cached but others aren't
-    # To test this case, comment out or delete the below
-    items = items.sample(frac=0.5)
+#             dataset_folderId = [
+#                 item["_id"]
+#                 for item in gc.listFolder(task_parentId)
+#                 if item["name"] == "Datasets"
+#             ][0]
 
-    items.replace({"": None}, inplace=True)
+#             items = [
+#                 pd.DataFrame(val["meta"]["data"])
+#                 for val in gc.listItem(dataset_folderId)
+#                 if val["name"] in task_name
+#             ]
+#             items = pd.concat(items)
 
-    col_map = {"caseID": "Case ID", "stainID": "Stain ID", "regionName": "Region Name"}
-    [items[key].fillna(f"No {val} Value Given", inplace=True) for key, val in col_map.items()]
+#         else:
+#             dataset_folderId = [
+#                 item["_id"]
+#                 for item in gc.listFolder(project_id)
+#                 if item["name"] == "Datasets"
+#             ]
 
-    datatable = [generate_generic_DataTable(items, f"task_and_project_data_table")]
+#             if dataset_folderId:
+#                 dataset_folderId = dataset_folderId[0]
+#                 items = [
+#                     pd.DataFrame(val["meta"]["data"])
+#                     for val in gc.listItem(dataset_folderId)
+#                 ]
+#                 items = pd.concat(items)
 
-    items_as_dict = items.to_dict(orient="records")
-    images = [generate_imageSetViewer_layout(items_as_dict)]
+#             else:
+#                 text = "No datasets for this project available"
+#                 return [html.H3(text)], [html.H3(text)]
 
-    return datatable, images
+#         col_map = {
+#             "npSchema.caseID": "caseID",
+#             "npSchema.stainID": "stainID",
+#             "npSchema.regionName": "regionName",
+#         }
+#         items.rename(columns=col_map, inplace=True)
+
+#         # Added for testing the case where some images are cached but others aren't
+#         # To test this case, comment out or delete the below
+#         items = items.sample(frac=0.5)
+
+#         items.replace({"": None}, inplace=True)
+
+#         col_map = {
+#             "caseID": "Case ID",
+#             "stainID": "Stain ID",
+#             "regionName": "Region Name",
+#         }
+#         [
+#             items[key].fillna(f"No {val} Value Given", inplace=True)
+#             for key, val in col_map.items()
+#         ]
+
+#         datatable = [generate_generic_DataTable(items, f"task_and_project_data_table")]
+
+#         items_as_dict = items.to_dict(orient="records")
+#         images = [generate_imageSetViewer_layout(items_as_dict)]
+
+#         return datatable, images
