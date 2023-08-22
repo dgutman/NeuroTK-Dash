@@ -7,7 +7,9 @@ from pprint import pprint
 from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets
 
 db = MongoEngine()
-mc = pymongo.MongoClient(MONGO_URI,username=MONGODB_USERNAME,password=MONGODB_PASSWORD)
+mc = pymongo.MongoClient(
+    MONGO_URI, username=MONGODB_USERNAME, password=MONGODB_PASSWORD
+)
 mc = mc[
     MONGODB_DB
 ]  ### Attach the mongo client object to the database I want to store everything
@@ -149,6 +151,8 @@ def getProjectDataset(projectName, projectFolderId):
             ## Going to return the just inserted item Set..
             projectImages = list(collection.find({"projectName": projectName}))
             return projectImages
+        else:
+            return None
 
 
 def getAnnotationNameCount(projectName):
