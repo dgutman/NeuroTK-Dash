@@ -1,26 +1,48 @@
-# NeuroTK-Dash
+# NeuroTK Dash Web Application & Python Package
 
-Dashboard and plotly/dash app for interacting with DSA and NeuroTK functions
+## Setup (devel)
+Create virtual or conda environment with Python >=3.8
 
-## Getting started for debug and development
+(conda) 
+```
+$ conda create -n <env name> python
+$ conda activate <env name>
+```
 
-python -m venv .pyenv
-source .pyenv/bin/activate
+(virtual env) 
+```
+$ python -m venv <env path>
+$ source <env path>/bin/activate
+```
 
-pip install -r requirements.txt
+Install required packages.
+```
+$ pip install -r requirements.txt
+```
 
+In **src** directory there is a *.env-template* file, before running rename or copy this to a file called .env and add your API key and DSA API URL.
 
+## Running Application
+```
+$ docker compose up -d  # start mongo in detatched mode
+$ python app.py  # run the app, runs on localhost:8050 by default
+```
 
-##### Updating package list during debug or if I added soemthing new and exciting
-pip freeze > requirements.txt
+### Hints & Tips:
+* Update requirements.txt: ```$ pip freeze > requirements.txt```
+* NeuroTK main application is run in the app.py located at the root of the repository
+* Additional standalone versions of the app are located in specific folders:
+  * app/
+  * dashApp/
+  * refactor/
+* src directory at the root of the repository contains the main files used by the web application 
+* neurotk directory is a Python package with various useful functions used in data analysis
+* algorithm directories contains the codeset used for the various CLIs created.
 
-
-### Mean features
+### Extras
+#### Mean features
 
 Web application for applying computer vision (including AI) in neuropathology digital image cohorts.
-
-## What is in this current stack
-
 #### Dash App
 
 There are several components, including a Dash application https://plotly.com/dash/
@@ -40,21 +62,3 @@ To simplify things, I have another service running mongodb. Since the DSA itself
 #### Jupyter notebook
 
 Another service at http://127.0.0.1:8888 is running a jupyter notebook instance. This is for local debugging, database queries and/or development
-
-## Getting started
-
-docker compose up
-
-*NOTE:* If the app hangs after running `python3 app.py` and gives no error, etc. ensure you are in the network and/or VPN is on and running as expected.
-
-## Files by Function
-
- - src
-  - components
-    - imageSetViewer.py: generates panels which visualize the images related to the selection/filters applied to the main table in "Item Set Datatable"
-    - statsGraph.py: generates graph/table which give counts of stainID and regionName
-    - annotationViewPanel.py: code for pulling and plotting annotations, including existing annotations and any being generalized
-  - pages
-    - home.py: generates home page, including building and populating the main table in "Item Set Datatable"
-  - utils
-    - api.py: various functions used to interact with the DSA/girder client
