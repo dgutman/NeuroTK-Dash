@@ -1,4 +1,4 @@
-from dash import html, dcc, Output, Input, callback
+from dash import html, dcc
 from .projects_frame import projects_frame
 from .analysis_frame import analysis_frame
 

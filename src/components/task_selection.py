@@ -5,18 +5,26 @@ button popup window.
 from dash import html, dcc, Output, Input, callback
 import dash_bootstrap_components as dbc
 from dash_mantine_components import Select
-from ..settings import gc
+from ..utils.settings import gc
 
 task_selection = html.Div(
     [
         dcc.Store(id="task-store", data=[]),
         dbc.Row(
             [
-                dbc.Col(html.Div("Select task: ", style={"fontWeight": "bold"}), align="start", width="auto"),
+                dbc.Col(
+                    html.Div("Select task: ", style={"fontWeight": "bold"}),
+                    align="start",
+                    width="auto",
+                ),
                 dbc.Col(html.Div(Select(data=[], id="tasks-dropdown"))),
                 dbc.Col(
                     html.Div(
-                        html.Button([html.I(className="fa-solid fa-plus")], title="create new task"), id="create-task"
+                        html.Button(
+                            [html.I(className="fa-solid fa-plus")],
+                            title="create new task",
+                        ),
+                        id="create-task",
                     ),
                     align="end",
                     width="auto",
@@ -24,7 +32,9 @@ task_selection = html.Div(
                 dbc.Col(
                     html.Div(
                         html.Button(
-                            [html.I(className="fa-solid fa-trash")], title="delete selected task", id="delete-task"
+                            [html.I(className="fa-solid fa-trash")],
+                            title="delete selected task",
+                            id="delete-task",
                         )
                     ),
                     align="end",
@@ -59,12 +69,12 @@ task_selection = html.Div(
 def populate_tasks(value):
     """Populate the task dropdown from the value in projects dropdown."""
 
-    tasks = [
-        {"value": val["_id"], "label": val["name"]}
-        for val in gc.listItem([item["_id"] for item in gc.listFolder(value) if item["name"] == "Tasks"][0])
-    ]
+    tasks = [item["_id"] for item in gc.listFolder(value) if item["name"] == "Tasks"]
 
-    if len(tasks):
+    if tasks:
+        tasks = [
+            {"value": val["_id"], "label": val["name"]} for val in gc.listItem(tasks[0])
+        ]
         return tasks, "", "", False
     else:
         return [], "", "No tasks in project.", True
