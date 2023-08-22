@@ -38,6 +38,7 @@ gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
 #     print("Trying to connect to %s with %s " % (DSA_BASE_URL, API_KEY))
 gc.authenticate(apiKey=API_KEY)
 
+JC_WINDOWS  = True
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
 
@@ -47,7 +48,14 @@ if is_docker():
     MONGODB_PORT = os.environ.get("MONGODB_PORT", 27017)
     MONGODB_DB = os.environ.get("MONGODB_DB", "dsaCache")
     APP_IN_DOCKER = True
-
+elif JC_WINDOWS:
+    MONGO_URI = "localhost"
+    MONGODB_USERNAME = "docker"
+    MONGODB_PASSWORD = "docker"
+    MONGODB_HOST = "localhost"
+    MONGODB_PORT = 27017
+    MONGODB_DB = "dsaCache"
+    APP_IN_DOCKER = False
 else:
     MONGO_URI = "localhost"
     MONGODB_USERNAME = None
