@@ -179,7 +179,6 @@ def update_web_image(trigger_value):
     [State("imageInfo-collapse", "is_open")],
 )
 def toggle_collapse(n, is_open):
-    print("I am collapsing.. no?", n)
     if n:
         return not is_open
     return is_open

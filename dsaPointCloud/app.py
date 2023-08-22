@@ -167,8 +167,7 @@ def display_hover_data(hoverData):
 )
 def update_full_res_image(relayout_data):
     # Extract rectangle coordinates
-
-    if "shapes" in relayout_data:
+    if relayout_data and "shapes" in relayout_data:
         scale_factor_X = 1
         scale_factor_Y = 1
 

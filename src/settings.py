@@ -4,12 +4,12 @@ import os, girder_client
 # DSA variables.
 DSA_BASE_URL = "https://megabrain.neurology.emory.edu/api/v1"
 
-# DSA_API_KEY = os.getenv("DSAKEY")
+DSA_API_KEY = os.getenv("DSAKEY")
 
 gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
 
 # JC API Key
-gc.authenticate(apiKey='')
+#gc.authenticate(apiKey='')
 
 # Neurotk API Key
 # gc.authenticate(apiKey='')
