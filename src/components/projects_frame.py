@@ -33,8 +33,6 @@ np.random.seed(42)
 simple_dev_tab = html.Div(
     [
         dbc.Button("Refresh Cache?"),
-        dcc.Store("projectItem_store"),
-        html.Div(id="devDiv"),
     ]
 )
 
@@ -44,6 +42,7 @@ projects_frame = html.Div(
         project_selection,
         task_selection,
         simple_dev_tab,
+        dcc.Store("projectItem_store"),
         html.Br(id="no_update_div"),
         dmc.Tabs(
             [
@@ -57,7 +56,7 @@ projects_frame = html.Div(
                     [
                         html.Div(
                             [dbc.Row(dmc.Loader(size="md", variant="oval"))],
-                            id="datatable_div",
+                            id="project-itemSet-table",
                         ),
                     ],
                     value="table",
@@ -83,32 +82,86 @@ projects_frame = html.Div(
 
 
 ### Adding call back function for development purposes
+
+## Note this updates the projectItem_store, which then cna update the datatable itself
+
+
 @callback(
-    [Output("devDiv", "children")],
+    Output("projectItem_store", "data"),
     Input("projects-dropdown", "value"),
     Input("projects-dropdown", "data"),
 )
-def simplifyProjectLoading(projectId, projectData):
-    ### Will call the database and see if there's any data already existing given the projectName
-    ## TO REFACTOR, but basically now have to find the ID for the folder which is in the data
-
+def updateProjectItemStore(projectId, projectData):
+    ### This updates the projectItem store, this will pull data from mongo and/or girder if not already local
     projectName = None
     for x in projectData:
         if x["value"] == projectId:
-            print(x)
             projectName = x["label"]
-    print(projectId, projectData, projectName)
+    #    print(projectId, projectData, projectName)
 
     projectItemSet = getProjectDataset(projectName, projectId)
-    ## Now let's get clever and query our local database, will make it that if the projectFlag returns nothing
-    ## It will get the data from Girder instead...
+    if projectItemSet:
+        return projectItemSet
+    else:
+        return None
+
+
+## TO DO: Have it blank out the datatable if there's no data for the project
+
+
+@callback(
+    Output("project-itemSet-table", "children"),
+    Input("projectItem_store", "data"),
+)
+def updateProjectItemSetTable(projectItemSet):
     if projectItemSet:
         return [
             generate_generic_DataTable(
                 pd.json_normalize(projectItemSet, sep="-"), "project-itemSet-table"
             ),  ## TO DO?? make the column name mappings prettier?
         ]
-    return [html.Div()]
+    else:
+        return [html.Div("No dataset for project")]
+
+
+@callback(
+    Output("images_div", "children"),
+    Input("projectItem_store", "data"),
+)
+def updateProjectItemSetTable(projectItemSet):
+    if projectItemSet:
+        print(len(projectItemSet))
+
+        imageDataView_panel = [generate_imageSetViewer_layout(projectItemSet)]
+        return imageDataView_panel
+
+
+# @callback(
+#     [Output("devDiv", "children")],
+#     Input("projects-dropdown", "value"),
+#     Input("projects-dropdown", "data"),
+# )
+# def simplifyProjectLoading(projectId, projectData):
+#     ### Will call the database and see if there's any data already existing given the projectName
+#     ## TO REFACTOR, but basically now have to find the ID for the folder which is in the data
+
+#     projectName = None
+#     for x in projectData:
+#         if x["value"] == projectId:
+#             print(x)
+#             projectName = x["label"]
+#     print(projectId, projectData, projectName)
+
+#     projectItemSet = getProjectDataset(projectName, projectId)
+#     ## Now let's get clever and query our local database, will make it that if the projectFlag returns nothing
+#     ## It will get the data from Girder instead...
+#     if projectItemSet:
+#         return [
+#             generate_generic_DataTable(
+#                 pd.json_normalize(projectItemSet, sep="-"), "project-itemSet-table"
+#             ),  ## TO DO?? make the column name mappings prettier?
+#         ]
+#     return [html.Div()]
 
 
 # @callback(

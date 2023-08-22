@@ -10,15 +10,19 @@ from ..utils.database import fetch_and_cache_image_thumb
 
 def genRelatedImagePanel(image_info):
     imageId = image_info["_id"]
-
-    stainId = image_info["stainID"]
-    regionName = image_info["regionName"]
+    print(image_info)
+    stainId = image_info.get("npSchema", {}).get("stainID", "")
+    regionName = image_info.get("npSchema", {}).get("regionName", "")
     image_details = f"{regionName.title()}, Stained with {stainId}"
 
     if thumb := fetch_and_cache_image_thumb(imageId):
-        image_card_content = create_card_content(image_info["name"], thumb, image_details)
+        image_card_content = create_card_content(
+            image_info["name"], thumb, image_details
+        )
     else:
-        image_card_content = create_card_content(image_info["name"], None, image_details)
+        image_card_content = create_card_content(
+            image_info["name"], None, image_details
+        )
 
     card = dbc.Col(
         [
@@ -34,13 +38,23 @@ def genRelatedImagePanel(image_info):
 
 
 def generate_imageSetViewer_layout(imageDataToDisplay):
-    imageSetViewer_layout = dbc.Row([genRelatedImagePanel(img) for img in tqdm(imageDataToDisplay)])
+    print(imageDataToDisplay[0])
+    # return('meh')
+    ## This hsould be changed,, right now we are returning a gigantic panel with all of the data being loaded
+    ## at once, should just pass a url, or add to the panel dynamically as things load...
+
+    imageSetViewer_layout = dbc.Row(
+        [genRelatedImagePanel(img) for img in tqdm(imageDataToDisplay)]
+    )
     return imageSetViewer_layout
+
+
+## TO DO: MAKE the dataview panel change with a button to change the image size and/or panel size
 
 
 @lru_cache(maxsize=None)
 def create_card_content(name, thumb, image_details):
-    image = dbc.CardImg(src=thumb, top=True)
+    image = dbc.CardImg(src=thumb, style={"width": 128}, top=True)
 
     card = [
         image,
