@@ -132,7 +132,7 @@ def getProjectDataset(projectName, projectFolderId):
                 dict(projectDatasetDict[imageId], **{"projectName": projectName})
                 for imageId in projectDatasetDict
             ]
-            print(len(projectDataSetItems), "items were detected in the project Set")
+            # print(len(projectDataSetItems), "items were detected in the project Set")
 
             ### Now insert the bundle into mongo
             debug = False
