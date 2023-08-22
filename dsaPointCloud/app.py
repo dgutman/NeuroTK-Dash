@@ -10,11 +10,10 @@ import dash_bootstrap_components as dbc
 import requests
 import dash_mantine_components as dmc
 from src.components.multiChannelView import multiChannelViz_layout
+from io import BytesIO
 
 # Dash app setup
-app = dash.Dash(__name__)
-
-from io import BytesIO
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 
 pt_cloud_layout = html.Div(
@@ -29,6 +28,11 @@ pt_cloud_layout = html.Div(
                 "margin": "0px",
                 "padding": "0px",
             },
+            config={
+                "staticPlot": False,
+                "displayModeBar": True,
+                "modeBarButtonsToAdd": ["drawrect"],
+            },
         ),
         dcc.Graph(
             id="bar-chart",
@@ -41,6 +45,8 @@ pt_cloud_layout = html.Div(
             },
         ),
         html.Div(id="hover-data", style={"padding": "20px", "height": "100px"}),
+        html.Div(id="selected-roi"),
+        dcc.Graph(id="full-resolution-graph", style={"height": "50%"}),
     ],
 )
 
@@ -112,7 +118,9 @@ def update_image(relayoutData):
     # Update layout to keep the image aspect and set drag mode
     fig.update_layout(
         margin=dict(t=5, b=5, l=2, r=2),  # Adjust these values as needed
-        dragmode="select",
+        dragmode="drawrect",
+        shapes=[],
+        # dragmode="select",
     )
     fig.update_xaxes(range=[0, width])
     fig.update_yaxes(range=[0, height], scaleanchor="x")
@@ -152,6 +160,32 @@ def display_hover_data(hoverData):
         y = hoverData["points"][0]["y"]
         return f"X: {x}, Y: {y}"
     return "Hover over the image"
+
+
+@app.callback(
+    Output("selected-roi", "children"), Input("image-with-points", "relayoutData")
+)
+def update_full_res_image(relayout_data):
+    # Extract rectangle coordinates
+
+    if "shapes" in relayout_data:
+        scale_factor_X = 1
+        scale_factor_Y = 1
+
+        x0 = relayout_data["shapes[0].x0"] * scale_factor_X
+        x1 = relayout_data["shapes[0].x1"] * scale_factor_X
+        y0 = relayout_data["shapes[0].y0"] * scale_factor_Y
+        y1 = relayout_data["shapes[0].y1"] * scale_factor_Y
+
+        # Request the full-resolution image section
+        # full_res_image_section = request_full_res_image(x0, y0, x1, y1)
+
+        # Create a figure with the full-resolution image
+        # fig = px.imshow(full_res_image_section)
+        # return fig
+        return html.Div(f"{x0},{x1},{y0},{y1}")
+    else:
+        return html.Div("Nothing selected yet..")
 
 
 if __name__ == "__main__":
