@@ -1,13 +1,13 @@
 import pandas as pd
 from flask_mongoengine import MongoEngine
-from ..utils.settings import MONGO_URI, MONGODB_DB
+from ..utils.settings import MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
 import pymongo
 from pymongo import UpdateOne
 from pprint import pprint
 from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets
 
 db = MongoEngine()
-mc = pymongo.MongoClient(MONGO_URI)
+mc = pymongo.MongoClient(MONGO_URI,username=MONGODB_USERNAME,password=MONGODB_PASSWORD)
 mc = mc[
     MONGODB_DB
 ]  ### Attach the mongo client object to the database I want to store everything
