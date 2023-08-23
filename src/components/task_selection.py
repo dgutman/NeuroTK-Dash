@@ -47,10 +47,6 @@ task_selection = html.Div(
 )
 
 
-# @callback(Input("tasks-dropdown","value"),
-#           Output())
-
-
 @callback(
     [
         Output("tasks-dropdown", "data"),

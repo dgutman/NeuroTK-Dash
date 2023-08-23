@@ -9,7 +9,6 @@ from ..utils.settings import gc, PROJECTS_ROOT_FOLDER_ID
 from dash_mantine_components import Select
 import dash_bootstrap_components as dbc
 
-
 project_selection = html.Div(
     [
         dcc.Store(

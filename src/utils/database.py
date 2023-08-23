@@ -1,9 +1,14 @@
 import pandas as pd
 from flask_mongoengine import MongoEngine
-from ..utils.settings import MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
+from pprint import pprint
+from typing import List
+
 import pymongo
 from pymongo import UpdateOne
-from pprint import pprint
+
+from ..utils.settings import (
+    MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
+)
 from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets
 
 db = MongoEngine()
@@ -107,26 +112,25 @@ def getUniqueParamSets(annotationName):
     return results
 
 
-def getProjectDataset(projectName, projectFolderId, forceRefresh=False):
-    ### Given a projectName, this will check to see if we have items for this project already in a local mongo database
-    ### and if so return them, if we do not, I will query girder_client and pull the items instead..
-    collection = mc[
-        "projectImages"
-    ]  ## Creating a new collection for projectImages.. maybe to be merged late
+def getProjectDataset(
+        projectName: str, projectFolderId: str, forceRefresh: bool = False
+    ) -> List[dict]:
+    """
+    Given a projectName, return the data from local mongo database if it exists
+    otherwise pull from DSA using girder_client and add to mongo database.
+    """
+    # Mongo collection.
+    collection = mc["projectImages"]
 
-    # Here for debugging.. don't want to just call this forver!
-    forceRefresh = True
-    # projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
-
+    # Get the project in collection.
     projectImages = list(collection.find({"projectName": projectName}))
 
     if projectImages and not forceRefresh:
-        return projectImages  ## Maybe do some fancier crap here... return as a dataframe? nah probably not
-
+        # Return existing project.
+        return projectImages
     else:
-        ## #Now fetch the data from girder instead..
+        # Get data from DSA.
 
-        print(len(list(projectImages)), "images were found...")
         projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
         ## This is a dictionary keyed by the image itemId... needs to be flattened before mongo insert..
         ## Also don't forget to add the projectName or things will go badly
@@ -138,7 +142,6 @@ def getProjectDataset(projectName, projectFolderId, forceRefresh=False):
                 dict(projectDatasetDict[imageId], **{"projectName": projectName})
                 for imageId in projectDatasetDict
             ]
-            # print(len(projectDataSetItems), "items were detected in the project Set")
 
             ### Now insert the bundle into mongo
             debug = False
@@ -149,9 +152,7 @@ def getProjectDataset(projectName, projectFolderId, forceRefresh=False):
                 )
             for chunk in chunks(operations, 500):
                 result = collection.bulk_write(chunk)
-                if debug:
-                    pprint(result.bulk_api_result)
-            # return result
+
             ## Going to return the just inserted item Set..
             projectImages = list(collection.find({"projectName": projectName}))
             return projectImages
@@ -181,7 +182,6 @@ def getUniqueParamSets(annotationName):
     ### Given an annotationName, this will generate a list of unique parameter sets that were used for the analysis
     ### One thing to think about, not all annotations were algorithmically generated so will need to come up with logic
     ### To figure this out in the future..
-    # print(annotationName)
     # # Select your collection
     collection = mc["annotationData"]
 

@@ -10,11 +10,13 @@ from girder_client import GirderClient
 
 
 def get_neuroTK_projectDatasets(projectFolderId: str):
-    ## Given a projectFolder Id, this needs to find the datasets folder, and then grab metadata
-    ## From that...
-
-    ## We need the Datasets folder and the Tasks folder..
-
+    """
+    Get all datasets from a project.
+    
+    Args:
+        projectFolderId: DSA id of project folder.
+    """
+    # Find the project "Datasets" and "Tasks" folder.
     dataSetsFolder = None
     tasksFolder = None
 
@@ -24,32 +26,39 @@ def get_neuroTK_projectDatasets(projectFolderId: str):
         elif pjf["name"] == "Tasks":
             tasksFolder = pjf
 
-    ## Get the list of items in the tasks folder..
+    # For any current tasks, find the list of image ids.
+    taskImageIdDict = {}  # keys: task name, values: list of image ids
 
-    taskImageIdDict = {}
+    if tasksFolder is not None:
+        for i in gc.listItem(tasksFolder["_id"]):
+            # Get list of images in task item from metadata.
+            taskImageList = i["meta"].get("images", {})
 
-    for i in gc.listItem(tasksFolder["_id"]):
-        taskName = i["name"]
-        ## Now get the task..
-        taskImageList = i["meta"].get("images", {})
-        print(taskName, "has", len(taskImageList), "images in it..")
-        if taskImageList:
-            taskImageIdDict[taskName] = taskImageList
+            if taskImageList:
+                taskImageIdDict[i['name']] = taskImageList
 
+    # Get a list of images in the project dataset.
+    # Since there may be multiple datasets make sure to merge dictionaries
+    # from duplicate images.
     dataSetImages = {}
-    for k in dataSetsFolder.get("meta", {}).keys():
-        if k.startswith("ntkdata_"):
-            for i in dataSetsFolder["meta"][k]:
-                dataSetImages[i["_id"]] = i
-                ## TO DO:  JC work on merging the dictionaries instead of overwriting..
-                ## Just return a set of itemId's that are in the project.
-    # Now comes the fun datasets logic, where I am going to one_hot_encode all of the taskNames as a new column
 
-    ## This will now add a magical  column telling me what task a given image has been assigned to
-    for taskName in taskImageIdDict:
-        for imgId in taskImageIdDict[taskName]:
+    if dataSetsFolder is not None:
+        for k in dataSetsFolder.get("meta", {}):
+            if k.startswith("ntkdata_"):
+                for i in dataSetsFolder["meta"][k]:
+                    if i['_id'] not in dataSetImages:
+                        dataSetImages[i['_id']] = {}
+
+                    dataSetImages[i["_id"]].update(i)
+
+    # For each unique task, pass a key, value pair to the image information 
+    # to assign the task to that image, start the key with "taskAssigned_".
+    for taskName, imgIds in taskImageIdDict.items():
+        for imgId in imgIds:
             if imgId in dataSetImages:
-                dataSetImages[imgId]["taskAssigned_" + taskName] = 1
+                dataSetImages[imgId]["taskAssigned_" + taskName] = True
+            else:
+                dataSetImages[imgId]["taskAssigned_" + taskName] = False
 
     if dataSetImages:
         return dataSetImages
