@@ -38,7 +38,7 @@ gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
 #     print("Trying to connect to %s with %s " % (DSA_BASE_URL, API_KEY))
 gc.authenticate(apiKey=API_KEY)
 
-JC_WINDOWS  = True
+JC_WINDOWS = False
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
 

@@ -47,11 +47,8 @@ task_selection = html.Div(
 )
 
 
-# @callback(Output("create-task-panel", "is_open"), Input("create-task", "n_clicks"), prevent_initial_call=True)
-# def open_create_task_panel(nclicks):
-#     """ """
-#     if nclicks:
-#         return True
+# @callback(Input("tasks-dropdown","value"),
+#           Output())
 
 
 @callback(
@@ -73,7 +70,8 @@ def populate_tasks(value):
 
     if tasks:
         tasks = [
-            {"value": val["_id"], "label": val["name"]} for val in gc.listItem(tasks[0])
+            {"value": val["name"], "label": val["name"]}
+            for val in gc.listItem(tasks[0])
         ]
         return tasks, "", "", False
     else:

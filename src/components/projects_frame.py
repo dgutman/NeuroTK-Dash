@@ -18,8 +18,6 @@ import dash_bootstrap_components as dbc
 import numpy as np
 import pandas as pd
 
-np.random.seed(42)
-
 
 # NOTE: There's a bug here which seems to allow multiple processes which sync down the image thumbnails to run
 # simultaneously. For example, on page load the process begins, but if the user then selects a task from the dropdown
@@ -56,7 +54,7 @@ projects_frame = html.Div(
                     [
                         html.Div(
                             [dbc.Row(dmc.Loader(size="md", variant="oval"))],
-                            id="project-itemSet-table",
+                            id="project-itemSet-div",
                         ),
                     ],
                     value="table",
@@ -110,30 +108,45 @@ def updateProjectItemStore(projectId, projectData):
 
 
 @callback(
-    Output("project-itemSet-table", "children"),
+    Output("project-itemSet-div", "children"),
     Input("projectItem_store", "data"),
+    Input("tasks-dropdown", "value"),
 )
-def updateProjectItemSetTable(projectItemSet):
+def updateProjectItemSetTable(projectItemSet, selectedTask):
+    ## Regenerate a filtered table, if it exists..
+    print("Task selected is..", selectedTask)
+
     if projectItemSet:
+        df = pd.json_normalize(projectItemSet, sep="-")
+
+        # ## Case where selectedTask actualy has no items yet.
+        # if selectedTask and f"tasksAssigned_{selectedTask}" not in df.columns:
+        #     return [html.Div()]
+        taskColName = f"taskAssigned_{selectedTask}"
+        if selectedTask:
+            if taskColName in df.columns:
+                df = df[df[taskColName] == 1]
+
+            else:
+                df = pd.DataFrame()
+
         return [
             generate_generic_DataTable(
-                pd.json_normalize(projectItemSet, sep="-"), "project-itemSet-table"
+                df, "project-itemSet-table"
             ),  ## TO DO?? make the column name mappings prettier?
         ]
-    else:
-        return [html.Div("No dataset for project")]
+    return html.Div(id="project-itemSet-table")
 
 
 @callback(
     Output("images_div", "children"),
     Input("projectItem_store", "data"),
 )
-def updateProjectItemSetTable(projectItemSet):
+def updateDataView(projectItemSet):
     if projectItemSet:
-        print(len(projectItemSet))
-
         imageDataView_panel = [generate_imageSetViewer_layout(projectItemSet)]
         return imageDataView_panel
+    return html.Div()
 
 
 # @callback(

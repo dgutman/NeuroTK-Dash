@@ -107,16 +107,20 @@ def getUniqueParamSets(annotationName):
     return results
 
 
-def getProjectDataset(projectName, projectFolderId):
+def getProjectDataset(projectName, projectFolderId, forceRefresh=False):
     ### Given a projectName, this will check to see if we have items for this project already in a local mongo database
     ### and if so return them, if we do not, I will query girder_client and pull the items instead..
     collection = mc[
         "projectImages"
     ]  ## Creating a new collection for projectImages.. maybe to be merged late
 
+    # Here for debugging.. don't want to just call this forver!
+    forceRefresh = True
+    # projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
+
     projectImages = list(collection.find({"projectName": projectName}))
 
-    if projectImages:
+    if projectImages and not forceRefresh:
         return projectImages  ## Maybe do some fancier crap here... return as a dataframe? nah probably not
 
     else:
@@ -153,6 +157,7 @@ def getProjectDataset(projectName, projectFolderId):
             return projectImages
         else:
             return None
+    return None
 
 
 def getAnnotationNameCount(projectName):
@@ -176,7 +181,7 @@ def getUniqueParamSets(annotationName):
     ### Given an annotationName, this will generate a list of unique parameter sets that were used for the analysis
     ### One thing to think about, not all annotations were algorithmically generated so will need to come up with logic
     ### To figure this out in the future..
-    print(annotationName)
+    # print(annotationName)
     # # Select your collection
     collection = mc["annotationData"]
 

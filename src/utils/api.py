@@ -12,20 +12,49 @@ from girder_client import GirderClient
 def get_neuroTK_projectDatasets(projectFolderId: str):
     ## Given a projectFolder Id, this needs to find the datasets folder, and then grab metadata
     ## From that...
+
+    ## We need the Datasets folder and the Tasks folder..
+
+    dataSetsFolder = None
+    tasksFolder = None
+
     for pjf in gc.listFolder(projectFolderId):
         if pjf["name"] == "Datasets":
-            ### So the projectFolder should have metadata, and I am specifically looking for
-            #  ntkdata_ as the keys..
+            dataSetsFolder = pjf
+        elif pjf["name"] == "Tasks":
+            tasksFolder = pjf
 
-            dataSetImages = {}
-            for k in pjf.get("meta", {}).keys():
-                if k.startswith("ntkdata_"):
-                    for i in pjf["meta"][k]:
-                        dataSetImages[i["_id"]] = i
-                        ## TO DO:  JC work on merging the dictionaries instead of overwriting..
-                    ## Just return a set of itemId's that are in the project.
-            return dataSetImages
-            ## Remember this is returning a dictionary, not a list of dictionaries
+    ## Get the list of items in the tasks folder..
+
+    taskImageIdDict = {}
+
+    for i in gc.listItem(tasksFolder["_id"]):
+        taskName = i["name"]
+        ## Now get the task..
+        taskImageList = i["meta"].get("images", {})
+        print(taskName, "has", len(taskImageList), "images in it..")
+        if taskImageList:
+            taskImageIdDict[taskName] = taskImageList
+
+    dataSetImages = {}
+    for k in dataSetsFolder.get("meta", {}).keys():
+        if k.startswith("ntkdata_"):
+            for i in dataSetsFolder["meta"][k]:
+                dataSetImages[i["_id"]] = i
+                ## TO DO:  JC work on merging the dictionaries instead of overwriting..
+                ## Just return a set of itemId's that are in the project.
+    # Now comes the fun datasets logic, where I am going to one_hot_encode all of the taskNames as a new column
+
+    ## This will now add a magical  column telling me what task a given image has been assigned to
+    for taskName in taskImageIdDict:
+        for imgId in taskImageIdDict[taskName]:
+            if imgId in dataSetImages:
+                dataSetImages[imgId]["taskAssigned_" + taskName] = 1
+
+    if dataSetImages:
+        return dataSetImages
+    ## Remember this is returning a dictionary, not a list of dictionaries
+    return None
 
 
 def get_projects(gc: GirderClient, fld_id: str) -> List[dict]:
