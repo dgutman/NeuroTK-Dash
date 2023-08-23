@@ -1,4 +1,4 @@
-import dash
+import dash, requests
 from dash import Input, Output, State, html, dcc
 import plotly.graph_objects as go
 import numpy as np
@@ -7,10 +7,13 @@ from PIL import Image
 from plotly.subplots import make_subplots
 import plotly.express as px
 import dash_bootstrap_components as dbc
-import requests
 import dash_mantine_components as dmc
-from src.components.multiChannelView import multiChannelViz_layout
+
+# from src.components.multiChannelView import multiChannelViz_layout
+from src.components.clusterResults import clusterResults_layout
 from io import BytesIO
+import src.utils.multiChannelHelpers as mch
+from src.components.multiChannelViz_V2 import mcv_layout
 
 # Dash app setup
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -55,42 +58,22 @@ tabs_layout = dmc.Tabs(
         dmc.TabsList(
             [
                 dmc.Tab("Point Cloud Viz", value="ptCloud-tab"),
-                dmc.Tab("MultiChannel Viewer", value="multiChannel-tab"),
+                # dmc.Tab("MultiChannel Viewer", value="multiChannel-tab"),
+                dmc.Tab("Clustering Results", value="cluster-tab"),
+                dmc.Tab("MultiChannelV2", value="mctwo-tab"),
             ]
         ),
         dmc.TabsPanel(pt_cloud_layout, value="ptCloud-tab"),
-        dmc.TabsPanel(multiChannelViz_layout, value="multiChannel-tab"),
+        # dmc.TabsPanel(multiChannelViz_layout, value="multiChannel-tab"),
+        dmc.TabsPanel(clusterResults_layout, value="cluster-tab"),
+        dmc.TabsPanel(mcv_layout, value="mctwo-tab"),
     ],
-    value="multiChannel-tab",
+    value="mctwo-tab",
     variant="pills",
     color="blue",
 )
 
 app.layout = tabs_layout
-
-
-# Load the image using PIL
-img = Image.open("sample_image_for_pointdata.png")
-width, height = img.size
-
-# Convert the image to a numpy array
-img_array = np.array(img)
-
-# Sample points
-points = pd.DataFrame(
-    {
-        "x": [50, 100, 150, 200, 250],
-        "y": [50, 100, 150, 200, 600],
-        "id": ["A", "B", "C", "D", "E"],
-    }
-)
-
-num_points = len(points)
-random_colors = [
-    "#%02x%02x%02x" % (int(r), int(g), int(b))
-    for r, g, b in np.random.randint(0, 255, size=(num_points, 3))
-]
-points["color"] = random_colors
 
 
 # Create the initial figure with the image and scatter points
@@ -99,21 +82,23 @@ points["color"] = random_colors
 )
 def update_image(relayoutData):
     fig = make_subplots(rows=1, cols=1, subplot_titles=("Image with Points",))
-
+    print(mch.img_array.shape)
     # Display image
-    fig.add_trace(go.Image(z=img_array), 1, 1)
+    fig.add_trace(go.Image(z=mch.img_array), 1, 1)
 
     # Add scatter points
     fig.add_trace(
         go.Scatter(
-            x=points["x"],
-            y=points["y"],
+            x=mch.points["x"],
+            y=mch.points["y"],
             mode="markers",
-            marker=dict(size=10, color=points["color"]),
+            marker=dict(size=10),  # , color=mch.points["color"]),
             hoverinfo="text",
-            text=points["id"],
+            text=mch.points["id"],
         )
     )
+
+    width, height = mch.img.size
 
     # Update layout to keep the image aspect and set drag mode
     fig.update_layout(
@@ -189,34 +174,6 @@ def update_full_res_image(relayout_data):
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-
-
-# import dash
-# import dash_core_components as dcc
-# import dash_html_components as html
-# from dash.dependencies import Input, Output, State
-# import plotly.graph_objects as go
-# import numpy as np
-# import pandas as pd
-# from PIL import Image
-# import plotly.express as px
-
-# # Dash app setup
-# app = dash.Dash(__name__)
-
-# app.layout = html.Div(
-#     [
-#         dcc.Graph(
-#             id="image-with-points", style={"width": "60%", "display": "inline-block"}
-#         ),
-#         dcc.Graph(
-#             id="bar-chart",
-#             style={"width": "30%", "display": "inline-block", "vertical-align": "top"},
-#         ),
-#         html.Div(id="hover-data", style={"padding": "20px"}),
-#     ]
-# )
-
 
 # # # Add image
 # # fig.add_layout_image(
@@ -421,7 +378,3 @@ if __name__ == "__main__":
 # #         y = hoverData["points"][0]["y"]
 # #         return f"X: {x}, Y: {y}"
 # #     return "Hover over the image"
-
-
-# # if __name__ == "__main__":
-# #     app.run_server(debug=True)
