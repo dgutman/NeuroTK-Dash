@@ -16,6 +16,7 @@ def generate_main_DataTable(df, id_val):
                     "flex": 1,
                     "filterParams": {"debounceMs": 2500},
                     "floatingFilter": True,
+                    "sortable": True,
                 },
                 columnDefs=[{"field": col} for col in df.columns],
                 rowData=df.to_dict("records"),
@@ -36,8 +37,15 @@ def generate_main_DataTable(df, id_val):
     return dsa_datatable
 
 
-def generate_generic_DataTable(df, id_val, default_col_def={"resizable": True}, col_defs={}, exportable=False):
+def generate_generic_DataTable(
+    df,
+    id_val,
+    default_col_def={"resizable": True, "sortable": True},
+    col_defs={},
+    exportable=False,
+):
     col_defs = [{"field": col} for col in df.columns] if not col_defs else col_defs
+
     dsa_datatable = html.Div(
         [
             dag.AgGrid(
@@ -88,7 +96,10 @@ def generate_dsaAnnotationsTable(df):
         [
             dash_table.DataTable(
                 id="annotation-datatable",
-                columns=[{"name": i, "id": i, "deletable": False, "selectable": True} for i in df.columns],
+                columns=[
+                    {"name": i, "id": i, "deletable": False, "selectable": True}
+                    for i in df.columns
+                ],
                 data=df.to_dict("records"),
                 editable=True,
                 filter_action="native",
@@ -135,7 +146,10 @@ def generate_dsaDataTable(df):
         [
             dash_table.DataTable(
                 id="datatable-interactivity",
-                columns=[{"name": i, "id": i, "deletable": True, "selectable": True} for i in df.columns],
+                columns=[
+                    {"name": i, "id": i, "deletable": True, "selectable": True}
+                    for i in df.columns
+                ],
                 data=df.to_dict("records"),
                 editable=True,
                 filter_action="native",
