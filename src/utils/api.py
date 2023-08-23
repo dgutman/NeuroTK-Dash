@@ -56,9 +56,7 @@ def get_neuroTK_projectDatasets(projectFolderId: str):
     for taskName, imgIds in taskImageIdDict.items():
         for imgId in imgIds:
             if imgId in dataSetImages:
-                dataSetImages[imgId]["taskAssigned_" + taskName] = True
-            else:
-                dataSetImages[imgId]["taskAssigned_" + taskName] = False
+                dataSetImages[imgId]["taskAssigned_" + taskName] = 'Assigned'
 
     if dataSetImages:
         return dataSetImages

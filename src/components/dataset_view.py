@@ -100,9 +100,18 @@ def updateProjectItemSetTable(
             taskColName = f"taskAssigned_{selectedTask}"
 
             if taskColName in df:
-                df = df[df[taskColName]]
+                df = df[df[taskColName] == 'Assigned']
             else:
                 df = pd.DataFrame()
+
+        # Drop columns with Task Assigned at the beginning.
+        cols_to_drop = []
+
+        for col in df.columns.tolist():
+            if col.startswith('taskAssigned_'):
+                cols_to_drop.append(col)
+
+        df = df.drop(columns=cols_to_drop)
 
         return [generate_generic_DataTable(df, "project-itemSet-table")]
 
