@@ -30,7 +30,9 @@ def get_all_containers():
         holder.extend(
             [
                 {"item_id": item["_id"], "parent_folder_id": item["folderId"]}
-                for item in gc.get(f"resource/{collection_id}/items?type=collection&limit=0")
+                for item in gc.get(
+                    f"resource/{collection_id}/items?type=collection&limit=0"
+                )
             ]
         )
 
@@ -82,13 +84,18 @@ def getAllItemAnnotations(annotationName=None):
     ## For now I am focusing on pulling out the PPC data
     annotationItemSet = gc.listResource("annotation")
     annotationItemSet = list(annotationItemSet)
-    print("You have retrieved %d annotations from the DSA for the current API KEY" % len(annotationItemSet))
+    print(
+        "You have retrieved %d annotations from the DSA for the current API KEY"
+        % len(annotationItemSet)
+    )
     return annotationItemSet
 
 
 def getItemSetData(num_of_items=0):
     # url = f"{DSA_BASE_Url}/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
-    url = f"/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
+    url = (
+        f"/resource/{ROOT_FOLDER_ID}/items?type={ROOT_FOLDER_TYPE}&limit={num_of_items}"
+    )
 
     # # print(url)
     # response = requests.get(url)
@@ -108,7 +115,9 @@ def pull_thumbnail_array(item_id, height=1000, encoding="PNG"):
     Thumbnail is returned as a numpy array, after dropping alpha channel
     Thumbnail encoding is specified as PNG by default
     """
-    thumb_download_endpoint = f"/item/{item_id}/tiles/thumbnail?encoding={encoding}&height={height}"
+    thumb_download_endpoint = (
+        f"/item/{item_id}/tiles/thumbnail?encoding={encoding}&height={height}"
+    )
     thumb = gc.get(thumb_download_endpoint, jsonResp=False).content
     thumb = np.array(Image.open(BytesIO(thumb)))
     # dropping alpha channel and keeping only rgb
@@ -185,7 +194,13 @@ def get_ppc_details_simple():
     ppc_records = pd.DataFrame.from_dict(ppc_records, orient="index")
     ppc_records.reset_index(inplace=True)
 
-    keep_cols = ["index", "Created On", "NumberStrongPositive", "NumberTotalPixels", "RatioStrongToPixels"]
+    keep_cols = [
+        "index",
+        "Created On",
+        "NumberStrongPositive",
+        "NumberTotalPixels",
+        "RatioStrongToPixels",
+    ]
     ppc_records = ppc_records[keep_cols]
 
     ppc_records.rename(
@@ -211,7 +226,9 @@ def get_items_in_container(parent_id, container_type="folder"):
         List of items in parent folder.
 
     """
-    return gc.get(f"resource/{parent_id}/items?type={container_type}&limit=0&sort=_id&sortdir=1")
+    return gc.get(
+        f"resource/{parent_id}/items?type={container_type}&limit=0&sort=_id&sortdir=1"
+    )
 
 
 def get_folder_items(parent_id):
@@ -237,7 +254,11 @@ def get_items_in_folder(folder_id):
 
         metadata[item["_id"]] = item["meta"]["npSchema"]
 
-        large_image = l_image if (l_image := item.get("largeImage")) is None else l_image.get("fileId")
+        large_image = (
+            l_image
+            if (l_image := item.get("largeImage")) is None
+            else l_image.get("fileId")
+        )
 
         update_dict = {"folder_id": item["folderId"], "large_image": large_image}
         metadata[item["_id"]].update(update_dict)
@@ -278,7 +299,9 @@ def get_ppc_details_specific(
 
     original_items = get_items_in_folder(folder_id)
 
-    filt = (original_items["stainID"].isin(stains_of_interest)) & (original_items["regionName"].isin(keep_regions))
+    filt = (original_items["stainID"].isin(stains_of_interest)) & (
+        original_items["regionName"].isin(keep_regions)
+    )
     original_items = original_items[filt]
 
     folder_item_count = len(original_items)
@@ -328,14 +351,26 @@ def get_ppc_details_specific(
     ppc_records.rename(columns={"index": "item_id"}, inplace=True)
     metadata_df = pd.DataFrame.from_dict(metadata, orient="index")
 
-    req_cols = ["caseID", "stainID", "regionName", "ABC", "Braak Stage", "CERAD", "Thal"]
+    req_cols = [
+        "caseID",
+        "stainID",
+        "regionName",
+        "ABC",
+        "Braak Stage",
+        "CERAD",
+        "Thal",
+    ]
 
     if all([val in metadata_df.columns for val in req_cols]):
         metadata_df = update_metadata_df(metadata_df, ppc_records)
 
         metadata_df.reset_index(inplace=True)
         metadata_df.rename(
-            columns={"index": "item_id", "RatioStrongToPixels": "Percent Strong Positive"}, inplace=True
+            columns={
+                "index": "item_id",
+                "RatioStrongToPixels": "Percent Strong Positive",
+            },
+            inplace=True,
         )
 
         req_cols.insert(0, "item_id")
@@ -396,7 +431,8 @@ def run_ppc(data, params, run=False):
     annot_records = {
         annot["_id"]: itemId
         for annot in annots
-        if (annot["annotation"]["name"] == annotation_name) and ((itemId := annot["itemId"]) in data["Item ID"].values)
+        if (annot["annotation"]["name"] == annotation_name)
+        and ((itemId := annot["itemId"]) in data["Item ID"].values)
     }
 
     # retrieve the full annotation details and transform the returned values into a format that is accepted by PPC
