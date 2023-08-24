@@ -17,13 +17,13 @@ dataset_view = html.Div([
         ]),
         dmc.TabsPanel([
             html.Div(
-                [dbc.Row(dmc.Loader(size="md", variant="oval"))],
+                html.Div(),
                 id="project-itemSet-div",
             ),
         ], value="table", id="table_tab_panel"),
         dmc.TabsPanel([
             html.Div(
-                [dbc.Row(dmc.Loader(size="md", variant="oval"))],
+                html.Div(),
                 id="images_div",
             ),
         ], value="images", id="images_tab_panel")
@@ -123,7 +123,9 @@ def updateProjectItemSetTable(
     Input("projectItem_store", "data"),
 )
 def updateDataView(projectItemSet):
+    ## Update view
     if projectItemSet:
+        print('Updating data view...')
         imageDataView_panel = [generate_imageSetViewer_layout(projectItemSet)]
         return imageDataView_panel
     return html.Div()
