@@ -28,6 +28,11 @@ DSA_BASE_URL = os.environ.get("DSA_BASE_URL", None)
 ROOT_FOLDER_ID = os.environ.get("ROOT_FOLDER_ID", None)
 ROOT_FOLDER_TYPE = os.environ.get("ROOT_FOLDER_TYPE", None)
 
+AVAILABLE_CLI_TASKS = {
+    'PositivePixelCount': 'PPC',
+    'nft_detection': 'Detect Pre-NFTs & iNFTs'
+}
+
 PROJECTS_ROOT_FOLDER_ID = os.environ.get(
     "PROJECTS_ROOT_FOLDER_ID", "64dbd2667920606b462e5b83"
 )

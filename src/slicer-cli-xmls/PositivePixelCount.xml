@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<executable>
+  <category>HistomicsTK</category>
+  <title>Positive Pixel Count</title>
+  <description>Counts different types of positive pixels based on values in the HSI color space</description>
+  <version>0.1.0</version>
+  <documentation-url>https://digitalslidearchive.github.io/HistomicsTK</documentation-url>
+  <license>Apache 2.0</license>
+  <contributor>David Manthey (Kitware), Neal Siekierski (Kitware)</contributor>
+  <acknowledgements>This work is part of the HistomicsTK project.</acknowledgements>
+  <parameters>
+    <label>I/O</label>
+    <description>Input/output parameters.</description>
+    <image>
+      <name>inputImageFile</name>
+      <label>Input Image</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>Input image in which to count and classify positive pixels</description>
+    </image>
+    <region shapes="rectangle,polygon,multipolygon">
+      <name>region</name>
+      <label>Analysis ROI</label>
+      <longflag>region</longflag>
+      <description>Region of interest where analysis is performed.  This is either -1,-1,-1,-1 for the whole image, or a four-element vector in the format "left, top, width, height", or a list of four or more x,y vertices to specify a polygon.</description>
+      <default>-1,-1,-1,-1</default>
+    </region>
+    <float>
+      <name>hue_value</name>
+      <label>Hue Value</label>
+      <index>1</index>
+      <description>Center of the hue range in HSI space for the positive color, in the range [0, 1]</description>
+      <default>0.83</default>
+    </float>
+    <float>
+      <name>hue_width</name>
+      <label>Hue Width</label>
+      <index>2</index>
+      <description>Width of the hue range in HSI space</description>
+      <default>0.15</default>
+    </float>
+    <float>
+      <name>saturation_minimum</name>
+      <label>Minimum Saturation</label>
+      <index>3</index>
+      <description>Minimum saturation of positive pixels in HSI space, in the range [0, 1]</description>
+      <default>0.05</default>
+    </float>
+    <float>
+      <name>intensity_upper_limit</name>
+      <label>Upper Intensity Limit</label>
+      <index>4</index>
+      <description>Intensity threshold in HSI space above which a pixel is considered negative, in the range [0, 1]</description>
+      <default>0.95</default>
+    </float>
+    <float>
+      <name>intensity_weak_threshold</name>
+      <label>Intensity Threshold for Weak Pixels</label>
+      <index>5</index>
+      <description>Intensity threshold in HSI space that separates weak-positive pixels (above) from plain positive pixels (below)</description>
+      <default>0.65</default>
+    </float>
+    <float>
+      <name>intensity_strong_threshold</name>
+      <label>Intensity Threshold for Strong Pixels</label>
+      <index>6</index>
+      <description>Intensity threshold in HSI space that separates plain positive pixels (above) from strong positive pixels (below)</description>
+      <default>0.35</default>
+    </float>
+    <float>
+      <name>intensity_lower_limit</name>
+      <label>Lower Intensity Limit</label>
+      <index>7</index>
+      <description>Intensity threshold in HSI space below which a pixel is considered negative</description>
+      <default>0.05</default>
+    </float>
+    <image fileExtensions=".tiff" reference="inputImageFile">
+      <name>outputLabelImage</name>
+      <longflag>outputLabelImage</longflag>
+      <label>Output Label Image</label>
+      <description>Color-coded image of the region, showing the various classes of pixel</description>
+      <channel>output</channel>
+    </image>
+    <string-enumeration>
+      <name>outputImageForm</name>
+      <label>Image Format</label>
+      <description>The output image can either be colored for easy visibility or coded as categorical values where 0 is negative, 1 weak, 2 plain, and 3 strong</description>
+      <channel>input</channel>
+      <longflag>output_form</longflag>
+      <element>visible</element>
+      <element>pixelmap</element>
+      <default>visible</default>
+    </string-enumeration>
+    <file fileExtensions=".anot" reference="inputImageFile">
+      <name>outputAnnotationFile</name>
+      <label>Image Annotation</label>
+      <description>Annotation to relate the image to the source (*.anot)</description>
+      <channel>output</channel>
+      <longflag>image_annotation</longflag>
+    </file>
+  </parameters>
+  <parameters advanced="true">
+    <label>Frame and Style</label>
+    <description>Frame parameters</description>
+    <string>
+      <name>frame</name>
+      <longflag>frame</longflag>
+      <label>Frame Index</label>
+      <description>Frame index in a multi-frame image</description>
+      <default>{#control:#current_image_frame#}</default>
+    </string>
+    <string>
+      <name>style</name>
+      <longflag>style</longflag>
+      <label>Style Options</label>
+      <description>Image style options for compositing a multi-frame image</description>
+      <default>{#control:#current_image_style#}</default>
+    </string>
+  </parameters>
+  <parameters advanced="true">
+    <label>Dask</label>
+    <description>Dask parameters</description>
+    <string>
+      <name>scheduler</name>
+      <label>Scheduler Address</label>
+      <description>Address of a dask scheduler in the format '127.0.0.1:8786'.  Not passing this parameter sets up a dask cluster on the local machine.  'multiprocessing' uses Python multiprocessing.  'multithreading' uses Python multiprocessing in threaded mode.</description>
+      <longflag>scheduler</longflag>
+      <default></default>
+    </string>
+    <integer>
+      <name>num_workers</name>
+      <label>Number of workers</label>
+      <description>Number of dask workers to start while setting up a local cluster internally. If a negative value is specified then the number of workers is set to number of cpu cores on the machine minus the number of workers specified.</description>
+      <longflag>num_workers</longflag>
+      <default>-1</default>
+    </integer>
+    <integer>
+      <name>num_threads_per_worker</name>
+      <label>Number of threads per worker</label>
+      <description>Number of threads to use per worker while setting up a local cluster internally. Must be a positive integer >= 1.</description>
+      <longflag>num_threads_per_worker</longflag>
+      <default>1</default>
+    </integer>
+  </parameters>
+</executable>
