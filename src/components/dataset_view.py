@@ -1,4 +1,4 @@
-from dash import html, dcc, callback, Output, Input
+from dash import html, dcc, callback, Output, Input, State
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 from typing import List
@@ -11,6 +11,7 @@ from .dataView_component import generateDataViewLayout
 
 dataset_view = html.Div(
     [
+        dcc.Store("filteredItem_store"),
         dcc.Store("projectItem_store"),
         dcc.Store("itemSet-state"),  # Storing itemSet as state
         dmc.Tabs(
@@ -96,11 +97,48 @@ def updateProjectItemStore(projectId: str, projectData: List[dict]) -> List[dict
 
 
 @callback(
-    Output("project-itemSet-div", "children"),
+    Output("filteredItem_store", "data"),
     [Input("projectItem_store", "data"), Input("tasks-dropdown", "value")],
 )
+def updateFilteredItemStore(projectItemSet, selectedTask):
+    ### Update the filteredItemStore based on selected task...
+    print(
+        len(projectItemSet),
+        "items originally, going to to try and filter",
+        selectedTask,
+    )
+
+    if projectItemSet:
+        df = pd.json_normalize(projectItemSet, sep="-")
+
+        # If task is selected then filter by the task.
+        if selectedTask:
+            taskColName = f"taskAssigned_{selectedTask}"
+
+            if taskColName in df:
+                df = df[df[taskColName] == "Assigned"]
+            else:
+                df = pd.DataFrame()
+
+        # Drop columns with Task Assigned at the beginning.
+        cols_to_drop = []
+
+        for col in df.columns.tolist():
+            if col.startswith("taskAssigned_"):
+                cols_to_drop.append(col)
+
+        df = df.drop(columns=cols_to_drop)
+        print(len(df), "should be left after filtering on", selectedTask)
+        return df.to_dict("records")
+
+
+@callback(
+    Output("project-itemSet-div", "children"),
+    Input("tasks-dropdown", "value"),
+    Input("projectItem_store", "data"),
+)
 def updateProjectItemSetTable(
-    projectItemSet: List[dict], selectedTask: str
+    selectedTask: str, projectItemSet: List[dict]
 ) -> html.Div:
     """
     Update the contents of the datatable when project store changes (i.e. when
@@ -143,10 +181,12 @@ def updateProjectItemSetTable(
 
 @callback(
     Output("images_div", "children"),
-    Input("projectItem_store", "data"),
+    Input("filteredItem_store", "data"),
 )
 def updateDataView(projectItemSet):
     ## Update view
+    print("Received", len(projectItemSet), "items for data view")
+
     if projectItemSet:
         imageDataView_panel = generateDataViewLayout(projectItemSet)
         return imageDataView_panel

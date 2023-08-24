@@ -76,6 +76,7 @@ def generate_cards(subset, selected_size):
 
 
 def generateDataViewLayout(itemSet):
+    print("generated item layout received", len)
     size_selector = dbc.RadioItems(
         id="size-selector",
         options=[{"label": size.capitalize(), "value": size} for size in sizes],
@@ -108,7 +109,7 @@ def generateDataViewLayout(itemSet):
 @callback(
     [Output("pagination", "max_value"), Output("cards-container", "children")],
     [Input("pagination", "active_page"), Input("size-selector", "value")],
-    [State("projectItem_store", "data")],
+    [State("filteredItem_store", "data")],
     # prevent_initial_call=True,
 )
 def update_cards_and_pagination(active_page, selected_size, itemSet):
