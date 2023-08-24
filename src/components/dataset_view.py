@@ -125,7 +125,6 @@ def updateProjectItemSetTable(
 def updateDataView(projectItemSet):
     ## Update view
     if projectItemSet:
-        print('Updating data view...')
         imageDataView_panel = [generate_imageSetViewer_layout(projectItemSet)]
         return imageDataView_panel
     return html.Div()
