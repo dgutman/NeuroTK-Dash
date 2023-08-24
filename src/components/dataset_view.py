@@ -58,7 +58,7 @@ dataset_view = html.Div(
                 ),
             ],
             orientation="vertical",
-            value="images",
+            value="table",
         ),
     ]
 )
@@ -66,7 +66,8 @@ dataset_view = html.Div(
 
 @callback(
     Output("projectItem_store", "data"),
-    [Input("projects-dropdown", "value"), Input("projects-dropdown", "data")],
+    Input("projects-dropdown", "value"),
+    State("projects-dropdown", "data")
 )
 def updateProjectItemStore(projectId: str, projectData: List[dict]) -> List[dict]:
     """
@@ -80,6 +81,7 @@ def updateProjectItemStore(projectId: str, projectData: List[dict]) -> List[dict
         List of dictionaries with item / image metadata.
 
     """
+    print('updateProjectItemStore')
     # Get the name of the project.
     projectName = None
 
@@ -99,58 +101,27 @@ def updateProjectItemStore(projectId: str, projectData: List[dict]) -> List[dict
 
 @callback(
     Output("filteredItem_store", "data"),
-    [
-        Input("projectItem_store", "data"),
-        Input("tasks-dropdown", "value"),
-        Input("project-itemSet-table", "filterModel"),
-        Input("project-itemSet-table", "virtualRowData"),
-    ],
+    Input("project-itemSet-table", "filterModel"),
+    State("project-itemSet-table", "virtualRowData"),
+    suppress_initial_call=True
 )
 def updateFilteredItemStore(
-    projectItemSet, selectedTask, tableFilterModel, virtualRowData
+    filterModel, virtualRowData
 ):
-    ### Update the filteredItemStore based on selected task...
-    print(
-        len(projectItemSet),
-        "items originally, going to to try and filter",
-        selectedTask,
-    )
-
-    if tableFilterModel:
-        print("JC Gets to figure out how to use this too to the dataframe!")
-        print(tableFilterModel)
-
-    if virtualRowData:
-        print(len(virtualRowData), "rows in the virtual data table..")
-
-    if projectItemSet:
-        df = pd.json_normalize(projectItemSet, sep="-")
-
-        # If task is selected then filter by the task.
-        if selectedTask:
-            taskColName = f"taskAssigned_{selectedTask}"
-
-            if taskColName in df:
-                df = df[df[taskColName] == "Assigned"]
-            else:
-                df = pd.DataFrame()
-
-        # Drop columns with Task Assigned at the beginning.
-        cols_to_drop = []
-
-        for col in df.columns.tolist():
-            if col.startswith("taskAssigned_"):
-                cols_to_drop.append(col)
-
-        df = df.drop(columns=cols_to_drop)
-        print(len(df), "should be left after filtering on", selectedTask)
-        return df.to_dict("records")
+    print('updateFilteredItemStore')
+    # We update the filtered item store from changes to the table.
+    if virtualRowData is not None and len(virtualRowData):
+        return virtualRowData
+    
+    return []
 
 
 @callback(
     Output("project-itemSet-div", "children"),
-    Input("tasks-dropdown", "value"),
-    Input("projectItem_store", "data"),
+    [
+        Input("tasks-dropdown", "value"),
+        Input("projectItem_store", "data")
+    ]
 )
 def updateProjectItemSetTable(
     selectedTask: str, projectItemSet: List[dict]
@@ -167,6 +138,7 @@ def updateProjectItemSetTable(
         Datatable HTML div.
 
     """
+    print('updateProjectItemSetTable')
     # If there are items read them into dataframe.
     if projectItemSet:
         df = pd.json_normalize(projectItemSet, sep="-")
@@ -200,8 +172,7 @@ def updateProjectItemSetTable(
 )
 def updateDataView(projectItemSet):
     ## Update view
-    print("Received", len(projectItemSet), "items for data view")
-
+    print('updateDataView')
     if projectItemSet:
         imageDataView_panel = generateDataViewLayout(projectItemSet)
         return imageDataView_panel
