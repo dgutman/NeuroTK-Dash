@@ -3,6 +3,7 @@ import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 from typing import List
 import pandas as pd
+import dash_ag_grid as dag
 
 from ..utils.database import getProjectDataset
 from ..utils.helpers import generate_generic_DataTable
@@ -25,8 +26,8 @@ dataset_view = html.Div(
                 dmc.TabsPanel(
                     [
                         html.Div(
-                            html.Div(),
                             id="project-itemSet-div",
+                            children=[dag.AgGrid(id="project-itemSet-table")],
                         ),
                     ],
                     value="table",
@@ -98,15 +99,29 @@ def updateProjectItemStore(projectId: str, projectData: List[dict]) -> List[dict
 
 @callback(
     Output("filteredItem_store", "data"),
-    [Input("projectItem_store", "data"), Input("tasks-dropdown", "value")],
+    [
+        Input("projectItem_store", "data"),
+        Input("tasks-dropdown", "value"),
+        Input("project-itemSet-table", "filterModel"),
+        Input("project-itemSet-table", "virtualRowData"),
+    ],
 )
-def updateFilteredItemStore(projectItemSet, selectedTask):
+def updateFilteredItemStore(
+    projectItemSet, selectedTask, tableFilterModel, virtualRowData
+):
     ### Update the filteredItemStore based on selected task...
     print(
         len(projectItemSet),
         "items originally, going to to try and filter",
         selectedTask,
     )
+
+    if tableFilterModel:
+        print("JC Gets to figure out how to use this too to the dataframe!")
+        print(tableFilterModel)
+
+    if virtualRowData:
+        print(len(virtualRowData), "rows in the virtual data table..")
 
     if projectItemSet:
         df = pd.json_normalize(projectItemSet, sep="-")
