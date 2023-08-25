@@ -61,8 +61,14 @@ task_selection = html.Div(
 )
 def populate_tasks(value):
     """Populate the task dropdown from the value in projects dropdown."""
-
-    tasks = [item["_id"] for item in gc.listFolder(value) if item["name"] == "Tasks"]
+    # Catch if value is None - i.e. no Project found.
+    if value:
+        tasks = [
+            item["_id"] for item in gc.listFolder(value) \
+            if item["name"] == "Tasks"
+        ]
+    else:
+        tasks = []
 
     if tasks:
         tasks = [

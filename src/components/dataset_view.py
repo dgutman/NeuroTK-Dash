@@ -7,8 +7,19 @@ import dash_ag_grid as dag
 
 from ..utils.database import getProjectDataset
 from ..utils.helpers import generate_generic_DataTable
-from .imageSetViewer import generate_imageSetViewer_layout
 from .dataView_component import generateDataViewLayout
+
+add_dataset_popup = dbc.Modal(
+    [
+        dbc.ModalHeader('Add Dataset'),
+        dbc.ModalBody([
+            html.Div(dmc.Select([], id='dataset-dropdown'))
+        ])
+    ],
+    id='add-dataset-popup',
+    is_open=False,
+    fullscreen=False
+)
 
 dataset_view = html.Div(
     [
@@ -21,6 +32,9 @@ dataset_view = html.Div(
                     [
                         dmc.Tab("Table", value="table"),
                         dmc.Tab("Images", value="images"),
+                        html.Button(
+                            '+ Dataset', id='add-dataset', title='Add dataset'
+                        )
                     ]
                 ),
                 dmc.TabsPanel(
@@ -60,6 +74,7 @@ dataset_view = html.Div(
             orientation="vertical",
             value="table",
         ),
+        add_dataset_popup
     ]
 )
 
@@ -67,7 +82,8 @@ dataset_view = html.Div(
 @callback(
     Output("projectItem_store", "data"),
     Input("projects-dropdown", "value"),
-    State("projects-dropdown", "data")
+    State("projects-dropdown", "data"),
+    prevent_initial_call=True
 )
 def updateProjectItemStore(projectId: str, projectData: List[dict]) -> List[dict]:
     """
@@ -81,39 +97,24 @@ def updateProjectItemStore(projectId: str, projectData: List[dict]) -> List[dict
         List of dictionaries with item / image metadata.
 
     """
-    print('updateProjectItemStore')
-    # Get the name of the project.
-    projectName = None
+    if projectId:
+        # Get the name of the project.
+        projectName = None
 
-    for x in projectData:
-        if x["value"] == projectId:
-            projectName = x["label"]
-            break
+        for x in projectData:
+            if x["value"] == projectId:
+                projectName = x["label"]
+                break
 
-    # Get the project items (images) from the Project folder.
-    projectItemSet = getProjectDataset(projectName, projectId, forceRefresh=True)
+        # Get the project items (images) from the Project folder.
+        projectItemSet = getProjectDataset(projectName, projectId, forceRefresh=True)
 
-    if projectItemSet:
-        return projectItemSet
+        if projectItemSet:
+            return projectItemSet
+        else:
+            return []
     else:
         return []
-
-
-@callback(
-    Output("filteredItem_store", "data"),
-    Input("project-itemSet-table", "filterModel"),
-    State("project-itemSet-table", "virtualRowData"),
-    suppress_initial_call=True
-)
-def updateFilteredItemStore(
-    filterModel, virtualRowData
-):
-    print('updateFilteredItemStore')
-    # We update the filtered item store from changes to the table.
-    if virtualRowData is not None and len(virtualRowData):
-        return virtualRowData
-    
-    return []
 
 
 @callback(
@@ -121,7 +122,8 @@ def updateFilteredItemStore(
     [
         Input("tasks-dropdown", "value"),
         Input("projectItem_store", "data")
-    ]
+    ],
+    prevent_initial_call=True
 )
 def updateProjectItemSetTable(
     selectedTask: str, projectItemSet: List[dict]
@@ -138,7 +140,6 @@ def updateProjectItemSetTable(
         Datatable HTML div.
 
     """
-    print('updateProjectItemSetTable')
     # If there are items read them into dataframe.
     if projectItemSet:
         df = pd.json_normalize(projectItemSet, sep="-")
@@ -167,13 +168,52 @@ def updateProjectItemSetTable(
 
 
 @callback(
+    Output("filteredItem_store", "data"),
+    Input("project-itemSet-table", "filterModel"),
+    State("project-itemSet-table", "virtualRowData"),
+    prevent_initial_call=True
+)
+def updateFilteredItemStore(
+    filterModel, virtualRowData
+):
+    # We update the filtered item store from changes to the table.
+    if virtualRowData is not None and len(virtualRowData):
+        return virtualRowData
+    
+    return []
+
+
+@callback(
     Output("images_div", "children"),
     Input("filteredItem_store", "data"),
+    prevent_initial_call=True
 )
 def updateDataView(projectItemSet):
     ## Update view
-    print('updateDataView')
     if projectItemSet:
         imageDataView_panel = generateDataViewLayout(projectItemSet)
         return imageDataView_panel
     return html.Div()
+
+
+@callback(
+    Output('add-dataset-popup', 'is_open'),
+    Input('add-dataset', 'n_clicks'),
+    # State()
+    prevent_initial_call=True
+)
+def open_add_dataset_popup(n_clicks: int) -> bool:
+    """
+    Open the add dataset popup and populate the select with available
+    datasets.
+    
+    Args:
+        n_clicks: Number of times button has been clicked.
+
+    Returns:
+        Always returns True to open up the menu.
+    """
+    if n_clicks:
+        # Populate the select before opening the popup.
+
+        return True
