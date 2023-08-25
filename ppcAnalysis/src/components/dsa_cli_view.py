@@ -1,4 +1,4 @@
-from dash import html, Input, Output, State, callback, dcc
+from dash import html, Input, Output, State, callback, dcc, ALL
 from ..utils.settings import AVAILABLE_CLI_TASKS
 import json
 import dash_mantine_components as dmc
@@ -13,9 +13,11 @@ cli_selector = html.Div(
             id="cli-select",
             value="PositivePixelCount",
             data=list(AVAILABLE_CLI_TASKS.keys()),
+            style={"maxWidth": 300},
         ),
         dmc.Text(id="selected-cli-task"),
-    ]
+    ],
+    style={"marginLeft": "30px"},
 )
 
 
@@ -68,10 +70,16 @@ def generate_slicer_cli_xml_view(dsa_task_name):
     return xml_panel, xml_content
 
 
-def generate_dash_layout_from_slicer_cli(xml_string):
+def generate_dash_layout_from_slicer_cli(
+    xml_string, paramSetsToIgnore=["Frame and Style", "Dask"]
+):
     root = ET.fromstring(xml_string)
 
     ## TO DO:  Hide anything related to DASK and Frame and Style--- this is not reevant
+
+    # There are certain parameters that should not be made directly visible in the UI such as a specific image
+    ## At least for now...
+    paramsToHide = []
 
     components = []
 
@@ -79,16 +87,21 @@ def generate_dash_layout_from_slicer_cli(xml_string):
         param_components = []
 
         label = param.find("label").text if param.find("label") is not None else ""
+        if label in paramSetsToIgnore:
+            continue
         param_components.append(html.H4(label, className="card-title"))
 
-        for image in param.findall("image"):
-            name = image.find("name").text if image.find("name") is not None else ""
-            label_text = (
-                image.find("label").text if image.find("label") is not None else ""
-            )
-            param_components.extend(
-                [html.Label(label_text), dcc.Upload(id=name), html.Br()]
-            )
+        ## This loops through all the various parameters, I want to hide image params for now..
+        hideImageParam = True
+        if not hideImageParam:
+            for image in param.findall("image"):
+                name = image.find("name").text if image.find("name") is not None else ""
+                label_text = (
+                    image.find("label").text if image.find("label") is not None else ""
+                )
+                param_components.extend(
+                    [html.Label(label_text), dcc.Upload(id=name), html.Br()]
+                )
 
         for region in param.findall("region"):
             name = region.find("name").text if region.find("name") is not None else ""
@@ -103,7 +116,12 @@ def generate_dash_layout_from_slicer_cli(xml_string):
             param_components.extend(
                 [
                     html.Label(label_text),
-                    dcc.Input(id=name, value=default, type="text", readOnly=False),
+                    dcc.Input(
+                        id={"type": "dynamic-input", "index": name},
+                        value=default,
+                        type="text",
+                        readOnly=False,
+                    ),
                     html.Br(),
                 ]
             )
@@ -118,10 +136,11 @@ def generate_dash_layout_from_slicer_cli(xml_string):
                 [
                     html.Label(label_text),
                     dcc.Dropdown(
-                        id=name,
+                        id={"type": "dynamic-input", "index": name},
                         options=[{"label": op, "value": op} for op in options],
                         value=options[0],
                         clearable=False,
+                        style={"maxWidth": 300},
                     ),
                     html.Br(),
                 ]
@@ -171,50 +190,25 @@ def generate_dash_layout_from_slicer_cli(xml_string):
                 [
                     html.Label(label_text, style={"margin-right": "10px"}),
                     dcc.Input(
-                        id=name,
+                        id={"type": "dynamic-input", "index": name},
                         value=float(default),
                         type="number",
                         step=0.01,
                         readOnly=False,
-                        style={"width": "100px"},
+                        style={
+                            "width": "60px",
+                            "textAlign": "right",
+                            "border": "1px solid #ccc",
+                            "margin-right": "5px",
+                            "margin": "2px 2px",  # vertical and horizontal margin
+                            "appearance": "number-input",  # for Firefox
+                            "MozAppearance": "number-input",  # for older Firefox versions
+                            "WebkitAppearance": "number-input",  # for Chrome and modern browsers
+                        },
                     ),
                     html.Br(),
                 ]
             )
-
-            # param_components.extend(
-            #     [
-            #         html.Label(label_text),
-            #         dcc.Input(
-            #             id=name, value=default, type="number", step=0.1, readOnly=False
-            #         ),
-            #         html.Br(),
-            #     ]
-            # )
-
-        # for float_param in param.findall("float"):
-        #     name = (
-        #         float_param.find("name").text
-        #         if float_param.find("name") is not None
-        #         else ""
-        #     )
-        #     label_text = (
-        #         float_param.find("label").text
-        #         if float_param.find("label") is not None
-        #         else ""
-        #     )
-        #     default = (
-        #         float_param.find("default").text
-        #         if float_param.find("default") is not None
-        #         else ""
-        #     )
-        #     param_components.extend(
-        #         [
-        #             html.Label(label_text),
-        #             dcc.Input(id=name, value=default, type="number", readOnly=False),
-        #             html.Br(),
-        #         ]
-        #     )
 
         components.append(dbc.Card(dbc.CardBody(param_components), className="mb-3"))
 
@@ -242,44 +236,60 @@ def generate_dash_layout_from_slicer_cli(xml_string):
     return dbc.Container(components, className="mt-3")
 
 
-# data=[{"value": "PositivePixelCount", "label": "PPC"})]])
-# ,dmc.Text(id="selected-project")
+@callback(
+    Output("cliParam-json-output", "children"),
+    [Input({"type": "dynamic-input", "index": ALL}, "value")],
+    [State({"type": "dynamic-input", "index": ALL}, "id")],
+)
+def update_json_output(*args):
+    # Map names to values
+    print("cli params output was triggered")
 
+    names = args[::2]  # Take every other item starting from 0
+    values = args[1::2]  # Take every other item starting from 1
 
-# Callback to generate the JSON result
-# @app.callback(
-#     Output('cli_output', 'children'),
-#     Input('SubmitCLITask', 'n_clicks'),
-#     # Dynamically generate the list of State objects based on created components
-#     [State(component_id, 'value') for component_id in created_component_ids]
-# )
-# def generate_cli_output(n_clicks, *args):
-#     if not n_clicks:
-#         return ""
+    print("Names:", names)
+    print("Values:", values)
 
-#     # Map names to values
-#     result = {name: value for name, value in zip(created_component_ids, args)}
+    result = {value["index"]: name for name, value in zip(names[0], values[0])}
 
-#     return html.Pre(json.dumps(result, indent=4))
-
-# project_selector = html.Div(
-#     [
-#         dmc.Select(
-#             label="Select project",
-#             placeholder="Select one",
-#             id="projects-select",
-#             value="evanPPC",  ## Default project
-#             data=[
-#                 {"value": "evanPPC", "label": "evanPPC"},
-#                 {"value": "nftDetector", "label": "NFT Detector"},
-#             ],
-#             style={"width": 200, "marginBottom": 10},
-#         ),
-#         dmc.Text(id="selected-value"),
-#     ]
-# )
+    # Convert the result to a pretty JSON string
+    json_string = json.dumps(result, indent=4)
+    return json_string
 
 
 dsa_cli_view_layout = html.Div(
-    [cli_selector, html.Div(json.dumps(AVAILABLE_CLI_TASKS, indent=4))]
+    [
+        html.Div(
+            id="cliParam-json-output",
+            style={"border": "1px solid #ddd", "padding": "10px", "margin-top": "10px"},
+        ),
+        cli_selector,
+        html.Div(json.dumps(AVAILABLE_CLI_TASKS, indent=4)),
+    ]
 )
+
+
+# for float_param in param.findall("float"):
+#     name = (
+#         float_param.find("name").text
+#         if float_param.find("name") is not None
+#         else ""
+#     )
+#     label_text = (
+#         float_param.find("label").text
+#         if float_param.find("label") is not None
+#         else ""
+#     )
+#     default = (
+#         float_param.find("default").text
+#         if float_param.find("default") is not None
+#         else ""
+#     )
+#     param_components.extend(
+#         [
+#             html.Label(label_text),
+#             dcc.Input(id=name, value=default, type="number", readOnly=False),
+#             html.Br(),
+#         ]
+#     )

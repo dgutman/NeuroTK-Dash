@@ -63,7 +63,7 @@ tab_panel = dmc.Tabs(
     ],
     color="blue",
     variant="pills",
-    value="itemSet-tab",
+    value="cliList-tab",
 )
 
 

@@ -9,7 +9,12 @@ from dash import html
 import dash_bootstrap_components as dbc
 from flask import Flask
 
-from src.utils.settings import DEV_TOOLS_PROPS_CHECK, APP_HOST, APP_PORT, MONGODB_SETTINGS
+from src.utils.settings import (
+    DEV_TOOLS_PROPS_CHECK,
+    APP_HOST,
+    APP_PORT,
+    MONGODB_SETTINGS,
+)
 
 from src.components.main_layout import app_layout
 from src.utils.database import db
@@ -43,6 +48,7 @@ app = dash.Dash(
     title="NeuroTK PPC Dashboard",
 )
 
+
 def serve_layout():
     """Define the layout of the application"""
     return html.Div(
@@ -50,7 +56,6 @@ def serve_layout():
             html.Div(
                 [
                     # header,
-
                     html.Div(app_layout, className="twelve columns"),
                 ],
                 className="app__content",
@@ -58,6 +63,7 @@ def serve_layout():
         ],
         className="app__container",
     )
+
 
 app.layout = serve_layout()  # set the layout to the serve_layout function
 server = app.server  # the server is needed to deploy the application
