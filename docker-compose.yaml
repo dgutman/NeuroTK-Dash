@@ -65,3 +65,15 @@ services:
     depends_on:
       - mongodb
       # - neurotk-notebook
+  fastapi:
+    container_name: dsapostgisapi
+    build: fastapi/
+    command: bash -c 'while !</dev/tcp/postgisdb/5432; do sleep 1; done; uvicorn app.main:app --host 0.0.0.0 --port 82 --reload'
+    ports:
+      - "82:82"
+    expose:
+      - "82"
+    depends_on:
+      - postgisdb
+    volumes:
+      - ${PWD}/fastapi/app:/code/app
