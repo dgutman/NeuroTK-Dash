@@ -26,6 +26,31 @@ DSA_BASE_Url = os.environ.get("DSA_BASE_Url", None)
 ROOT_FOLDER_ID = os.environ.get("ROOT_FOLDER_ID", None)
 ROOT_FOLDER_TYPE = os.environ.get("ROOT_FOLDER_TYPE", None)
 
+AVAILABLE_CLI_TASKS = {
+    'PositivePixelCount': 'PPC',
+    'nft_detection': 'Detect Pre-NFTs & iNFTs'
+}
+
+PROJECTS_ROOT_FOLDER_ID = os.environ.get(
+    "PROJECTS_ROOT_FOLDER_ID", "64dbd2667920606b462e5b83"
+)
+
+# Authenticate a girder client from API token in .env.
+gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
+gc.authenticate(apiKey=API_KEY)
+
+# Get the information from current token.
+token_info = gc.get('token/current')
+
+# Find the user ID that owns the token.
+try:
+    for user_info in token_info['access']['users']:
+        USER = gc.getUser(user_info['id'])['login']
+        break
+except KeyError:
+    USER = 'Could not match API token to user.'
+
+JC_WINDOWS = False
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
 
