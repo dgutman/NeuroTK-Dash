@@ -1,5 +1,5 @@
-# DSA settings.
-import os, girder_client
+# package imports
+import os
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -22,25 +22,10 @@ APP_HOST = os.environ.get("HOST")
 APP_PORT = int(os.environ.get("PORT", 5000))
 DEV_TOOLS_PROPS_CHECK = bool(os.environ.get("DEV_TOOLS_PROPS_CHECK"))
 API_KEY = os.environ.get("API_KEY", None)
-USER = os.environ.get("USER", None)
-DSA_BASE_URL = os.environ.get("DSA_BASE_URL", None)
+DSA_BASE_Url = os.environ.get("DSA_BASE_Url", None)
 ROOT_FOLDER_ID = os.environ.get("ROOT_FOLDER_ID", None)
 ROOT_FOLDER_TYPE = os.environ.get("ROOT_FOLDER_TYPE", None)
 
-PROJECTS_ROOT_FOLDER_ID = os.environ.get(
-    "PROJECTS_ROOT_FOLDER_ID", "64dbd2667920606b462e5b83"
-)
-
-
-gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
-# JC API Key
-# if debug:
-#     print("Trying to connect to %s with %s " % (DSA_BASE_URL, API_KEY))
-dsa_login_status = gc.authenticate(apiKey=API_KEY)
-
-print(dsa_login_status)
-
-JC_WINDOWS = False
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
 
@@ -50,14 +35,7 @@ if is_docker():
     MONGODB_PORT = os.environ.get("MONGODB_PORT", 27017)
     MONGODB_DB = os.environ.get("MONGODB_DB", "dsaCache")
     APP_IN_DOCKER = True
-elif JC_WINDOWS:
-    MONGO_URI = "localhost"
-    MONGODB_USERNAME = "docker"
-    MONGODB_PASSWORD = "docker"
-    MONGODB_HOST = "localhost"
-    MONGODB_PORT = 27017
-    MONGODB_DB = "dsaCache"
-    APP_IN_DOCKER = False
+
 else:
     MONGO_URI = "localhost"
     MONGODB_USERNAME = None
@@ -66,6 +44,16 @@ else:
     MONGODB_PORT = 27017
     MONGODB_DB = "dsaCache"
     APP_IN_DOCKER = False
+
+
+## Create a single dictionary containing all the MONGODB_SETTINGS
+MONGODB_SETTINGS = {
+    "host": MONGODB_HOST,
+    "username": MONGODB_USERNAME,
+    "password": MONGODB_PASSWORD,
+    "port": int(MONGODB_PORT),
+    "db": MONGODB_DB,
+}  # Replace with your MongoDB connection URI
 
 
 AVAILABLE_CLI_TASKS = {

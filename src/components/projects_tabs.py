@@ -1,9 +1,11 @@
 from dash import html, dcc
 from .projects_frame import projects_frame
 from .analysis_frame import analysis_frame
+from .ppcAnalysis import ppcRunner_frame
 
 # Parameters used in tabs.
 tab_height = "3vh"  # height of tab
+
 
 # CSS on tab when selected.
 selected_style = {
@@ -26,7 +28,7 @@ projects_tabs = html.Div(
     [
         dcc.Tabs(
             id="projects-tabs",
-            value="projects",
+            value="ppc",  # Changed default tab
             style={"height": tab_height},
             children=[
                 dcc.Tab(
@@ -42,6 +44,13 @@ projects_tabs = html.Div(
                     style=tab_style,
                     selected_style=selected_style,
                     children=[analysis_frame],
+                ),
+                dcc.Tab(
+                    label="PPC Data",
+                    value="ppc",
+                    style=tab_style,
+                    selected_style=selected_style,
+                    children=[ppcRunner_frame],
                 ),
             ],
         ),

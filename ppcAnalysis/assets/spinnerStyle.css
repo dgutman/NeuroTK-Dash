@@ -1,0 +1,15 @@
+/* Make spinners always visible in Chrome, Safari, and other WebKit 
+browsers */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+}
+
+/* Additional styling for Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+input[type="number"]::-moz-number-spin-box {
+    opacity: 1;
+}
