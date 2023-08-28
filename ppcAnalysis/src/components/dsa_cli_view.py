@@ -1,73 +1,128 @@
-from dash import html, Input, Output, State, callback, dcc, ALL
+from dash import html, dcc, Input, Output, State, ALL, callback
 from ..utils.settings import AVAILABLE_CLI_TASKS
-import json
 import dash_mantine_components as dmc
-import xml.etree.ElementTree as ET
-
 import dash_bootstrap_components as dbc
+import json
+import xml.etree.ElementTree as ET
+import dash
 
-cli_selector = html.Div(
-    [
-        dmc.Select(
-            label="Select CLI",
-            id="cli-select",
-            value="PositivePixelCount",
-            data=list(AVAILABLE_CLI_TASKS.keys()),
-            style={"maxWidth": 300},
-        ),
-        dmc.Text(id="selected-cli-task"),
-    ],
-    style={"marginLeft": "30px"},
-)
-
-
-created_component_ids = []  # List to store IDs of created components
+# Constants
+CLI_SELECTOR_STYLE = {"marginLeft": "30px"}
+CARD_CLASS = "mb-3"
+MT3_CLASS = "mt-3"
+CLI_OUTPUT_STYLE = {
+    "border": "1px solid #ddd",
+    "padding": "10px",
+    "margin-top": "10px",
+    "border-radius": "5px",
+    "box-shadow": "2px 2px 12px #aaa",
+}
 
 
-### Add a callback so I know which CLI was selected, this will obviously get fancier
+def create_cli_selector():
+    return dbc.Container(
+        [
+            dcc.Store(id="cliItems_store"),
+            dbc.Button("CLI Testing", id="getCliItems-button"),
+            dbc.Row(
+                [
+                    dmc.Select(
+                        label="Select CLI",
+                        id="cli-select",
+                        value="PositivePixelCount",
+                        data=list(AVAILABLE_CLI_TASKS.keys()),
+                        style={"maxWidth": 300},
+                    )
+                ]
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(dmc.Text(id="selected-cli-task"), width=6),
+                    dbc.Col(
+                        [
+                            html.Div("ImageID List below?"),
+                            html.Div(id="imagelist"),
+                            dmc.Text(id="imageId_List"),
+                        ],
+                        width=3,
+                    ),
+                    dcc.Store(id="cliImageList_store"),
+                    dbc.Col(
+                        dmc.Text(
+                            id="cliParam-json-output",
+                            style=CLI_OUTPUT_STYLE,
+                        ),
+                        width=3,
+                    ),
+                ]
+            ),
+        ],
+        style=CLI_SELECTOR_STYLE,
+    )
 
 
-@callback(Output("selected-cli-task", "children"), Input("cli-select", "value"))
-def show_cli_param_ui(selected_cli_task):
-    print(f"You have selected {selected_cli_task}")
-
-    ## Now that I have the xml_content I can also generate a Dash panel
-    ## Can refactor this later to either cache things locally and/or pull from the DSA
-    ## Each task has an .xml parameter that has the ungoofed up version of the task with less
-    ## additional carriage returns and other formatting
-    xml_panel, xml_content = generate_slicer_cli_xml_view(selected_cli_task)
-
-    dsa_cli_task_layout = generate_dash_layout_from_slicer_cli(xml_content)
-
-    return [
-        html.Div(f"{selected_cli_task} is currently selected"),
-        dsa_cli_task_layout,
-        # xml_panel,
-    ]
-
-
-def generate_slicer_cli_xml_view(dsa_task_name):
-    # Given a DSA task name this will dump the XML document into a panel for debugging
-
-    ## For now assuming the component name matched the XML document
-
-    with open(f"src/components/{dsa_task_name}.xml", "r") as fp:
-        xml_content = fp.read().strip()
-
-    # Add the XML display panel
-    xml_panel = html.Div(
+def generate_xml_panel(xml_content):
+    return html.Div(
         [
             html.H3("XML Document"),
             dcc.Textarea(
                 id="xml_display",
                 value=xml_content,
                 style={"width": "100%", "height": 300},
-                readOnly=True,  # Make it read-only
+                readOnly=True,
             ),
         ]
     )
 
-    return xml_panel, xml_content
+
+### Update this cliItems from the main table data.
+
+
+@callback(Output("cliItems_store", "data"), Input("itemSet_store", "data"))
+def updateCliTasks(data):
+    return data
+
+
+# @callback(Output("cliItems_store", "data"), Input("getCliItems-button", "n_clicks"))
+# def updateItemsForCLI(n_clicks):
+#     return ["123", "456", "789"]
+
+
+@callback(Output("imagelist", "children"), Input("cliItems_store", "data"))
+def displayImagesForCLI(data):
+    print("Do I ever get called?")
+    ## This gets the data from the itemSet store, it really needs to be the
+    ## filtered version based on the task you are trying to run, will be integrated
+    # print(data[0])
+    # print("I like data")
+    return dash.no_update
+    # return html.Div([x["_id"] for x in json.dumps(data)])
+
+
+def read_xml_content(dsa_task_name):
+    with open(f"src/components/{dsa_task_name}.xml", "r") as fp:
+        return fp.read().strip()
+
+
+@callback(Output("selected-cli-task", "children"), Input("cli-select", "value"))
+def show_cli_param_ui(selected_cli_task):
+    xml_content = read_xml_content(selected_cli_task)
+    xml_panel = generate_xml_panel(xml_content)
+    dsa_cli_task_layout = generate_dash_layout_from_slicer_cli(xml_content)
+
+    return [dsa_cli_task_layout]
+
+
+@callback(
+    Output("cliParam-json-output", "children"),
+    [Input({"type": "dynamic-input", "index": ALL}, "value")],
+    [State({"type": "dynamic-input", "index": ALL}, "id")],
+)
+def update_json_output(*args):
+    names = args[::2]  # Take every other item starting from 0
+    values = args[1::2]  # Take every other item starting from 1
+    result = {value["index"]: name for name, value in zip(names[0], values[0])}
+    return json.dumps(result, indent=4)
 
 
 def generate_dash_layout_from_slicer_cli(
@@ -220,76 +275,30 @@ def generate_dash_layout_from_slicer_cli(
     )
 
     # Add an area to display JSON output
-    components.append(
-        html.Div(
-            id="cli-output",
-            style={
-                "border": "1px solid #ddd",
-                "padding": "10px",
-                "margin-top": "10px",
-                "border-radius": "5px",
-                "box-shadow": "2px 2px 12px #aaa",
-            },
-        )
-    )
+    ## Currently dumping this into another component..
+    # components.append(
+    #     html.Div(
+    #         id="cli-output",
+    #         style={
+    #             "border": "1px solid #ddd",
+    #             "padding": "10px",
+    #             "margin-top": "10px",
+    #             "border-radius": "5px",
+    #             "box-shadow": "2px 2px 12px #aaa",
+    #         },
+    #     )
+    # )
 
     return dbc.Container(components, className="mt-3")
 
 
-@callback(
-    Output("cliParam-json-output", "children"),
-    [Input({"type": "dynamic-input", "index": ALL}, "value")],
-    [State({"type": "dynamic-input", "index": ALL}, "id")],
-)
-def update_json_output(*args):
-    # Map names to values
-    print("cli params output was triggered")
-
-    names = args[::2]  # Take every other item starting from 0
-    values = args[1::2]  # Take every other item starting from 1
-
-    print("Names:", names)
-    print("Values:", values)
-
-    result = {value["index"]: name for name, value in zip(names[0], values[0])}
-
-    # Convert the result to a pretty JSON string
-    json_string = json.dumps(result, indent=4)
-    return json_string
-
-
-dsa_cli_view_layout = html.Div(
+dsa_cli_view_layout = dbc.Container(
     [
-        html.Div(
-            id="cliParam-json-output",
-            style={"border": "1px solid #ddd", "padding": "10px", "margin-top": "10px"},
-        ),
-        cli_selector,
-        html.Div(json.dumps(AVAILABLE_CLI_TASKS, indent=4)),
+        dbc.Row(create_cli_selector()),
+        # html.Div(json.dumps(AVAILABLE_CLI_TASKS, indent=4)),  # This dumps the cli specs as well
     ]
 )
 
 
-# for float_param in param.findall("float"):
-#     name = (
-#         float_param.find("name").text
-#         if float_param.find("name") is not None
-#         else ""
-#     )
-#     label_text = (
-#         float_param.find("label").text
-#         if float_param.find("label") is not None
-#         else ""
-#     )
-#     default = (
-#         float_param.find("default").text
-#         if float_param.find("default") is not None
-#         else ""
-#     )
-#     param_components.extend(
-#         [
-#             html.Label(label_text),
-#             dcc.Input(id=name, value=default, type="number", readOnly=False),
-#             html.Br(),
-#         ]
-#     )
+##Creatinga temporary callback/box to display information about the images
+## That we are planning on using for the

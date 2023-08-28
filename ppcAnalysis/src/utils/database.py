@@ -5,13 +5,16 @@ import pymongo
 from pymongo import UpdateOne, DeleteMany
 from pprint import pprint
 import dash_mantine_components as dmc
+from ..utils.settings import MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
 
 # initialize the app with the extension
 
 db = MongoEngine()
 ## Since the annotations do not have a very rigid schema and have weird fields, not sure if I want a class or not
 conn = pymongo.MongoClient(MONGO_URI)
-conn = conn[MONGODB_DB]  ### Attach the mongo client object to the database I want to store everything
+conn = conn[
+    MONGODB_DB
+]  ### Attach the mongo client object to the database I want to store everything
 
 # NOTE: to delete specific collection from mongo, in CLI use:
 # "mongo" -> "use [collection_name]" -> "db.dropDatabase()"
@@ -140,21 +143,27 @@ def chunks(lst, n):
 def upsert_dsa_container_structure(containers):
     ops = []
     for container in containers:
-        ops.append(UpdateOne({"_id": container["_id"]}, {"$set": container}, upsert=True))
+        ops.append(
+            UpdateOne({"_id": container["_id"]}, {"$set": container}, upsert=True)
+        )
 
     for chunk in chunks(ops, 500):
         result = conn["dsa_container_structure"].bulk_write(chunk)
 
     return result
 
+
 def get_dsa_container_structure(filters=None):
     container_structure = list(conn["dsa_container_structure"].find({}))
     return container_structure
 
+
 def insertAnnotationData(annotationItems, projectName, debug=False):
     ### This will insert all of the annotations pulled from the DSA and also insert a projectName to keep things bundled/separate
     ## Add the projectName to all of the annotations as well
-    annotationItems = [dict(item, **{"projectName": projectName}) for item in annotationItems]
+    annotationItems = [
+        dict(item, **{"projectName": projectName}) for item in annotationItems
+    ]
     ### The collection for annotations is called.. annotations!
     print(len(annotationItems), "to be inserted or upserted into the mongo table..")
     ## See this:
@@ -206,7 +215,9 @@ def insert_records(records):
         name = record["name"]
         blockID = str(record["blockID"]) if not pd.isna(record["blockID"]) else None
         caseID = str(record["caseID"]) if not pd.isna(record["caseID"]) else None
-        regionName = str(record["regionName"]) if not pd.isna(record["regionName"]) else None
+        regionName = (
+            str(record["regionName"]) if not pd.isna(record["regionName"]) else None
+        )
         stainID = str(record["stainID"]) if not pd.isna(record["stainID"]) else None
 
         record_obj = Records(
@@ -221,7 +232,14 @@ def insert_records(records):
     print("Records inserted successfully")
 
 
+def get_all_items(projectName):
+    ## Given a project name, will grab all the items associated with it from mongo
+    projectItems = list(conn["annotationData"].find({"projectName": projectName}))
+    return projectItems
+
+
 def get_all_records_df():
+    print("Querying record database..")
     records = Records.objects.all()
     records = [record.to_dict() for record in records]
     df = pd.DataFrame(records)

@@ -14,6 +14,7 @@ from src.utils.settings import (
     APP_HOST,
     APP_PORT,
     MONGODB_SETTINGS,
+    MONGODB_DB,
 )
 
 from src.components.main_layout import app_layout
@@ -25,7 +26,7 @@ from src.utils.database import db
 server = Flask(__name__)
 
 server.config["MONGODB_SETTINGS"] = MONGODB_SETTINGS
-# print(server.config["MONGODB_SETTINGS"])
+print(server.config["MONGODB_SETTINGS"])
 with server.app_context():
     db.init_app(server)
 
