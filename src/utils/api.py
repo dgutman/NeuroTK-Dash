@@ -6,7 +6,7 @@ from PIL import Image
 from io import BytesIO
 from typing import List
 from ..utils.settings import gc
-from girder_client import GirderClient
+from girder_client import GirderClient, HttpError
 
 
 def get_neuroTK_projectDatasets(projectFolderId: str):
@@ -126,3 +126,65 @@ def get_thumbnail_as_b64(item_id=None, thumb_array=False, height=1000, encoding=
     b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
 
     return "data:image/png;base64," + b64image
+
+
+def lookup_resource(gc: GirderClient, path: str, 
+                    resource_type: str = 'collection') -> dict | None:
+    """
+    Lookup a resource by given path. You can lookup a collection, folder, or
+    user with this function.
+    
+    Args:
+        gc: Girder client.
+        path: Absolute DSA path to folder or collection (always start with 
+            collection for folders) or user to look up if resource_type is user.
+        resource_type: If looking for user set to "user" otherwise set to 
+            "collection".
+            
+    Returns:
+        Metadata dictionary for collection, folder, or user or None if not
+        found.
+    
+    """
+    if resource_type not in ('user', 'collection'):
+        raise ValueError(f'Resource type should be "user" or "collection".')
+    
+    try:
+        return gc.get(f'resource/lookup?path=%2F{resource_type}%2F{path}')
+    except HttpError:
+        return None
+    
+
+def get_datasets_list() -> List[dict]:
+    """
+    Get a list of datasets available to your user.
+
+    Returns:
+        List of dataset item information from the DSA. Includes a path key that 
+        is the username/dataset-name.
+    
+    """
+    dataset_flds = [
+        lookup_resource(gc, 'NeuroTK/Datasets/Private'),
+        lookup_resource(gc, 'NeuroTK/Datasets/Public')
+    ]
+
+    datasets = []
+
+    for fld in dataset_flds:
+        if fld:
+            # Loop through user folders.
+            for user_fld in gc.listFolder(fld['_id']):
+                for dataset_fld in gc.listItem(user_fld['_id']):
+                    dataset_fld['path'] = \
+                        f"{user_fld['name']}/{dataset_fld['name']}"
+                    
+                    datasets.append(dataset_fld)
+
+    return datasets
+
+
+def add_project_dataset():
+    """
+    Add a dataset to a project.
+    """

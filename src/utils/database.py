@@ -125,13 +125,19 @@ def getProjectDataset(
     # Get the project in collection.
     projectImages = list(collection.find({"projectName": projectName}))
 
-    if projectImages and not forceRefresh:
+
+    print(type(collection), type(projectImages[0]))
+
+    if False:#projectImages and not forceRefresh:
         # Return existing project.
         return projectImages
     else:
-        # Get data from DSA.
+        if projectImages:
+            collection.delete_many({})
 
+        # Get data from DSA.
         projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
+
         ## This is a dictionary keyed by the image itemId... needs to be flattened before mongo insert..
         ## Also don't forget to add the projectName or things will go badly
 
@@ -143,8 +149,9 @@ def getProjectDataset(
                 for imageId in projectDatasetDict
             ]
 
+            print(len(projectDataSetItems))
+
             ### Now insert the bundle into mongo
-            debug = False
             operations = []
             for a in projectDataSetItems:
                 operations.append(
@@ -155,6 +162,7 @@ def getProjectDataset(
 
             ## Going to return the just inserted item Set..
             projectImages = list(collection.find({"projectName": projectName}))
+
             return projectImages
         else:
             return None
