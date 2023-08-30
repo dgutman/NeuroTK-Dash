@@ -338,7 +338,7 @@ def submitCLItasks(n_clicks, curCLI_params, itemsToRun):
     if n_clicks:
         print("Should be running PPC on 10 items")
         ## This should return a list related to the submitted jobs
-        jobList = run_ppc(itemsToRun[:2], curCLI_params)
+        jobList = run_ppc(itemsToRun[:10], curCLI_params)
         print(len(jobList), "Jobs submitted")
 
         insertJobData(jobList, "evanPPC")
