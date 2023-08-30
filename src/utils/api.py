@@ -1,6 +1,6 @@
-import base64, json
-
+import base64
 import numpy as np
+import json
 
 from PIL import Image
 from io import BytesIO
@@ -185,7 +185,28 @@ def get_datasets_list() -> List[dict]:
     return datasets
 
 
-def add_project_dataset():
-    """
-    Add a dataset to a project.
-    """
+def run_ppc(data, params):
+    ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
+    # print(gc.token)
+    ## Test point set only running on small ROI to test code
+    points = "[5000,5000,1000,1000]"
+
+    jobStatus = []
+    for i in data:
+        item = gc.get(f"item/{i['_id']}")
+        cliInputData = {
+            "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
+            "outputLabelImage": f"{item['name']}_ppc.tiff",
+            "outputLabelImage_folder": "645a5fb76df8ba8751a8dd7d",
+            "outputAnnotationFile": f"{item['name']}_ppc.anot",
+            "outputAnnotationFile_folder": "645a5fb76df8ba8751a8dd7d",
+            "returnparameterfile": f"{item['name']}_ppc.params",
+            "returnparameterfile_folder": "645a5fb76df8ba8751a8dd7d",
+        }
+        cliInputData.update(params)
+        cliInputData["region"] = points
+        returned_val = gc.post(ppc_ext, data=cliInputData)
+        jobStatus.append(returned_val)
+    print(len(jobStatus), "jobs were submitted..")
+
+    return json.dumps(jobStatus)
