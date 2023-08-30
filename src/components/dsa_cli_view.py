@@ -6,6 +6,13 @@ import json
 import xml.etree.ElementTree as ET
 import dash
 from ..utils.api import run_ppc
+from ..utils.database import insertJobData
+
+
+## TO DO
+## Debating whether I insert stuff directly, or push to
+## a jobQueue_store or something.. this is to be determined
+
 
 # Constants
 CLI_SELECTOR_STYLE = {"marginLeft": "30px"}
@@ -328,10 +335,14 @@ def submitCLItasks(n_clicks, curCLI_params, itemsToRun):
     # print(curCLI_params)
     # print(itemsToRun[:10])
     ## I also need the list of items to submit..
-    print("Should be running PPC on 10 items")
-    run_ppc(itemsToRun[:10], curCLI_params)
+    if n_clicks:
+        print("Should be running PPC on 10 items")
+        ## This should return a list related to the submitted jobs
+        jobList = run_ppc(itemsToRun[:2], curCLI_params)
+        print(len(jobList), "Jobs submitted")
 
-    return html.Div(n_clicks)
+        insertJobData(jobList, "evanPPC")
+        return html.Div(n_clicks)
 
 
 dsa_cli_view_layout = dbc.Container(

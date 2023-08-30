@@ -148,6 +148,7 @@ def run_ppc(data, params, run=False):
         returned_val = gc.post(ppc_ext, data=cliInputData)
         jobStatus.append(returned_val)
     print(len(jobStatus), "jobs were submitted..")
+
     return json.dumps(jobStatus)
 
     # annotation_name = "gray-matter-fixed"

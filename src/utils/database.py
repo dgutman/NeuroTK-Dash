@@ -1,13 +1,15 @@
 import pandas as pd
 from flask_mongoengine import MongoEngine
 from ..utils.settings import MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
-import pymongo
+import pymongo, json
 from pymongo import UpdateOne
 from pprint import pprint
 from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets
 
 db = MongoEngine()
-mc = pymongo.MongoClient(MONGO_URI,username=MONGODB_USERNAME,password=MONGODB_PASSWORD)
+mc = pymongo.MongoClient(
+    MONGO_URI, username=MONGODB_USERNAME, password=MONGODB_PASSWORD
+)
 mc = mc[
     MONGODB_DB
 ]  ### Attach the mongo client object to the database I want to store everything
@@ -226,6 +228,16 @@ def getAnnotationNameCount(projectName):
 
 
 # -------------------------------------------------------------------------------------------------
+
+
+def insertJobData(dsaJobOutput, projectName, debug=False):
+    ### This will insert tasks run via the DSA Job Queue
+    ## This does not update!! This is the bulk insert
+    dsaJobOutput = json.loads(dsaJobOutput)
+    print(dsaJobOutput[0])
+    mc["dsaJobQueue"].insert_many(dsaJobOutput)
+
+    pass
 
 
 def insertAnnotationData(annotationItems, projectName, debug=False):
