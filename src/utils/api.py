@@ -6,26 +6,63 @@ from PIL import Image
 from io import BytesIO
 from typing import List
 from ..utils.settings import gc
-from girder_client import GirderClient
+from girder_client import GirderClient, HttpError
 
 
 def get_neuroTK_projectDatasets(projectFolderId: str):
-    ## Given a projectFolder Id, this needs to find the datasets folder, and then grab metadata
-    ## From that...
+    """
+    Get all datasets from a project.
+    
+    Args:
+        projectFolderId: DSA id of project folder.
+    """
+    # Find the project "Datasets" and "Tasks" folder.
+    dataSetsFolder = None
+    tasksFolder = None
+
     for pjf in gc.listFolder(projectFolderId):
         if pjf["name"] == "Datasets":
-            ### So the projectFolder should have metadata, and I am specifically looking for
-            #  ntkdata_ as the keys..
+            dataSetsFolder = pjf
+        elif pjf["name"] == "Tasks":
+            tasksFolder = pjf
 
-            dataSetImages = {}
-            for k in pjf.get("meta", {}).keys():
-                if k.startswith("ntkdata_"):
-                    for i in pjf["meta"][k]:
-                        dataSetImages[i["_id"]] = i
-                        ## TO DO:  JC work on merging the dictionaries instead of overwriting..
-                    ## Just return a set of itemId's that are in the project.
-            return dataSetImages
-            ## Remember this is returning a dictionary, not a list of dictionaries
+    # For any current tasks, find the list of image ids.
+    taskImageIdDict = {}  # keys: task name, values: list of image ids
+
+    if tasksFolder is not None:
+        for i in gc.listItem(tasksFolder["_id"]):
+            # Get list of images in task item from metadata.
+            taskImageList = i["meta"].get("images", {})
+
+            if taskImageList:
+                taskImageIdDict[i['name']] = taskImageList
+
+    # Get a list of images in the project dataset.
+    # Since there may be multiple datasets make sure to merge dictionaries
+    # from duplicate images.
+    dataSetImages = {}
+
+    if dataSetsFolder is not None:
+        for k in dataSetsFolder.get("meta", {}):
+            if k.startswith("ntkdata_"):
+                for i in dataSetsFolder["meta"][k]:
+                    if i['_id'] not in dataSetImages:
+                        dataSetImages[i['_id']] = {}
+
+                    dataSetImages[i["_id"]].update(i)
+
+    # For each unique task, pass a key, value pair to the image information 
+    # to assign the task to that image, start the key with "taskAssigned_".
+    for taskName, imgIds in taskImageIdDict.items():
+        for imgId in imgIds:
+            if imgId in dataSetImages:
+                dataSetImages[imgId]["taskAssigned_" + taskName] = 'Assigned'
+
+    if dataSetImages:
+        return dataSetImages
+    
+    ## Remember this is returning a dictionary, not a list of dictionaries
+    return None
 
 
 def get_projects(gc: GirderClient, fld_id: str) -> List[dict]:
@@ -90,3 +127,65 @@ def get_thumbnail_as_b64(item_id=None, thumb_array=False, height=1000, encoding=
     b64image = base64.b64encode(img_io.getvalue()).decode("utf-8")
 
     return "data:image/png;base64," + b64image
+
+
+def lookup_resource(gc: GirderClient, path: str, 
+                    resource_type: str = 'collection') -> dict | None:
+    """
+    Lookup a resource by given path. You can lookup a collection, folder, or
+    user with this function.
+    
+    Args:
+        gc: Girder client.
+        path: Absolute DSA path to folder or collection (always start with 
+            collection for folders) or user to look up if resource_type is user.
+        resource_type: If looking for user set to "user" otherwise set to 
+            "collection".
+            
+    Returns:
+        Metadata dictionary for collection, folder, or user or None if not
+        found.
+    
+    """
+    if resource_type not in ('user', 'collection'):
+        raise ValueError(f'Resource type should be "user" or "collection".')
+    
+    try:
+        return gc.get(f'resource/lookup?path=%2F{resource_type}%2F{path}')
+    except HttpError:
+        return None
+    
+
+def get_datasets_list() -> List[dict]:
+    """
+    Get a list of datasets available to your user.
+
+    Returns:
+        List of dataset item information from the DSA. Includes a path key that 
+        is the username/dataset-name.
+    
+    """
+    dataset_flds = [
+        lookup_resource(gc, 'NeuroTK/Datasets/Private'),
+        lookup_resource(gc, 'NeuroTK/Datasets/Public')
+    ]
+
+    datasets = []
+
+    for fld in dataset_flds:
+        if fld:
+            # Loop through user folders.
+            for user_fld in gc.listFolder(fld['_id']):
+                for dataset_fld in gc.listItem(user_fld['_id']):
+                    dataset_fld['path'] = \
+                        f"{user_fld['name']}/{dataset_fld['name']}"
+                    
+                    datasets.append(dataset_fld)
+
+    return datasets
+
+
+def add_project_dataset():
+    """
+    Add a dataset to a project.
+    """

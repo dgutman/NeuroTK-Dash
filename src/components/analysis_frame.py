@@ -17,7 +17,7 @@ tab3 = dbc.Card(dbc.CardBody([results]))
 analysis_frame = html.Div(
     dbc.Tabs(
         [
-            dbc.Tab(tab1, label="Tab 1", activeTabClassName="fw-bold fst-italic"),
+            dbc.Tab(tab1, label="Analysis", activeTabClassName="fw-bold fst-italic"),
             dbc.Tab(tab2, label="HistomicsUI", activeTabClassName="fw-bold fst-italic"),
             dbc.Tab(tab3, label="Report", activeTabClassName="fw-bold fst-italic"),
         ]

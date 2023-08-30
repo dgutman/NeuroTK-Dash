@@ -4,25 +4,20 @@ from dash import html
 from tqdm import tqdm
 from functools import lru_cache
 from ..utils.database import fetch_and_cache_image_thumb
+from ..utils.settings import DSA_BASE_URL, gc
 
 # This will render a set of thumbnails from a given region or case depending on what input it receives
 
 
 def genRelatedImagePanel(image_info):
     imageId = image_info["_id"]
-    print(image_info)
     stainId = image_info.get("npSchema", {}).get("stainID", "")
     regionName = image_info.get("npSchema", {}).get("regionName", "")
     image_details = f"{regionName.title()}, Stained with {stainId}"
 
-    if thumb := fetch_and_cache_image_thumb(imageId):
-        image_card_content = create_card_content(
-            image_info["name"], thumb, image_details
-        )
-    else:
-        image_card_content = create_card_content(
-            image_info["name"], None, image_details
-        )
+    image_card_content = create_card_content_withremoteimage(
+        image_info["name"], image_info["_id"], image_details
+    )
 
     card = dbc.Col(
         [
@@ -38,13 +33,10 @@ def genRelatedImagePanel(image_info):
 
 
 def generate_imageSetViewer_layout(imageDataToDisplay):
-    print(imageDataToDisplay[0])
-    # return('meh')
     ## This hsould be changed,, right now we are returning a gigantic panel with all of the data being loaded
-    ## at once, should just pass a url, or add to the panel dynamically as things load...
-
+    ## at once, should just pass a url, or add to  the panel dynamically as things load...
     imageSetViewer_layout = dbc.Row(
-        [genRelatedImagePanel(img) for img in tqdm(imageDataToDisplay)]
+        [genRelatedImagePanel(img) for img in imageDataToDisplay]
     )
     return imageSetViewer_layout
 
@@ -53,8 +45,31 @@ def generate_imageSetViewer_layout(imageDataToDisplay):
 
 
 @lru_cache(maxsize=None)
-def create_card_content(name, thumb, image_details):
-    image = dbc.CardImg(src=thumb, style={"width": 128}, top=True)
+def create_card_content(name, thumb, image_details, thumb_width=128):
+    image = dbc.CardImg(src=thumb, style={"width": thumb_width}, top=True)
+
+    card = [
+        image,
+        dbc.CardBody(
+            [
+                html.H4(name, className="card-title"),
+                html.P(image_details, className="card-text"),
+            ]
+        ),
+    ]
+
+    return card
+
+
+def get_img_url(imageId, encoding="PNG", height=128):
+    ### Given an imageId, turns this into a URL to fetch the image from a girder server
+    ## including the token
+    thumb_url = f"{DSA_BASE_URL}/item/{imageId}/tiles/thumbnail?encoding={encoding}&height={height}&token={gc.token}"
+    return thumb_url
+
+
+def create_card_content_withremoteimage(name, imgId, image_details):
+    image = dbc.CardImg(src=get_img_url(imgId), style={"width": 128}, top=True)
 
     card = [
         image,

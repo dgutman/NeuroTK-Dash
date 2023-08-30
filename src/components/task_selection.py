@@ -17,7 +17,9 @@ task_selection = html.Div(
                     align="start",
                     width="auto",
                 ),
-                dbc.Col(html.Div(Select(data=[], id="tasks-dropdown"))),
+                dbc.Col(html.Div(
+                    Select(data=[], id="tasks-dropdown", clearable=True)
+                )),
                 dbc.Col(
                     html.Div(
                         html.Button(
@@ -47,13 +49,6 @@ task_selection = html.Div(
 )
 
 
-# @callback(Output("create-task-panel", "is_open"), Input("create-task", "n_clicks"), prevent_initial_call=True)
-# def open_create_task_panel(nclicks):
-#     """ """
-#     if nclicks:
-#         return True
-
-
 @callback(
     [
         Output("tasks-dropdown", "data"),
@@ -68,12 +63,19 @@ task_selection = html.Div(
 )
 def populate_tasks(value):
     """Populate the task dropdown from the value in projects dropdown."""
-
-    tasks = [item["_id"] for item in gc.listFolder(value) if item["name"] == "Tasks"]
+    # Catch if value is None - i.e. no Project found.
+    if value:
+        tasks = [
+            item["_id"] for item in gc.listFolder(value) \
+            if item["name"] == "Tasks"
+        ]
+    else:
+        tasks = []
 
     if tasks:
         tasks = [
-            {"value": val["_id"], "label": val["name"]} for val in gc.listItem(tasks[0])
+            {"value": val["name"], "label": val["name"]}
+            for val in gc.listItem(tasks[0])
         ]
         return tasks, "", "", False
     else:
