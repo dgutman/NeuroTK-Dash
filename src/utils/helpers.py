@@ -20,7 +20,9 @@ def generate_generic_DataTable(df, id_val, col_defs={}, exportable=False):
                 },
                 columnDefs=col_defs,
                 rowData=df.to_dict("records"),
-                dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
+                dashGridOptions={
+                    "pagination": True, "paginationAutoPageSize": True
+                },
                 columnSize="sizeToFit",
                 csvExportParams={
                     "fileName": f"{id_val.replace('-', '_')}.csv",

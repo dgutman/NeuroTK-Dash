@@ -170,8 +170,7 @@ def updateProjectItemStore(
         projectItemSet = getProjectDataset(projectName, projectId, 
                                            forceRefresh=True)
         
-        print('size of projectItemSet', len(projectItemSet))
-
+        # pprint(projectItemSet)
         if projectItemSet:
             return projectItemSet
         else:
@@ -205,7 +204,12 @@ def updateProjectItemSetTable(
     """
     # If there are items read them into dataframe.
     if projectItemSet:
-        df = pd.json_normalize(projectItemSet, sep="-")
+        # df = pd.json_normalize(projectItemSet, sep='.')
+        df = pd.DataFrame(projectItemSet)
+
+        # print(df.columns)
+        # pprint(projectItemSet)
+        # df = pd.json_normalize(projectItemSet, sep="-")
 
         # If task is selected then filter by the task.
         if selectedTask:
