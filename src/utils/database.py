@@ -125,7 +125,7 @@ def getProjectDataset(
     # Get the project in collection.
     projectImages = list(collection.find({"projectName": projectName}))
 
-    if False:#projectImages and not forceRefresh:
+    if projectImages and not forceRefresh:
         # Return existing project.
         return projectImages
     else:
@@ -134,8 +134,6 @@ def getProjectDataset(
 
         # Get data from DSA.
         projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
-
-        from pprint import pprint
 
         ## This is a dictionary keyed by the image itemId... needs to be flattened before mongo insert..
         ## Also don't forget to add the projectName or things will go badly
@@ -147,9 +145,9 @@ def getProjectDataset(
                 dict(projectDatasetDict[imageId], **{"projectName": projectName})
                 for imageId in projectDatasetDict
             ]
-
-            # pprint(projectDataSetItems)
-
+            
+            """Snippet of code that replaces "." with "-" when in the key of 
+            dictionary."""
             for i in range(len(projectDataSetItems)):
                 d = projectDataSetItems[i]
 
@@ -177,7 +175,6 @@ def getProjectDataset(
             ## Going to return the just inserted item Set..
             projectImages = list(collection.find({"projectName": projectName}))
 
-            # pprint(projectImages)
             return projectImages
         else:
             return None

@@ -14,7 +14,7 @@ def generate_generic_DataTable(df, id_val, col_defs={}, exportable=False):
                 defaultColDef={
                     "filter": "agSetColumnFilter",
                     "editable": True,
-                    "flex": 1,
+                    # "flex": 1,
                     "filterParams": {"debounceMs": 2500},
                     "floatingFilter": True,
                 },
@@ -23,7 +23,7 @@ def generate_generic_DataTable(df, id_val, col_defs={}, exportable=False):
                 dashGridOptions={
                     "pagination": True, "paginationAutoPageSize": True
                 },
-                columnSize="sizeToFit",
+                # columnSize="sizeToFit",
                 csvExportParams={
                     "fileName": f"{id_val.replace('-', '_')}.csv",
                 }

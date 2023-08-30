@@ -4,44 +4,13 @@ import dash_bootstrap_components as dbc
 from typing import List
 import pandas as pd
 import dash_ag_grid as dag
-from pprint import pprint
-import json
 
 from ..utils.database import getProjectDataset
 from ..utils.helpers import generate_generic_DataTable
 from .dataView_component import generateDataViewLayout
+from .add_dataset_popup import add_dataset_popup
 from ..utils.settings import gc
 from ..utils.api import get_datasets_list
-
-add_dataset_popup = dbc.Modal(
-    [
-        dbc.ModalHeader('Add Dataset'),
-        dbc.ModalBody([
-            dbc.Row([
-                dbc.Col(
-                    dmc.Select([], id='dataset-dropdown', clearable=True), 
-                    width='auto', 
-                ),
-                dbc.Col(
-                    html.Button(
-                        'Add selected dataset', disabled=True, 
-                        id='add-dataset-bn', title='add dataset to project'
-                    ),
-                    width='auto', align="end"
-                )
-            ]),
-            html.Br(),
-            dmc.Textarea(
-                placeholder='Dataset metadata.', autosize=True,
-                id='dataset-info'    
-            ),
-            dmc.Textarea(id='second-text-area', autosize=True)
-        ])
-    ],
-    id='add-dataset-popup',
-    is_open=False,
-    fullscreen=False
-)
 
 
 dataset_view = html.Div(
@@ -56,7 +25,8 @@ dataset_view = html.Div(
                         dmc.Tab("Table", value="table"),
                         dmc.Tab("Images", value="images"),
                         html.Button(
-                            '+ Dataset', id='add-dataset', title='Add dataset'
+                            '+ Dataset', id='add-dataset', title='Add dataset',
+                            style={'background': '#7df097'}
                         )
                     ]
                 ),
@@ -133,30 +103,34 @@ def updateProjectItemStore(
     """
     if projectId:
         # Update project "add dataset button" was clicked.
-        # if n_clicks:
-        #     refresh_mongo = True
+        if n_clicks:
+            refresh_mongo = True
 
-        #     # Get the dataset selected to add.
-        #     meta = {}
+            # Get the dataset selected to add.
+            meta = {}
 
-        #     for dst in datasetStore:
-        #         if dst['_id'] == dataset:
-        #             meta[f"ntkdata_{dst['name']}"] = dst['meta']['data']
+            for dst in datasetStore:
+                if dst['_id'] == dataset:
+                    meta[f"ntkdata_{dst['name']}"] = dst['meta']['data']
 
-        #     # Get the current project info.
-        #     if meta:
-        #         for project in projectStore:
-        #             if project['_id'] == projectId:
-        #                 # List the Datasets folders.
-        #                 for fld in gc.listFolder(project['_id']):
-        #                     if fld['name'] == 'Datasets':
-        #                         # Add the dataset
-        #                         pprint('hello world')
-        #                         print(meta)
-        #                         _ = gc.addMetadataToFolder(fld['_id'], 
-        #                                                    metadata=meta)
-        # else:
-        #     refresh_mongo = False
+            # Get the current project info.
+            if meta:
+                for project in projectStore:
+                    if project['_id'] == projectId:
+                        # List the Datasets folders.
+                        flds = {
+                            fld['name']: fld for fld in \
+                            list(gc.listFolder(project['_id']))
+                        }
+
+                        if 'Datasets' not in flds:
+                            fld = gc.createFolder(projectId, 'Datasets')
+                        else:
+                            fld = flds['Datasets']
+                        
+                        _ = gc.addMetadataToFolder(fld['_id'], metadata=meta)
+        else:
+            refresh_mongo = False
 
         # Get the name of the project.
         projectName = None
@@ -168,9 +142,8 @@ def updateProjectItemStore(
 
         # Get the project items (images) from the Project folder.
         projectItemSet = getProjectDataset(projectName, projectId, 
-                                           forceRefresh=True)
+                                           forceRefresh=refresh_mongo)
         
-        # pprint(projectItemSet)
         if projectItemSet:
             return projectItemSet
         else:
@@ -204,12 +177,7 @@ def updateProjectItemSetTable(
     """
     # If there are items read them into dataframe.
     if projectItemSet:
-        # df = pd.json_normalize(projectItemSet, sep='.')
         df = pd.DataFrame(projectItemSet)
-
-        # print(df.columns)
-        # pprint(projectItemSet)
-        # df = pd.json_normalize(projectItemSet, sep="-")
 
         # If task is selected then filter by the task.
         if selectedTask:
@@ -261,84 +229,3 @@ def updateDataView(projectItemSet):
         imageDataView_panel = generateDataViewLayout(projectItemSet)
         return imageDataView_panel
     return html.Div()
-
-
-@callback(
-    Output('add-dataset-popup', 'is_open'),
-    Input('add-dataset', 'n_clicks'),
-    [
-        State('projects-store', 'data'),
-        State('projects-dropdown', 'value')
-    ],
-    prevent_initial_call=True
-)
-def open_add_dataset_popup(n_clicks: int, data, value) -> bool:
-    """
-    Open the add dataset popup and populate the select with available
-    datasets.
-    
-    Args:
-        n_clicks: Number of times button has been clicked.
-
-    Returns:
-        Always returns True to open up the menu.
-    """
-    if n_clicks:
-        return True
-    
-
-@callback(
-    Output('dataset-dropdown', 'data'),
-    Input('dataset-item-store', 'data')
-)
-def populate_dataset_dropdown(data: List[dict]) -> List[dict]:
-    """
-    Populate the Dataset dropdown when the dataset item store changes.
-
-    Args:
-        data: List of dictionaries with metadata on the datasets.
-
-    Returns:
-        List of dictionaries with value key (id of the dataset item) and 
-        label key (user name and dataset name).
-    
-    """
-    # Populate the dropdown.
-    options = []
-
-    for dataset in data:
-        options.append({'value': dataset['_id'], 'label': dataset['path']})
-
-    return options
-
-
-@callback(
-    [
-        Output('dataset-info', 'value'),
-        Output('add-dataset-bn', 'disabled')
-    ],
-    Input('dataset-dropdown', 'value'),
-    State('dataset-item-store', 'data'),
-    prevent_initial_call=True
-)
-def populate_dataset_info(value, data):
-    """
-    
-    """
-    for dataset in data:
-        if dataset['_id'] == value:
-            # Found the dataset, return its description.
-            if dataset['description']:
-                string = f"Description: {dataset['description']}"
-
-                # string += f'Filters:\n{json.dumps()}'
-                if 'meta' in dataset and 'filters' in dataset['meta']:
-                    string += '\n\nFilters:\n'
-
-                    for k, v in dataset['meta']['filters'].items():
-                        string += f'  {k}: {v}\n'
-                return string, False
-            else:
-                return 'No description for dataset found.', False
-    
-    return '', True

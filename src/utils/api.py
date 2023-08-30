@@ -59,9 +59,8 @@ def get_neuroTK_projectDatasets(projectFolderId: str):
                 dataSetImages[imgId]["taskAssigned_" + taskName] = 'Assigned'
 
     if dataSetImages:
-        # from pprint import pprint
-        # pprint(dataSetImages)
         return dataSetImages
+    
     ## Remember this is returning a dictionary, not a list of dictionaries
     return None
 

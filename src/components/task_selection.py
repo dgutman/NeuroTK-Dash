@@ -17,7 +17,9 @@ task_selection = html.Div(
                     align="start",
                     width="auto",
                 ),
-                dbc.Col(html.Div(Select(data=[], id="tasks-dropdown"))),
+                dbc.Col(html.Div(
+                    Select(data=[], id="tasks-dropdown", clearable=True)
+                )),
                 dbc.Col(
                     html.Div(
                         html.Button(
