@@ -52,7 +52,6 @@ try:
 except KeyError:
     USER = 'Could not match API token to user.'
 
-JC_WINDOWS = True
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
 
@@ -62,7 +61,7 @@ if is_docker():
     MONGODB_PORT = os.environ.get("MONGODB_PORT", 27017)
     MONGODB_DB = os.environ.get("MONGODB_DB", "dsaCache")
     APP_IN_DOCKER = True
-elif JC_WINDOWS:
+elif os.environ.get("WINDOWS", None):
     MONGO_URI = "localhost"
     MONGODB_USERNAME = "docker"
     MONGODB_PASSWORD = "docker"
