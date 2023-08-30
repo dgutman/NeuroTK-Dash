@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<executable>
+  <category>npFxns</category>
+  <title>NFT Detection</title>
+  <description>Detect NFTs using object dection deep learning model.</description>
+  <version>0.1.0</version>
+  <license>Apache 2.0</license>
+  <contributor>Juan Carlos Vizcarra</contributor>
+  <parameters>
+    <label>IO</label>
+    <description>Input/output parameters</description>
+    <image>
+      <name>in_file</name>
+      <label>Input image</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>Input image</description>
+    </image>
+    <region shapes="rectangle,polygon,multipolygon">
+      <name>region</name>
+      <label>Analysis Regions</label>
+      <longflag>region</longflag>
+      <description>Regions to apply analysis.  This is either -1,-1,-1,-1 for the whole image, or a four-element vector in the format 
+"left, top, width, height", or a list of four or more x,y vertices to specify a polygon.</description>
+      <default>-1,-1,-1,-1</default>
+    </region>
+    <float>
+      <name>lr_res_mag</name>
+      <label>Low Resolution Mask Magnification.</label>
+      <index>1</index>
+      <description>A mask of the regions to analyze is created at low resolution.</description>
+      <default>1.25</default>
+    </float>
+    <integer>
+      <name>stride</name>
+      <label>Stride</label>
+      <index>2</index>
+      <description>Stride to use when tiling.</description>
+      <default>960</default>
+    </integer>
+    <integer>
+      <name>tile_size</name>
+      <label>Tile size</label>
+      <index>3</index>
+      <description>Tile size, size of image when predicting.</description>
+      <default>1280</default>
+    </integer>
+    <integer>
+      <name>nproc</name>
+      <label>Number of processes</label>
+      <index>4</index>
+      <description>Number of processes to use when tiling.</description>
+      <default>10</default>
+    </integer>
+    <float>
+      <name>conf_thr</name>
+      <label>Confidence threshold</label>
+      <index>5</index>
+      <description>Confidence threshold when keeping predictions.</description>
+      <default>0.2</default>
+    </float>
+    <float>
+      <name>nms_iou_thr</name>
+      <label>NMS IoU Threshold</label>
+      <index>6</index>
+      <description>Non-max-suppression IoU threshold.</description>
+      <default>0.4</default>
+    </float>
+    <float>
+      <name>contained_thr</name>
+      <label>Contained Threshold</label>
+      <index>7</index>
+      <description>Threshold used when removing boxes contained in others.</description>
+      <default>0.7</default>
+    </float>
+    <file fileExtensions=".anot" reference="in_file">
+      <name>nftAnnotationFile</name>
+      <label>Output NFT Annotation File</label>
+      <description>Output NFT annotation file (*.anot)</description>
+      <channel>output</channel>
+      <index>8</index>
+    </file>
+  </parameters>
+
+  <parameters advanced="true">
+    <label>Girder API URL and Key</label>
+    <description>A Girder API URL and token for Girder client</description>
+    <string>
+      <name>girderApiUrl</name>
+      <longflag>api-url</longflag>
+      <label>Girder API URL</label>
+      <description>A Girder API URL (e.g., https://girder.example.com:443/api/v1)</description>
+      <default></default>
+    </string>
+    <string>
+      <name>girderToken</name>
+      <longflag>girder-token</longflag>
+      <label>Girder Token</label>
+      <description>A Girder token</description>
+      <default></default>
+    </string>
+  </parameters>
+</executable>
+
+
