@@ -3,6 +3,7 @@ import dash_mantine_components as dmc
 
 from .projects_frame import projects_frame
 from .analysis_frame import analysis_frame
+from .ppcAnalysis import ppcRunner_frame
 
 projects_tabs = html.Div([
     dmc.Tabs([

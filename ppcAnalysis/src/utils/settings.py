@@ -1,17 +1,11 @@
-# DSA settings.
-import os, girder_client
+# package imports
+import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Load .env variables to environment.
-load_dotenv(dotenv_path='src/.env', override=True)
 
-
+## Adding code that if I am not running in a docker environment, it will use different MONGO_DB Credentials
 def is_docker():
-    """
-    Adding code that if I am not running in a docker environment, it will use 
-    different MONGO_DB Credentials.
-    """
     cgroup = Path("/proc/self/cgroup")
     return (
         Path("/.dockerenv").is_file()
@@ -20,39 +14,18 @@ def is_docker():
     )
 
 
+cwd = os.getcwd()
+dotenv_path = os.path.join(cwd, "src", os.getenv("ENVIRONMENT_FILE", ".env"))
+load_dotenv(dotenv_path=dotenv_path, override=True)
+
 APP_HOST = os.environ.get("HOST")
 APP_PORT = int(os.environ.get("PORT", 5000))
 DEV_TOOLS_PROPS_CHECK = bool(os.environ.get("DEV_TOOLS_PROPS_CHECK"))
 API_KEY = os.environ.get("API_KEY", None)
-DSA_BASE_URL = os.environ.get("DSA_BASE_URL", None)
+DSA_BASE_Url = os.environ.get("DSA_BASE_Url", None)
 ROOT_FOLDER_ID = os.environ.get("ROOT_FOLDER_ID", None)
 ROOT_FOLDER_TYPE = os.environ.get("ROOT_FOLDER_TYPE", None)
 
-AVAILABLE_CLI_TASKS = {
-    'PositivePixelCount': 'PPC',
-    'nft_detection': 'Detect Pre-NFTs & iNFTs'
-}
-
-PROJECTS_ROOT_FOLDER_ID = os.environ.get(
-    "PROJECTS_ROOT_FOLDER_ID", "64dbd2667920606b462e5b83"
-)
-
-# Authenticate a girder client from API token in .env.
-gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
-gc.authenticate(apiKey=API_KEY)
-
-# Get the information from current token.
-token_info = gc.get('token/current')
-
-# Find the user ID that owns the token.
-try:
-    for user_info in token_info['access']['users']:
-        USER = gc.getUser(user_info['id'])['login']
-        break
-except KeyError:
-    USER = 'Could not match API token to user.'
-
-JC_WINDOWS = True
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
 
@@ -62,14 +35,7 @@ if is_docker():
     MONGODB_PORT = os.environ.get("MONGODB_PORT", 27017)
     MONGODB_DB = os.environ.get("MONGODB_DB", "dsaCache")
     APP_IN_DOCKER = True
-elif JC_WINDOWS:
-    MONGO_URI = "localhost"
-    MONGODB_USERNAME = "docker"
-    MONGODB_PASSWORD = "docker"
-    MONGODB_HOST = "localhost"
-    MONGODB_PORT = 27017
-    MONGODB_DB = "dsaCache"
-    APP_IN_DOCKER = False
+
 else:
     MONGO_URI = "localhost"
     MONGODB_USERNAME = None
@@ -78,6 +44,16 @@ else:
     MONGODB_PORT = 27017
     MONGODB_DB = "dsaCache"
     APP_IN_DOCKER = False
+
+
+## Create a single dictionary containing all the MONGODB_SETTINGS
+MONGODB_SETTINGS = {
+    "host": MONGODB_HOST,
+    "username": MONGODB_USERNAME,
+    "password": MONGODB_PASSWORD,
+    "port": int(MONGODB_PORT),
+    "db": MONGODB_DB,
+}  # Replace with your MongoDB connection URI
 
 
 AVAILABLE_CLI_TASKS = {
