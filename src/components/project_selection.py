@@ -3,11 +3,13 @@ This div should contain the project selection functionality including the
 dropdown menu to select available projects to the user, and the ability to
 create new projects via button.
 """
-from dash import html, dcc, Output, Input, callback
-from ..utils.api import get_projects
-from ..utils.settings import gc, PROJECTS_ROOT_FOLDER_ID
+from dash import html, dcc, Output, Input, callback, State
 from dash_mantine_components import Select
 import dash_bootstrap_components as dbc
+
+from .create_project_popup import create_project_popup
+from ..utils.api import get_projects
+from ..utils.settings import gc, PROJECTS_ROOT_FOLDER_ID, USER
 
 project_selection = html.Div(
     [
@@ -28,6 +30,7 @@ project_selection = html.Div(
                         html.Button(
                             [html.I(className="fa-solid fa-plus")],
                             title="create new project",
+                            id='open-create-project-bn'
                         )
                     ),
                     align="end",
@@ -46,6 +49,7 @@ project_selection = html.Div(
                 ),
             ]
         ),
+        create_project_popup
     ],
     id="project-selection",
 )
@@ -54,7 +58,6 @@ project_selection = html.Div(
 @callback(
     [
         Output("projects-dropdown", "data"),
-        Output("projects-dropdown", "value"),
         Output("projects-dropdown", "placeholder"),
         Output("delete-project", "disabled"),
     ],
@@ -65,6 +68,6 @@ def populate_projects(data):
     options = [{"value": project["_id"], "label": project["key"]} for project in data]
 
     if len(options):
-        return options, options[0]["value"], "", False
+        return options, "", False
     else:
-        return [], "", "No projects found.", True
+        return [], "No projects found.", True
