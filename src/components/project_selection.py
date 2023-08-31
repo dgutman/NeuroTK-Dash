@@ -15,8 +15,9 @@ project_selection = html.Div(
     [
         dcc.Store(
             id="projects-store",
-            data=get_projects(gc, PROJECTS_ROOT_FOLDER_ID),
+            # data=get_projects(gc, PROJECTS_ROOT_FOLDER_ID),
         ),
+        html.Div(id='load-project-store'),
         dbc.Row(
             [
                 dbc.Col(
@@ -24,7 +25,10 @@ project_selection = html.Div(
                     align="start",
                     width="auto",
                 ),
-                dbc.Col(html.Div(Select(data=[], id="projects-dropdown"))),
+                dbc.Col(Select(
+                    data=[], id="projects-dropdown", 
+                    placeholder='No project selected.'
+                )),
                 dbc.Col(
                     html.Div(
                         html.Button(
@@ -56,18 +60,29 @@ project_selection = html.Div(
 
 
 @callback(
-    [
-        Output("projects-dropdown", "data"),
-        Output("projects-dropdown", "placeholder"),
-        Output("delete-project", "disabled"),
-    ],
+    Output('projects-store', 'data'),
+    Input('load-project-store', 'children')
+)
+def start_store(_):
+    """
+    This is a simple trigger function that will initiate store loading.
+    """
+    return get_projects(gc, PROJECTS_ROOT_FOLDER_ID)
+
+
+@callback(
+    Output("projects-dropdown", "data"),
     Input("projects-store", "data"),
 )
 def populate_projects(data):
-    """Add values to the project dropdown."""
-    options = [{"value": project["_id"], "label": project["key"]} for project in data]
+    """
+    Populate the projects dropdown.
+    """    
+    options = [
+        {"value": project["_id"], "label": project["key"]} for project in data
+    ]
 
     if len(options):
-        return options, "", False
+        return options
     else:
-        return [], "No projects found.", True
+        return []
