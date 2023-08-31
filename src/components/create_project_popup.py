@@ -61,15 +61,29 @@ create_project_popup = dbc.Modal(
 )
 def open_create_project_popup(n_clicks):
     """
-    
+    Open the window for creating new projects.
+
     """
     if n_clicks:
         return True
     
 
 @callback(
+    Output('create-project-bn', 'disabled'),
+    Input('new-project-name', 'value'),
+    prevent_initial_call=True
+)
+def disable_create_project_bn(value):
+    """
+    Disable or enable button for creating new project.
+
+    """
+    return False if value else True
+    
+
+@callback(
     [
-        Output('projects-store', 'data'),
+        Output('projects-store', 'data', allow_duplicate=True),
         Output('create-project-popup', 'is_open', allow_duplicate=True),
         Output('create-project-alert', 'hide'),
     ],
@@ -83,7 +97,8 @@ def open_create_project_popup(n_clicks):
 )
 def create_new_project(n_clicks, data, state, value):
     """
-    Create a new project.
+    Logic for creating a new project.
+
     """
     if n_clicks:
         # Check list of project names
@@ -105,7 +120,11 @@ def create_new_project(n_clicks, data, state, value):
             # Create the project folder.
             _ = gc.createFolder(user_fld['_id'], value)
 
-            return get_projects(gc, PROJECTS_ROOT_FOLDER_ID), False, True
+            from pprint import pprint
+            jc = get_projects(gc, PROJECTS_ROOT_FOLDER_ID)
+            # pprint(jc)
+
+            return jc, False, True
         
     return data if len(data) else [], False, True
 
@@ -124,18 +143,6 @@ def alert_existing_project(hide, value):
 
 
 @callback(
-    Output('create-project-bn', 'disabled'),
-    Input('new-project-name', 'value'),
-    prevent_initial_call=True
-)
-def disable_create_project_bn(value):
-    """
-    Disable or enable button for creating new project.
-    """
-    return False if value else True
-
-
-@callback(
     [
         Output('projects-dropdown', 'value'),
         Output('new-project-name', 'value')
@@ -146,6 +153,10 @@ def disable_create_project_bn(value):
     State('projects-dropdown', 'value')
 )
 def update_dropdown_value(data, value, hide, selected_project):
+    """
+    Update the value of the project dropdown.
+    
+    """
     if value:
         if not hide:
             return selected_project, value
