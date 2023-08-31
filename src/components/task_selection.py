@@ -69,7 +69,13 @@ task_selection = html.Div(
 def populate_tasks(value):
     """Populate the task dropdown from the value in projects dropdown."""
 
-    tasks = [item["_id"] for item in gc.listFolder(value) if item["name"] == "Tasks"]
+    ## blank tasks or tasks with no items are causing an issue.. not sure where though
+    try:
+        tasks = [
+            item["_id"] for item in gc.listFolder(value) if item["name"] == "Tasks"
+        ]
+    except:
+        return [], "", "No tasks in project.", True
 
     if tasks:
         tasks = [

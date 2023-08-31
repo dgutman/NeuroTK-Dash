@@ -21,7 +21,9 @@ jobQueue_frame = html.Div(
                 {"headerName": "Created", "field": "created"},
             ],
             defaultColDef={"resizable": True, "sortable": True, "filter": True},
+            dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
             rowData=[],
+            columnSize="sizeToFit",
         ),
         dcc.Interval(
             id="interval-update",

@@ -15,10 +15,7 @@ from ..utils.database import getProjectDataset
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 
-import numpy as np
 import pandas as pd
-
-np.random.seed(42)
 
 
 # NOTE: There's a bug here which seems to allow multiple processes which sync down the image thumbnails to run
@@ -94,10 +91,12 @@ projects_frame = html.Div(
 def updateProjectItemStore(projectId, projectData):
     ### This updates the projectItem store, this will pull data from mongo and/or girder if not already local
     projectName = None
-    for x in projectData:
-        if x["value"] == projectId:
-            projectName = x["label"]
-    #    print(projectId, projectData, projectName)
+
+    if projectData:
+        for x in projectData:
+            if x["value"] == projectId:
+                projectName = x["label"]
+        #    print(projectId, projectData, projectName)
 
     projectItemSet = getProjectDataset(projectName, projectId)
     if projectItemSet:
@@ -130,8 +129,6 @@ def updateProjectItemSetTable(projectItemSet):
 )
 def updateProjectItemSetTable(projectItemSet):
     if projectItemSet:
-        print(len(projectItemSet))
-
         imageDataView_panel = [generate_imageSetViewer_layout(projectItemSet)]
         return imageDataView_panel
 

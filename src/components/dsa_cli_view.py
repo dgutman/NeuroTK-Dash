@@ -96,8 +96,13 @@ def generate_xml_panel(xml_content):
 ### Update this cliItems from the main table data.
 
 
+## TO DO-- DO NOT ALLOW THE CLI TO bE SUBMITTED IF THERE ARE NO ACTUAL]
+## ITEMS TO RUN.. its confusing..
+
+
 @callback(Output("cliItems_store", "data"), Input("projectItem_store", "data"))
 def updateCliTasks(data):
+    print(len(data), "Items should be in the projectCLI Item Store")
     return data
 
 
@@ -110,8 +115,10 @@ def displayImagesForCLI(data):
     # print("I like data")
     ## This is what I will dump in the imagelist for now.. will expand over time
     outputData = ""
-    for i in data[0:10]:
-        outputData += f"{i['name']},"
+
+    if data:
+        for i in data[0:10]:
+            outputData += f"{i['name']},"
 
     return html.Div(outputData)
 
@@ -335,13 +342,21 @@ def submitCLItasks(n_clicks, curCLI_params, itemsToRun):
     # print(curCLI_params)
     # print(itemsToRun[:10])
     ## I also need the list of items to submit..
-    if n_clicks:
-        print("Should be running PPC on 10 items")
-        ## This should return a list related to the submitted jobs
-        jobList = run_ppc(itemsToRun[:10], curCLI_params)
-        print(len(jobList), "Jobs submitted")
 
-        insertJobData(jobList, "evanPPC")
+    maxJobsToSubmit = 20
+
+    if n_clicks:
+        print("Should be running PPC on some items")
+        ## This should return a list related to the submitted jobs
+        if itemsToRun:
+            jobList = run_ppc(itemsToRun[:maxJobsToSubmit], curCLI_params)
+            # print(len(json.loads(jobList)), "Jobs submitted")
+            print("----Returned job list ----")
+            print(jobList)
+            insertJobData(jobList, "evanPPC")
+        else:
+            print("No items were set to run..")
+
         return html.Div(n_clicks)
 
 

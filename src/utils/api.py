@@ -5,8 +5,22 @@ import numpy as np
 from PIL import Image
 from io import BytesIO
 from typing import List
-from ..utils.settings import gc
+from ..utils.settings import (
+    gc,
+    MONGODB_DB,
+    MONGODB_USERNAME,
+    MONGODB_PASSWORD,
+    MONGO_URI,
+)
 from girder_client import GirderClient
+import pymongo
+
+
+## TO REFACTOR.. this should probably be in the settings or config?
+mc = pymongo.MongoClient(
+    MONGO_URI, username=MONGODB_USERNAME, password=MONGODB_PASSWORD
+)
+mc = mc[MONGODB_DB]  ### A
 
 
 def get_neuroTK_projectDatasets(projectFolderId: str):
@@ -125,31 +139,88 @@ def get_points(rois, delineator=["-1, -1"]):
     return points
 
 
+def find_job_record(search_dict):
+    # Initialize MongoDB client
+    collection = mc["dsaJobQueue"]
+    # Prepare the query. You might need to adjust this to your specific needs
+
+    ## TO DO.. figure out why the job Queue elements are making integers into strings..
+
+    ## Need to cast all the values to a string and also add the _original_params to the key
+    str_search_dict = {f"_original_params.{k}": str(v) for k, v in search_dict.items()}
+
+    ## KNOWLEDGE:  So the original_params are only returned by the job submission function
+    ## IT does not appear these are directly embedded in an actual job Item on the DSA itself..
+    ## Neer to verify this behavior with Manthey
+
+    # str_search_dict = {f"_original_params.{k}": v for k, v in search_dict.items()}
+
+    # Search for the record
+    matching_record = collection.find_one(str_search_dict)
+
+    if matching_record:
+        # print(f"Found a matching record: {matching_record['_id']}")
+        return matching_record
+    else:
+        ## Uncomment to debug job execution
+        # print("No matching record found.")
+        # print(str_search_dict)
+        return None
+
+
 def run_ppc(data, params, run=False):
     ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
+    print("Trying to run ppc and call this function.")
     # print(gc.token)
     ## Test point set only running on small ROI to test code
     points = "[5000,5000,1000,1000]"
 
-    jobStatus = []
-    for i in data:
-        item = gc.get(f"item/{i['_id']}")
-        cliInputData = {
-            "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
-            "outputLabelImage": f"{item['name']}_ppc.tiff",
-            "outputLabelImage_folder": "645a5fb76df8ba8751a8dd7d",
-            "outputAnnotationFile": f"{item['name']}_ppc.anot",
-            "outputAnnotationFile_folder": "645a5fb76df8ba8751a8dd7d",
-            "returnparameterfile": f"{item['name']}_ppc.params",
-            "returnparameterfile_folder": "645a5fb76df8ba8751a8dd7d",
-        }
-        cliInputData.update(params)
-        cliInputData["region"] = points
-        returned_val = gc.post(ppc_ext, data=cliInputData)
-        jobStatus.append(returned_val)
-    print(len(jobStatus), "jobs were submitted..")
+    maskName = []
 
-    return json.dumps(jobStatus)
+    ### NOTE That this is not checking if the image has largeImage set...
+    ## This also needs to throw an error
+
+    jobStatus = []
+    alreadyRan = []
+    for i in data:
+        try:
+            item = gc.get(f"item/{i['_id']}")
+
+            ### NEED TO THROW AN ERROR PERHAPS IF THE SUBMISSION FAILS?
+            ## TO DO
+
+            cliInputData = {
+                "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
+                "outputLabelImage": f"{item['name']}_ppc.tiff",
+                "outputLabelImage_folder": "645a5fb76df8ba8751a8dd7d",
+                "outputAnnotationFile": f"{item['name']}_ppc.anot",
+                "outputAnnotationFile_folder": "645a5fb76df8ba8751a8dd7d",
+                "returnparameterfile": f"{item['name']}_ppc.params",
+                "returnparameterfile_folder": "645a5fb76df8ba8751a8dd7d",
+            }
+            cliInputData.update(params)
+            cliInputData["region"] = points
+            ## ADD LOGIC HERE TO PREVENT JOBS FROM RERUNNING
+            ## Also don't forget to add an override if flag
+
+            # TO DO, can probably combine the streams of submitted vs cached..
+
+            if not find_job_record(cliInputData):
+                returned_val = gc.post(ppc_ext, data=cliInputData)
+                # print(returned_val)
+                jobStatus.append(returned_val)
+            else:
+                alreadyRan.append(cliInputData)
+            # print("-----DATA FOR CLI BELOW----")
+            # print(cliInputData)
+        except:
+            print("Item Failed ..", i)
+
+    print(len(jobStatus), "jobs were submitted..")
+    print(len(alreadyRan), "jobs were present in the cache")
+    ## FIX HERE... SEE IF THIS WHERE THE JOB STATUS is getting modified
+
+    return jobStatus
 
     # annotation_name = "gray-matter-fixed"
     annotation_name = "gray-matter-fixed"

@@ -2,6 +2,49 @@
 import os, girder_client
 from dotenv import load_dotenv
 from pathlib import Path
+import dash
+import diskcache
+from dash.long_callback import DiskcacheLongCallbackManager
+import dash_bootstrap_components as dbc
+
+
+cache = diskcache.Cache("./neurotk-cache")
+lcm = DiskcacheLongCallbackManager(cache)
+
+
+## This creates a single dash instance that I can access from multiple modules
+class SingletonDashApp:
+    _instance = None
+
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super(SingletonDashApp, cls).__new__(cls)
+
+            # Initialize your Dash app here
+            cls._instance.app = dash.Dash(
+                __name__,
+                external_stylesheets=[
+                    dbc.themes.BOOTSTRAP,
+                    dbc.icons.FONT_AWESOME,
+                ],
+                title="NeuroTK Dashboard",
+                long_callback_manager=lcm,
+            )
+        return cls._instance
+
+
+### Creating a cache to allow for async callbacks
+## May migrate to REDIS at some point ,for now using disk
+
+cache = diskcache.Cache("./neurotk-cache-directory")
+background_callback_manager = dash.DiskcacheManager(cache)
+
+
+# app = dash.Dash(__name__)
+# cache = Cache(app.server, config={
+#     'CACHE_TYPE': 'diskcache.DiskCache'
+# })
+# long_callback_manager = DiskcacheLongCallbackManager(cache)
 
 
 ## Adding code that if I am not running in a docker environment, it will use different MONGO_DB Credentials

@@ -19,6 +19,106 @@ mc = mc[
 # or mc.collection.drop()
 
 
+# def find_job_record_by_cli_params(search_dict):
+#     ## I want to add functionality that will make sure a job is not already submitted
+#     ## and / or pending to avoid submitting the same exact task over and over
+#     ## NOte, this shuold be overridable in case something weird happened to a job
+#     ## Sometimes they actually don't really complete
+#     # Initialize MongoDB client
+
+#     collection = mc["jobQueue"]
+
+#     # Prepare the query. You might need to adjust this to your specific needs
+#     query = {
+#         "kwargs.container_args": {
+#             "$all": [
+#                 {"$elemMatch": {"$eq": f"--{key}"}},
+#                 {"$elemMatch": {"$eq": str(value)}},
+#             ]
+#             for key, value in search_dict.items()
+#         }
+#     }
+
+#     # Search for the record
+#     matching_record = collection.find_one(query)
+
+#     if matching_record:
+#         print(f"Found a matching record: {matching_record}")
+#         return matching_record
+#     else:
+#         print("No matching record found.")
+#         return None
+
+
+def getElementSizeForAnnotations(annotation):
+    """Not Named well, but this will get the sum of the lengths of the elements.points arrays in all of the annotation documents"""
+    # Define the aggregation pipeline
+    collection = mc["annotationData"]
+    pipeline = [
+        {"$match": {"annotation.name": "gray-matter-fixed"}},
+        {
+            "$project": {
+                "annotationName": 1,
+                "totalPoints": {
+                    "$cond": [
+                        {
+                            "$and": [
+                                {"$isArray": "$annotation.elements"},
+                                {"$gt": [{"$size": "$annotation.elements"}, 0]},
+                            ]
+                        },
+                        {
+                            "$sum": {
+                                "$map": {
+                                    "input": "$annotation.elements",
+                                    "as": "element",
+                                    "in": {
+                                        "$cond": [
+                                            {"$isArray": "$$element.points"},
+                                            {"$size": "$$element.points"},
+                                            0,
+                                        ]
+                                    },
+                                }
+                            }
+                        },
+                        0,
+                    ]
+                },
+            }
+        },
+    ]
+
+    # pipeline = [
+    #     {"$match": {"annotation.name": annotation}},
+    #     {
+    #         "$project": {
+    #             "annotationName": 1,
+    #             "totalPoints": {
+    #                 "$sum": {
+    #                     "$map": {
+    #                         "input": "$annotation.elements",
+    #                         "as": "element",
+    #                         "in": {"$size": "$$element.points"},
+    #                     }
+    #                 }
+    #             },
+    #         }
+    #     },
+    # ]
+
+    # Execute the aggregation pipeline
+    results = list(collection.aggregate(pipeline))
+
+    totalPointCounts = []
+    print(results[0])
+    # Print or further process the results
+    for result in results:
+        print(f"Document ID: {result['_id']}, Total Points: {result['totalPoints']}")
+        totalPointCounts.append(int(result["totalPoints"]))
+    return totalPointCounts
+
+
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
@@ -218,11 +318,28 @@ def getAnnotationNameCount(projectName):
 
     # Define the aggregation pipeline
     pipeline = [
-        {"$group": {"_id": "$annotation.name", "count": {"$sum": 1}}},
-        {"$project": {"annotationName": "$_id", "count": 1, "_id": 0}},
-        {"$sort": {"count": -1}},
+        {
+            "$group": {
+                "_id": "$annotation.name",
+                "total": {"$sum": 1},
+                "with_elements": {
+                    "$sum": {
+                        "$cond": [{"$ifNull": ["$annotation.elements", False]}, 1, 0]
+                    }
+                },
+            }
+        },
+        {
+            "$project": {
+                "annotationName": "$_id",
+                "count": "$total",
+                "count_with_elements": "$with_elements",
+                "_id": 0,
+            }
+        },
     ]
-    # Execute the aggregation pipeline
+
+    # s# # Execute the aggregation pipeline
     results = list(collection.aggregate(pipeline))
     return results
 
@@ -233,11 +350,19 @@ def getAnnotationNameCount(projectName):
 def insertJobData(dsaJobOutput, projectName, debug=False):
     ### This will insert tasks run via the DSA Job Queue
     ## This does not update!! This is the bulk insert
-    dsaJobOutput = json.loads(dsaJobOutput)
-    print(dsaJobOutput[0])
-    mc["dsaJobQueue"].insert_many(dsaJobOutput)
+    ## Remember it's possible that we don't get any job output sometimes..
+    print("This is the data the insertJobData is receiving")
+    print(dsaJobOutput)
+    print(type(dsaJobOutput))
 
-    pass
+    if dsaJobOutput:
+        # dsaJobOutput = json.loads(dsaJobOutput)
+        # print(dsaJobOutput)
+        print(
+            len(dsaJobOutput), "jobs should be getting added to the dsaJobQueue table"
+        )
+
+        mc["dsaJobQueue"].insert_many(dsaJobOutput)
 
 
 def insertAnnotationData(annotationItems, projectName, debug=False):
@@ -319,3 +444,37 @@ def get_all_records_df():
     records = [record.to_dict() for record in records]
     df = pd.DataFrame(records)
     return df
+
+
+# # Call the function
+# getElementSizeForAnnotations("gray-matter-fixed")
+
+# def getElementSizeForAnnotations(annotation):
+#     """Not Named well, but this will get the length of the element field in all of the annotation documents"""
+#     # Define the aggregation pipeline
+#     collection = mc["annotationData"]
+
+#     pipeline = [
+#         {"$match": {"annotation.name": "gray-matter-fixed"}},
+#         {
+#             "$project": {
+#                 "annotationName": 1,
+#                 "elementsLength": {
+#                     "$cond": {
+#                         "if": {"$isArray": "$annotation.elements"},
+#                         "then": {"$size": "$annotation.elements"},
+#                         "else": 0,
+#                     }
+#                 },
+#             }
+#         },
+#     ]
+
+#     # Execute the aggregation pipeline
+#     results = list(collection.aggregate(pipeline))
+
+#     # Print or further process the results
+#     for result in results:
+#         print(
+#             f"Document ID: {result['_id']}, Elements Length: {result['elementsLength']}"
+#         )
