@@ -2,7 +2,7 @@
 Serves the root application layout.
 """
 import dash_bootstrap_components as dbc
-from src.components import banner, projects_tabs
+from src.components import banner, app_tabs
 
 import dash
 from dash import html
@@ -21,7 +21,7 @@ def main():
     )
 
     # Assign the layout to the app.
-    app.layout = html.Div([banner, projects_tabs])
+    app.layout = html.Div([banner, app_tabs])
 
     return app
 
@@ -29,6 +29,6 @@ def main():
 if __name__ == "__main__":
     app = main()
 
-    # To do: debug parameter may want to be set in .env or setting.py instead 
+    # To do: debug parameter may want to be set in .env or setting.py instead
     # of hard coded.
     app.run_server(debug=True, threaded=True)
