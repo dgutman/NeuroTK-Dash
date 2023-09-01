@@ -182,11 +182,9 @@ def updateProjectItemSetTable(
         # If task is selected then filter by the task.
         if selectedTask:
             taskColName = f"taskAssigned_{selectedTask}"
-
+            
             if taskColName in df:
                 df = df[df[taskColName] == "Assigned"]
-            else:
-                df = pd.DataFrame()
 
         # Drop columns with Task Assigned at the beginning.
         cols_to_drop = []
