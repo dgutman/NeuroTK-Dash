@@ -130,7 +130,7 @@ def get_thumbnail_as_b64(item_id=None, thumb_array=False, height=1000, encoding=
 
 
 def lookup_resource(gc: GirderClient, path: str, 
-                    resource_type: str = 'collection') -> dict | None:
+                    resource_type: str = 'collection'):
     """
     Lookup a resource by given path. You can lookup a collection, folder, or
     user with this function.
