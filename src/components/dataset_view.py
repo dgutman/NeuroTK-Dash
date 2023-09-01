@@ -17,7 +17,7 @@ dataset_view = html.Div(
     [
         dcc.Store("filteredItem_store"),
         dcc.Store("projectItem_store"),
-        dcc.Store('dataset-item-store', data=get_datasets_list()),
+        dcc.Store("dataset-item-store", data=get_datasets_list()),
         dmc.Tabs(
             [
                 dmc.TabsList(
@@ -25,9 +25,11 @@ dataset_view = html.Div(
                         dmc.Tab("Table", value="table"),
                         dmc.Tab("Images", value="images"),
                         html.Button(
-                            '+ Dataset', id='add-dataset', title='Add dataset',
-                            style={'background': '#7df097'}
-                        )
+                            "+ Dataset",
+                            id="add-dataset",
+                            title="Add dataset",
+                            style={"background": "#7df097"},
+                        ),
                     ]
                 ),
                 dmc.TabsPanel(
@@ -74,21 +76,22 @@ dataset_view = html.Div(
 
 @callback(
     Output("projectItem_store", "data"),
-    [
-        Input("projects-dropdown", "value"),
-        Input('add-dataset-bn', 'n_clicks')
-    ],
+    [Input("projects-dropdown", "value"), Input("add-dataset-bn", "n_clicks")],
     [
         State("projects-dropdown", "data"),
-        State('projects-store', 'data'),
-        State('dataset-dropdown', 'value'),
-        State('dataset-item-store', 'data')
+        State("projects-store", "data"),
+        State("dataset-dropdown", "value"),
+        State("dataset-item-store", "data"),
     ],
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def updateProjectItemStore(
-    projectId: str, n_clicks: int, projectData: List[dict], 
-    projectStore: List[dict], dataset: str, datasetStore: List[dict]
+    projectId: str,
+    n_clicks: int,
+    projectData: List[dict],
+    projectStore: List[dict],
+    dataset: str,
+    datasetStore: List[dict],
 ) -> List[dict]:
     """
     Updates the projects item store / mongo database when dropdown changes.
@@ -110,25 +113,25 @@ def updateProjectItemStore(
             meta = {}
 
             for dst in datasetStore:
-                if dst['_id'] == dataset:
-                    meta[f"ntkdata_{dst['name']}"] = dst['meta']['data']
+                if dst["_id"] == dataset:
+                    meta[f"ntkdata_{dst['name']}"] = dst["meta"]["data"]
 
             # Get the current project info.
             if meta:
                 for project in projectStore:
-                    if project['_id'] == projectId:
+                    if project["_id"] == projectId:
                         # List the Datasets folders.
                         flds = {
-                            fld['name']: fld for fld in \
-                            list(gc.listFolder(project['_id']))
+                            fld["name"]: fld
+                            for fld in list(gc.listFolder(project["_id"]))
                         }
 
-                        if 'Datasets' not in flds:
-                            fld = gc.createFolder(projectId, 'Datasets')
+                        if "Datasets" not in flds:
+                            fld = gc.createFolder(projectId, "Datasets")
                         else:
-                            fld = flds['Datasets']
-                        
-                        _ = gc.addMetadataToFolder(fld['_id'], metadata=meta)
+                            fld = flds["Datasets"]
+
+                        _ = gc.addMetadataToFolder(fld["_id"], metadata=meta)
         else:
             refresh_mongo = False
 
@@ -141,9 +144,10 @@ def updateProjectItemStore(
                 break
 
         # Get the project items (images) from the Project folder.
-        projectItemSet = getProjectDataset(projectName, projectId, 
-                                           forceRefresh=refresh_mongo)
-        
+        projectItemSet = getProjectDataset(
+            projectName, projectId, forceRefresh=refresh_mongo
+        )
+
         if projectItemSet:
             return projectItemSet
         else:
@@ -154,11 +158,8 @@ def updateProjectItemStore(
 
 @callback(
     Output("project-itemSet-div", "children"),
-    [
-        Input("tasks-dropdown", "value"),
-        Input("projectItem_store", "data")
-    ],
-    prevent_initial_call=True
+    [Input("tasks-dropdown", "value"), Input("projectItem_store", "data")],
+    prevent_initial_call=True,
 )
 def updateProjectItemSetTable(
     selectedTask: str, projectItemSet: List[dict]
@@ -204,22 +205,20 @@ def updateProjectItemSetTable(
     Output("filteredItem_store", "data"),
     Input("project-itemSet-table", "filterModel"),
     State("project-itemSet-table", "virtualRowData"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
-def updateFilteredItemStore(
-    filterModel, virtualRowData
-):
+def updateFilteredItemStore(filterModel, virtualRowData):
     # We update the filtered item store from changes to the table.
     if virtualRowData is not None and len(virtualRowData):
         return virtualRowData
-    
+
     return []
 
 
 @callback(
     Output("images_div", "children"),
     Input("filteredItem_store", "data"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def updateDataView(projectItemSet):
     ## Update view
