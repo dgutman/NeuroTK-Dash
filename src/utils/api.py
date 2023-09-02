@@ -12,7 +12,7 @@ from girder_client import GirderClient, HttpError
 def get_neuroTK_projectDatasets(projectFolderId: str):
     """
     Get all datasets from a project.
-    
+
     Args:
         projectFolderId: DSA id of project folder.
     """
@@ -35,7 +35,7 @@ def get_neuroTK_projectDatasets(projectFolderId: str):
             taskImageList = i["meta"].get("images", {})
 
             if taskImageList:
-                taskImageIdDict[i['name']] = taskImageList
+                taskImageIdDict[i["name"]] = taskImageList
 
     # Get a list of images in the project dataset.
     # Since there may be multiple datasets make sure to merge dictionaries
@@ -46,21 +46,21 @@ def get_neuroTK_projectDatasets(projectFolderId: str):
         for k in dataSetsFolder.get("meta", {}):
             if k.startswith("ntkdata_"):
                 for i in dataSetsFolder["meta"][k]:
-                    if i['_id'] not in dataSetImages:
-                        dataSetImages[i['_id']] = {}
+                    if i["_id"] not in dataSetImages:
+                        dataSetImages[i["_id"]] = {}
 
                     dataSetImages[i["_id"]].update(i)
 
-    # For each unique task, pass a key, value pair to the image information 
+    # For each unique task, pass a key, value pair to the image information
     # to assign the task to that image, start the key with "taskAssigned_".
     for taskName, imgIds in taskImageIdDict.items():
         for imgId in imgIds:
             if imgId in dataSetImages:
-                dataSetImages[imgId]["taskAssigned_" + taskName] = 'Assigned'
+                dataSetImages[imgId]["taskAssigned_" + taskName] = "Assigned"
 
     if dataSetImages:
         return dataSetImages
-    
+
     ## Remember this is returning a dictionary, not a list of dictionaries
     return None
 
@@ -129,45 +129,44 @@ def get_thumbnail_as_b64(item_id=None, thumb_array=False, height=1000, encoding=
     return "data:image/png;base64," + b64image
 
 
-def lookup_resource(gc: GirderClient, path: str, 
-                    resource_type: str = 'collection'):
+def lookup_resource(gc: GirderClient, path: str, resource_type: str = "collection"):
     """
     Lookup a resource by given path. You can lookup a collection, folder, or
     user with this function.
-    
+
     Args:
         gc: Girder client.
-        path: Absolute DSA path to folder or collection (always start with 
+        path: Absolute DSA path to folder or collection (always start with
             collection for folders) or user to look up if resource_type is user.
-        resource_type: If looking for user set to "user" otherwise set to 
+        resource_type: If looking for user set to "user" otherwise set to
             "collection".
-            
+
     Returns:
         Metadata dictionary for collection, folder, or user or None if not
         found.
-    
+
     """
-    if resource_type not in ('user', 'collection'):
+    if resource_type not in ("user", "collection"):
         raise ValueError(f'Resource type should be "user" or "collection".')
-    
+
     try:
-        return gc.get(f'resource/lookup?path=%2F{resource_type}%2F{path}')
+        return gc.get(f"resource/lookup?path=%2F{resource_type}%2F{path}")
     except HttpError:
         return None
-    
+
 
 def get_datasets_list() -> List[dict]:
     """
     Get a list of datasets available to your user.
 
     Returns:
-        List of dataset item information from the DSA. Includes a path key that 
+        List of dataset item information from the DSA. Includes a path key that
         is the username/dataset-name.
-    
+
     """
     dataset_flds = [
-        lookup_resource(gc, 'NeuroTK/Datasets/Private'),
-        lookup_resource(gc, 'NeuroTK/Datasets/Public')
+        lookup_resource(gc, "NeuroTK/Datasets/Private"),
+        lookup_resource(gc, "NeuroTK/Datasets/Public"),
     ]
 
     datasets = []
@@ -175,11 +174,10 @@ def get_datasets_list() -> List[dict]:
     for fld in dataset_flds:
         if fld:
             # Loop through user folders.
-            for user_fld in gc.listFolder(fld['_id']):
-                for dataset_fld in gc.listItem(user_fld['_id']):
-                    dataset_fld['path'] = \
-                        f"{user_fld['name']}/{dataset_fld['name']}"
-                    
+            for user_fld in gc.listFolder(fld["_id"]):
+                for dataset_fld in gc.listItem(user_fld["_id"]):
+                    dataset_fld["path"] = f"{user_fld['name']}/{dataset_fld['name']}"
+
                     datasets.append(dataset_fld)
 
     return datasets

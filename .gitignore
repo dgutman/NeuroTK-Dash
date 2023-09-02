@@ -163,3 +163,7 @@ cython_debug/
 .pyc
 bdsa-cache-directory*
 .DS_Store*
+
+*cache*
+.vscode/settings.json
+dsaPointCloud/src/.env.old
