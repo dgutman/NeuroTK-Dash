@@ -5,7 +5,8 @@ import dash_bootstrap_components as dbc
 import json
 import xml.etree.ElementTree as ET
 import dash
-from ..utils.api import run_ppc, submit_ppc_job
+from ..utils.api import submit_ppc_job
+from collections import Counter
 
 # from ..utils.database import insertJobData
 
@@ -79,7 +80,6 @@ def create_cli_selector():
                     ),
                     dbc.Col(
                         [
-                            html.Div("ImageID List for CLI", style=CLI_OUTPUT_STYLE),
                             html.Div(id="cliItemStats", style=CLI_OUTPUT_STYLE),
                         ],
                         width=3,
@@ -325,7 +325,6 @@ def generate_dash_layout_from_slicer_cli(
     return dbc.Container(components, className="mt-3")
 
 
-## Add temporary callback to display the CLI output...
 @app.long_callback(
     output=Output("cli-output-status", "children"),
     inputs=[
@@ -350,23 +349,23 @@ def generate_dash_layout_from_slicer_cli(
 )
 def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun):
     if n_clicks:
-        print("Entered submit CLI task box  ")
-        print(n_clicks)
-        maxJobsToSubmit = 10
+        maxJobsToSubmit = 100
         jobSubmitList = []
         for i in range(maxJobsToSubmit):
             jobOutput = submit_ppc_job(itemsToRun[i], curCLI_params)
             jobSubmitList.append(jobOutput)
 
             set_progress((str(i + 1), str(maxJobsToSubmit)))
-        print("----Returned job list ----")
         if jobSubmitList:
             print(len(jobSubmitList), "jobs were submitted..")
-
         else:
             print("No items were set to run..")
 
-        return html.Div(f"{n_clicks} and submited {len(jobSubmitList)}")
+        submissionStatus = [x["status"] for x in jobSubmitList]
+
+        return html.Div(
+            f"{json.dumps(Counter(submissionStatus))} from a total list of {len(jobSubmitList)}"
+        )
 
 
 dsa_cli_view_layout = dbc.Container(

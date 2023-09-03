@@ -186,35 +186,70 @@ def get_datasets_list() -> List[dict]:
 ### Adding job import here
 
 
-def run_ppc(data, params):
-    ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
-    # print(gc.token)
-    ## Test point set only running on small ROI to test code
-    points = "[5000,5000,1000,1000]"
+def lookup_job_record(search_dict):
+    # Initialize MongoDB client
+    collection = dbConn["dsaJobQueue"]
+    # Prepare the query. You might need to adjust this to your specific needs
 
-    jobStatus = []
-    for i in data:
-        item = gc.get(f"item/{i['_id']}")
-        cliInputData = {
-            "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
-            "outputLabelImage": f"{item['name']}_ppc.tiff",
-            "outputLabelImage_folder": "645a5fb76df8ba8751a8dd7d",
-            "outputAnnotationFile": f"{item['name']}_ppc.anot",
-            "outputAnnotationFile_folder": "645a5fb76df8ba8751a8dd7d",
-            "returnparameterfile": f"{item['name']}_ppc.params",
-            "returnparameterfile_folder": "645a5fb76df8ba8751a8dd7d",
-        }
-        cliInputData.update(params)
-        cliInputData["region"] = points
-        returned_val = gc.post(ppc_ext, data=cliInputData)
+    ## Need to cast all the values to a string and also add the _original_params to the key
+    str_search_dict = {f"_original_params.{k}": str(v) for k, v in search_dict.items()}
 
-        ## Should I add the userID here as well?
-        dbConn["dsaJobQueue"].insert_one(returned_val)
+    ## KNOWLEDGE:  So the original_params are only returned by the job submission function
+    ## IT does not appear these are directly embedded in an actual job Item on the DSA itself..
+    ## Neer to verify this behavior with Manthey
 
-        jobStatus.append(returned_val)
-    print(len(jobStatus), "jobs were submitted..")
+    # str_search_dict = {f"_original_params.{k}": v for k, v in search_dict.items()}
 
-    return json.dumps(jobStatus)
+    # Search for the record
+    matching_record = collection.find_one(str_search_dict)
+
+    if matching_record:
+        # print(f"Found a matching record: {matching_record['_id']}")
+        return matching_record
+    else:
+        ## Uncomment to debug job execution
+        # print("No matching record found.")
+        # print(str_search_dict)
+        return None
+
+
+# def run_ppc(data, params):
+#     ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
+#     # print(gc.token)
+#     ## Test point set only running on small ROI to test code
+#     points = "[5000,5000,1000,1000]"
+
+#     jobStatus = []
+#     alreadyRan = []
+#     for i in data:
+#         item = gc.get(f"item/{i['_id']}")
+#         cliInputData = {
+#             "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
+#             "outputLabelImage": f"{item['name']}_ppc.tiff",
+#             "outputLabelImage_folder": "645a5fb76df8ba8751a8dd7d",
+#             "outputAnnotationFile": f"{item['name']}_ppc.anot",
+#             "outputAnnotationFile_folder": "645a5fb76df8ba8751a8dd7d",
+#             "returnparameterfile": f"{item['name']}_ppc.params",
+#             "returnparameterfile_folder": "645a5fb76df8ba8751a8dd7d",
+#         }
+#         cliInputData.update(params)
+#         cliInputData["region"] = points
+
+#         ### See if the job has already been submitting
+#         if not lookup_job_record(cliInputData):
+#             returned_val = gc.post(ppc_ext, data=cliInputData)
+
+#             ## Should I add the userID here as well?
+#             dbConn["dsaJobQueue"].insert_one(returned_val)
+
+#             jobStatus.append(returned_val)
+#         else:
+#             print("Job  was already submitted")
+#             alreadyRan.append(cliInputData)
+#     print(len(jobStatus), "jobs were submitted..")
+#     print(len(alreadyRan), "jobs are alreadya in the queue")
+
+#     return json.dumps(jobStatus)
 
 
 def submit_ppc_job(data, params):
@@ -235,12 +270,12 @@ def submit_ppc_job(data, params):
     }
     cliInputData.update(params)
     cliInputData["region"] = points
-    jobSubmission_response = gc.post(ppc_ext, data=cliInputData)
+    if not lookup_job_record(cliInputData):
+        jobSubmission_response = gc.post(ppc_ext, data=cliInputData)
+        ## Should I add the userID here as well?
+        dbConn["dsaJobQueue"].insert_one(jobSubmission_response)
+        return {"status": "SUBMITTED", "girderResponse": jobSubmission_response}
 
-    ## Should I add the userID here as well?
-    dbConn["dsaJobQueue"].insert_one(jobSubmission_response)
-    return jobSubmission_response
-    #     jobStatus.append(returned_val)
-    # print(len(jobStatus), "jobs were submitted..")
-
-    # return json.dumps(jobStatus)
+    else:
+        # print("Job  was already submitted")
+        return {"status": "CACHED"}
