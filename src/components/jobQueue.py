@@ -12,6 +12,8 @@ jobStatusQueue_map = {4: "fail", 3: "sucess", 2: "running", 1: "queued", 0: "ina
 # status codes -- 4: fail, 3: success, 0: inactive, 1/2: queued/running
 
 
+## TO DO: Probably want to add something that looks only within last 24 hours or some sort of timeframe
+
 jobQueue_button_controls = html.Div(
     [
         dcc.Store("jobInfo_store"),

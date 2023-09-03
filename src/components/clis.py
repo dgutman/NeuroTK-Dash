@@ -327,7 +327,7 @@ def generate_dash_layout_from_slicer_cli(
 )
 def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun):
     if n_clicks:
-        maxJobsToSubmit = 100
+        maxJobsToSubmit = 400
         jobSubmitList = []
         for i in range(maxJobsToSubmit):
             jobOutput = submit_ppc_job(itemsToRun[i], curCLI_params)
