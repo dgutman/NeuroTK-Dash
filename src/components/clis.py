@@ -300,28 +300,6 @@ def generate_dash_layout_from_slicer_cli(
 
         components.append(dbc.Card(dbc.CardBody(param_components), className="mb-3"))
 
-    # Add a button to trigger CLI task submission
-    # components.append(
-    #     html.Button(
-    #         "Submit CLI Task", id="submit-cli-button", className="btn btn-primary"
-    #     )
-    # )
-
-    # Add an area to display JSON output
-    # Currently dumping this into another component..
-    # components.append(
-    #     html.Div(
-    #         id="cli-output",
-    #         style={
-    #             "border": "1px solid #ddd",
-    #             "padding": "10px",
-    #             "margin-top": "10px",
-    #             "border-radius": "5px",
-    #             "box-shadow": "2px 2px 12px #aaa",
-    #         },
-    #     )
-    # )
-
     return dbc.Container(components, className="mt-3")
 
 
