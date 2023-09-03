@@ -2,14 +2,49 @@
 import os, girder_client
 from dotenv import load_dotenv
 from pathlib import Path
+import pymongo
+
+import dash
+import diskcache
+from dash.long_callback import DiskcacheLongCallbackManager
+import dash_bootstrap_components as dbc
+
+
+## This creates a single dash instance that I can access from multiple modules
+class SingletonDashApp:
+    _instance = None
+
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super(SingletonDashApp, cls).__new__(cls)
+
+            # Initialize your Dash app here
+            cls._instance.app = dash.Dash(
+                __name__,
+                external_stylesheets=[
+                    dbc.themes.BOOTSTRAP,
+                    dbc.icons.FONT_AWESOME,
+                ],
+                title="NeuroTK Dashboard",
+                long_callback_manager=lcm,
+            )
+        return cls._instance
+
+
+cache = diskcache.Cache("./src/neurotk-cache")
+lcm = DiskcacheLongCallbackManager(cache)
+
+cache = diskcache.Cache("./neurotk-cache-directory")
+background_callback_manager = dash.DiskcacheManager(cache)
+
 
 # Load .env variables to environment.
-load_dotenv(dotenv_path='src/.env', override=True)
+load_dotenv(dotenv_path="src/.env", override=True)
 
 
 def is_docker():
     """
-    Adding code that if I am not running in a docker environment, it will use 
+    Adding code that if I am not running in a docker environment, it will use
     different MONGO_DB Credentials.
     """
     cgroup = Path("/proc/self/cgroup")
@@ -29,8 +64,8 @@ ROOT_FOLDER_ID = os.environ.get("ROOT_FOLDER_ID", None)
 ROOT_FOLDER_TYPE = os.environ.get("ROOT_FOLDER_TYPE", None)
 
 AVAILABLE_CLI_TASKS = {
-    'PositivePixelCount': 'PPC',
-    'nft_detection': 'Detect Pre-NFTs & iNFTs'
+    "PositivePixelCount": "PPC",
+    "nft_detection": "Detect Pre-NFTs & iNFTs",
 }
 
 PROJECTS_ROOT_FOLDER_ID = os.environ.get(
@@ -42,15 +77,15 @@ gc = girder_client.GirderClient(apiUrl=DSA_BASE_URL)
 gc.authenticate(apiKey=API_KEY)
 
 # Get the information from current token.
-token_info = gc.get('token/current')
+token_info = gc.get("token/current")
 
 # Find the user ID that owns the token.
 try:
-    for user_info in token_info['access']['users']:
-        USER = gc.getUser(user_info['id'])['login']
+    for user_info in token_info["access"]["users"]:
+        USER = gc.getUser(user_info["id"])["login"]
         break
 except KeyError:
-    USER = 'Could not match API token to user.'
+    USER = "Could not match API token to user."
 
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)
@@ -83,3 +118,12 @@ AVAILABLE_CLI_TASKS = {
     "PositivePixelCount": {"name": "Positive Pixel Count", "dsa_name": "PPC"},
     "nft_detection": {"name": "NFT Detector", "dsa_name": "nft_detection"},
 }
+
+## Move database connection to here
+mongoConn = pymongo.MongoClient(
+    MONGO_URI, username=MONGODB_USERNAME, password=MONGODB_PASSWORD
+)
+dbConn = mongoConn[
+    MONGODB_DB
+]  ### Attach the mongo client object to the database I want to store everything
+## dbConn is a connection to the dsaCache database

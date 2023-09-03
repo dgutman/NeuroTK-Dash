@@ -6,29 +6,18 @@ from src.components import banner, app_tabs
 
 import dash
 from dash import html
+from src.utils.settings import SingletonDashApp
 
 
-def main():
-    """Main function."""
-    # Application.
-    app = dash.Dash(
-        __name__,
-        external_stylesheets=[
-            dbc.themes.BOOTSTRAP,
-            dbc.icons.FONT_AWESOME,
-        ],
-        title="NeuroTK",
-    )
+neuroTK_dashapp = SingletonDashApp()
 
-    # Assign the layout to the app.
-    app.layout = html.Div([banner, app_tabs])
+app = neuroTK_dashapp.app
 
-    return app
+# Assign the layout to the app.
+app.layout = html.Div([banner, app_tabs])
 
 
 if __name__ == "__main__":
-    app = main()
-
     # To do: debug parameter may want to be set in .env or setting.py instead
     # of hard coded.
     app.run_server(debug=True, threaded=True)

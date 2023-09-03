@@ -1,18 +1,21 @@
 from dash import html, dcc, Input, Output, State, ALL, callback
-from ..utils.settings import AVAILABLE_CLI_TASKS
+from ..utils.settings import AVAILABLE_CLI_TASKS, SingletonDashApp
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 import json
 import xml.etree.ElementTree as ET
 import dash
-from ..utils.api import run_ppc
+from ..utils.api import run_ppc, submit_ppc_job
 
 # from ..utils.database import insertJobData
 
 
-## TO DO
-## Debating whether I insert stuff directly, or push to
-## a jobQueue_store or something.. this is to be determined
+## Note because of the way I am importing the app object, do NOT use @callback, use app.callback here
+
+curAppObject = SingletonDashApp()
+app = curAppObject.app
+## I find this very confusing.. but binding to main dash app claass
+
 
 # Constants
 CLI_SELECTOR_STYLE = {"marginLeft": "30px"}
@@ -25,6 +28,28 @@ CLI_OUTPUT_STYLE = {
     "border-radius": "5px",
     "box-shadow": "2px 2px 12px #aaa",
 }
+
+
+cli_button_controls = html.Div(
+    [
+        html.Button(
+            "Submit CLI",
+            id="cli-submit-button",
+            className="mr-2 btn btn-warning",
+        ),
+        html.Button(
+            id="cli-job-cancel-button",
+            className="mr-2 btn btn-danger",
+            children="Cancel Running Job!",
+        ),
+        html.Progress(
+            id="job-submit-progress-bar",
+            className="progress-bar-success",
+            style={"visibility": "hidden"},
+        ),
+    ],
+    className="d-grid gap-2 d-md-flex justify-content-md-begin",
+)
 
 
 def create_cli_selector():
@@ -48,10 +73,7 @@ def create_cli_selector():
                     dbc.Col(
                         dmc.Text(
                             id="selected-cli-task",
-                            children=[
-                                html.Div(id="cli-output"),
-                                dbc.Button("Submit CLI", id="submit-cli-button"),
-                            ],
+                            children=[html.Div(id="cli-output"), cli_button_controls],
                         ),
                         width=6,
                     ),
@@ -84,20 +106,6 @@ def create_cli_selector():
     )
 
 
-# def generate_xml_panel(xml_content):
-#     return html.Div(
-#         [
-#             html.H3("XML Document"),
-#             dcc.Textarea(
-#                 id="xml_display",
-#                 value=xml_content,
-#                 style={"width": "100%", "height": 300},
-#                 readOnly=True,
-#             ),
-#         ]
-#     )
-
-
 ### Update this cliItems from the main table data.
 ## TO DO-- DO NOT ALLOW THE CLI TO bE SUBMITTED IF THERE ARE NO ACTUAL]
 ## ITEMS TO RUN.. its confusing..
@@ -107,7 +115,6 @@ def create_cli_selector():
 def updateCliTasks(data):
     if data:
         print(len(data), "Items should be in the projectCLI Item Store")
-
         return data
 
 
@@ -116,17 +123,11 @@ def displayImagesForCLI(data):
     # print(len(data), "items in imagelist..")
     ## This gets the data from the itemSet store, it really needs to be the
     ## filtered version based on the task you are trying to run, will be integrated
-    # print(data[0])
-    # print("I like data")
     ## This is what I will dump in the imagelist for now.. will expand over time
-    outputData = "Should show item cound..."
-    print("I JUST RECEIVED THIS...??")
-
+    outputData = "Should show item count..."
     if data:
         ## TO DO ... ADD SOME MORE MATH TO DISPLAY OTHER PROPERTIES
         return html.Div(f"Items in Task List: {len(data)} ")
-
-    # return html.Div(outputData)
 
 
 ### This reads the XML files from Disk.. in future could also pull them
@@ -136,7 +137,7 @@ def read_xml_content(dsa_task_name):
         return fp.read().strip()
 
 
-@callback(Output("selected-cli-task", "children"), Input("cli-select", "value"))
+@callback(Output("cli-output", "children"), Input("cli-select", "value"))
 def show_cli_param_ui(selected_cli_task):
     xml_content = read_xml_content(selected_cli_task)
     # xml_panel = generate_xml_panel(xml_content)
@@ -155,18 +156,6 @@ def update_json_output(*args):
     values = args[1::2]  # Take every other item starting from 1
     result = {value["index"]: name for name, value in zip(names[0], values[0])}
     return result
-
-
-## This will eventually go away.. using this for debugging for now, don't really need to see
-# the params
-
-
-# @callback(Output("cliParam-json-output", "children"), Input("curCLI_params", "data"))
-# def displayCurCLIParamJson(data):
-#     return json.dumps(data, indent=4)
-
-
-#    Output("cliParam-json-output", "children"),
 
 
 def generate_dash_layout_from_slicer_cli(
@@ -312,11 +301,11 @@ def generate_dash_layout_from_slicer_cli(
         components.append(dbc.Card(dbc.CardBody(param_components), className="mb-3"))
 
     # Add a button to trigger CLI task submission
-    components.append(
-        html.Button(
-            "SubmitCLITask", id="submit-cli-button", className="btn btn-primary"
-        )
-    )
+    # components.append(
+    #     html.Button(
+    #         "Submit CLI Task", id="submit-cli-button", className="btn btn-primary"
+    #     )
+    # )
 
     # Add an area to display JSON output
     # Currently dumping this into another component..
@@ -337,44 +326,51 @@ def generate_dash_layout_from_slicer_cli(
 
 
 ## Add temporary callback to display the CLI output...
-@callback(
-    Output("cli-output-status", "children"),
-    Input("submit-cli-button", "n_clicks"),
-    Input("curCLI_params", "data"),
-    State("cliItems_store", "data"),
+@app.long_callback(
+    output=Output("cli-output-status", "children"),
+    inputs=[
+        Input("cli-submit-button", "n_clicks"),
+        Input("curCLI_params", "data"),
+        State("cliItems_store", "data"),
+    ],
+    running=[
+        (Output("cli-submit-button", "disabled"), True, False),
+        (Output("cli-job-cancel-button", "disabled"), False, True),
+        (
+            Output("job-submit-progress-bar", "style"),
+            {"visibility": "visible"},
+            {"visibility": "hidden"},
+        ),
+    ],
+    cancel=[Input("cli-job-cancel-button", "n_clicks")],
+    progress=[
+        Output("job-submit-progress-bar", "value"),
+        Output("job-submit-progress-bar", "max"),
+    ],
 )
-def submitCLItasks(n_clicks, curCLI_params, itemsToRun):
-    ## Eventually this will display the number of jobs or tasks submitted
-    ## And also eventually even keep track of job status..
-    ## TO DO -- DISABLE The button until the parameters are good?
-    # print(curCLI_params)
-    # print(itemsToRun[:10])
-    ## I also need the list of items to submit..
-
-    maxJobsToSubmit = 20
-
+def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun):
     if n_clicks:
-        print("Should be running PPC on some items")
-        ## This should return a list related to the submitted jobs
-        if itemsToRun:
-            jobList = run_ppc(itemsToRun[:maxJobsToSubmit], curCLI_params)
-            # print(len(json.loads(jobList)), "Jobs submitted")
-            print("----Returned job list ----")
-            print(jobList)
-            insertJobData(jobList, "evanPPC")
+        print("Entered submit CLI task box  ")
+        print(n_clicks)
+        maxJobsToSubmit = 10
+        jobSubmitList = []
+        for i in range(maxJobsToSubmit):
+            jobOutput = submit_ppc_job(itemsToRun[i], curCLI_params)
+            jobSubmitList.append(jobOutput)
+
+            set_progress((str(i + 1), str(maxJobsToSubmit)))
+        print("----Returned job list ----")
+        if jobSubmitList:
+            print(len(jobSubmitList), "jobs were submitted..")
+
         else:
             print("No items were set to run..")
 
-        return html.Div(n_clicks)
+        return html.Div(f"{n_clicks} and submited {len(jobSubmitList)}")
 
 
 dsa_cli_view_layout = dbc.Container(
     [
         dbc.Row(create_cli_selector()),
-        # html.Div(json.dumps(AVAILABLE_CLI_TASKS, indent=4)),  # This dumps the cli specs as well
     ]
 )
-
-
-##Creatinga temporary callback/box to display information about the images
-## That we are planning on using for the
