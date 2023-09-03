@@ -1,60 +1,110 @@
-from dash import html, dcc, callback, Input, Output, State, no_update
+from dash import html, dcc, callback, Input, Output, State, dcc
 import dash_ag_grid
 from ..utils.database import mc
 import dash_bootstrap_components as dbc
-import aiohttp
 from ..utils.api import gc
 import dash, json
+import pandas as pd
+from ..utils.settings import dbConn
+import plotly.express as px
 
-jobQueue_frame = html.Div(
+jobStatusQueue_map = {4: "fail", 3: "sucess", 2: "running", 1: "queued", 0: "inactive"}
+# status codes -- 4: fail, 3: success, 0: inactive, 1/2: queued/running
+
+
+## TO DO: Probably want to add something that looks only within last 24 hours or some sort of timeframe
+
+jobQueue_button_controls = html.Div(
     [
-        dbc.Button("Check Job Status", id="check-job-status-button", color="primary"),
-        dbc.Button(
-            "Refresh Job Status", id="refresh-job-status-button", color="warning"
+        dcc.Store("jobInfo_store"),
+        html.Button(
+            "Check Job Status",
+            id="check-job-status-button",
+            className="mr-2 btn btn-primary",
         ),
-        dash_ag_grid.AgGrid(
-            id="my-grid",
-            columnDefs=[
-                {"headerName": "Job ID", "field": "_id"},
-                {"headerName": "Title", "field": "title"},
-                {"headerName": "Status", "field": "status"},
-                {"headerName": "Created", "field": "created"},
-            ],
-            defaultColDef={"resizable": True, "sortable": True, "filter": True},
-            dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
-            rowData=[],
-            columnSize="sizeToFit",
+        html.Button(
+            "Refresh Job Status",
+            id="refresh-job-status-button",
+            className="mr-2 btn btn-warning",
         ),
-        dcc.Interval(
-            id="interval-update",
-            interval=5 * 1000,  # Update every 5 seconds
-            n_intervals=0,
+    ],
+    className="d-grid gap-2 d-md-flex justify-content-md-begin",
+)
+
+
+jobQueue_frame = dbc.Container(
+    [
+        dbc.Row(jobQueue_button_controls),
+        dbc.Row(
+            [
+                dbc.Col(
+                    dash_ag_grid.AgGrid(
+                        id="jobData_table",
+                        columnDefs=[
+                            {"headerName": "Job ID", "field": "_id"},
+                            {"headerName": "Title", "field": "title"},
+                            {"headerName": "Status Code", "field": "status"},
+                            {"headerName": "Status", "field": "statusText"},
+                            {"headerName": "Created", "field": "created"},
+                        ],
+                        defaultColDef={
+                            "resizable": True,
+                            "sortable": True,
+                            "filter": True,
+                        },
+                        dashGridOptions={
+                            "pagination": True,
+                            "paginationAutoPageSize": True,
+                        },
+                        rowData=[],
+                        columnSize="sizeToFit",
+                    ),
+                    width=9,
+                ),
+                dbc.Col(dcc.Graph("job-status-pieChart"), width=3),
+            ]
         ),
-        dbc.Toast(
-            "Refresh complete",
-            id="refresh-toast",
-            header="Notification",
-            is_open=False,
-            dismissable=True,
-            icon="info",
-            duration=4000,
-        ),
-        html.Div(id="refreshStatusDiv"),
+        dbc.Row([html.Div(id="refreshStatusDiv")]),
     ]
 )
 
 
-@callback(Output("my-grid", "rowData"), Input("interval-update", "n_intervals"))
-def update_table(n):
+@callback(Output("job-status-pieChart", "figure"), Input("jobInfo_store", "data"))
+def createJobStatusPieChart(data):
+    df = pd.DataFrame(data)
+    # Count the frequency of each unique 'statusCode'
+    status_count = df["statusText"].value_counts().reset_index()
+    status_count.columns = ["status", "count"]
+
+    # Generate the pie chart
+    fig = px.pie(
+        status_count,
+        values="count",
+        names="status",
+        title="Distribution of Status Codes",
+    )
+    return fig
+
+
+@callback(Output("jobData_table", "rowData"), Input("jobInfo_store", "data"))
+def update_jobDataTable(data):
+    ## On iupdates to the jobinfo store, update the jobdata table
+    return data
+
+
+@callback(Output("jobInfo_store", "data"), Input("check-job-status-button", "n_clicks"))
+def getJobInfoFromMongo(n_clicks):
     # Fetch data from MongoDB
     collection = mc["dsaJobQueue"]
     job_data = list(
         collection.find({}, {"_id": 1, "title": 1, "status": 1, "created": 1})
     )
-    return job_data
+    df = pd.DataFrame(job_data)
+    df["statusText"] = df.status.map(jobStatusQueue_map)
+    return df.to_dict("records")
 
 
-# Async Callbacks
+# Async Callback to be implemented
 @callback(
     Output("refreshStatusDiv", "children"),
     Input("refresh-job-status-button", "n_clicks"),
@@ -63,7 +113,7 @@ def refresh_jobs(n_clicks):
     if n_clicks is None:
         return dash.no_update
 
-    collection = mc["dsaJobQueue"]
+    collection = dbConn["dsaJobQueue"]
     # Find jobs with status 0
     jobs = collection.find({"status": 0})
 
@@ -74,7 +124,7 @@ def refresh_jobs(n_clicks):
         currentJobInfo = gc.get(f"job/{job_id}")
         newStatus = currentJobInfo["status"]
         # Update MongoDB
-        print(json.dumps(newStatus, indent=2))
+        # print(json.dumps(newStatus, indent=2))
         collection.update_one({"_id": job_id}, {"$set": {"status": newStatus}})
         jobsScanned += 1
     return [html.Div(jobsScanned, "were scanned")]

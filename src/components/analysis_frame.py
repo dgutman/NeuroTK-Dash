@@ -5,10 +5,10 @@ and the reports tab - unsure what kind of UI these will be in.
 from dash import html
 import dash_bootstrap_components as dbc
 from .histomicsui import histomicsui
-from .clis import clis
+from .clis import dsa_cli_view_layout
 from .results import results
 
-tab1 = dbc.Card(dbc.CardBody([clis]))
+tab1 = dbc.Card(dbc.CardBody([dsa_cli_view_layout]))
 
 tab2 = dbc.Card(dbc.CardBody([histomicsui]))
 

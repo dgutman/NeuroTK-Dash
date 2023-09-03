@@ -42,7 +42,7 @@ app_tabs = html.Div(
                 ),
             ],
             orientation="horizontal",
-            value="projects",
+            value="analysis",
             id="projects-tabs",
         )
     ]

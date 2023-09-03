@@ -178,12 +178,12 @@ def updateProjectItemSetTable(
     """
     # If there are items read them into dataframe.
     if projectItemSet:
-        df = pd.DataFrame(projectItemSet)
+        df = pd.json_normalize(projectItemSet)
 
         # If task is selected then filter by the task.
         if selectedTask:
             taskColName = f"taskAssigned_{selectedTask}"
-            
+
             if taskColName in df:
                 df = df[df[taskColName] == "Assigned"]
 
