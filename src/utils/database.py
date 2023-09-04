@@ -7,9 +7,9 @@ import pymongo
 from pymongo import UpdateOne
 
 from ..utils.settings import (
-    MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
+    MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD, USER, gc
 )
-from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets
+from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets, get_projects
 
 db = MongoEngine()
 mc = pymongo.MongoClient(
@@ -76,8 +76,6 @@ def getUniqueParamSets(annotationName):
     ### Given an annotationName, this will generate a list of unique parameter sets that were used for the analysis
     ### One thing to think about, not all annotations were algorithmically generated so will need to come up with logic
     ### To figure this out in the future..
-    print(annotationName)
-
     # # Select your collection
     collection = mc["annotationData"]
 
@@ -112,73 +110,73 @@ def getUniqueParamSets(annotationName):
     return results
 
 
-def getProjectDataset(
-        projectName: str, projectFolderId: str, forceRefresh: bool = False
-    ) -> List[dict]:
-    """
-    Given a projectName, return the data from local mongo database if it exists
-    otherwise pull from DSA using girder_client and add to mongo database.
-    """
-    # Mongo collection.
-    collection = mc["projectImages"]
+# def getProjectDataset(
+#         projectName: str, projectFolderId: str, forceRefresh: bool = False
+#     ) -> List[dict]:
+#     """
+#     Given a projectName, return the data from local mongo database if it exists
+#     otherwise pull from DSA using girder_client and add to mongo database.
+#     """
+#     # Mongo collection.
+#     collection = mc["projectImages"]
 
-    # Get the project in collection.
-    projectImages = list(collection.find({"projectName": projectName}))
+#     # Get the project in collection.
+#     projectImages = list(collection.find({"projectName": projectName}))
 
-    if projectImages and not forceRefresh:
-        # Return existing project.
-        return projectImages
-    else:
-        if projectImages:
-            collection.delete_many({})
+#     if projectImages and not forceRefresh:
+#         # Return existing project.
+#         return projectImages
+#     else:
+#         if projectImages:
+#             collection.delete_many({})
 
-        # Get data from DSA.
-        projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
+#         # Get data from DSA.
+#         projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
 
-        ## This is a dictionary keyed by the image itemId... needs to be flattened before mongo insert..
-        ## Also don't forget to add the projectName or things will go badly
+#         ## This is a dictionary keyed by the image itemId... needs to be flattened before mongo insert..
+#         ## Also don't forget to add the projectName or things will go badly
 
-        ## This only will run if the project actually has datasets, it's possible
-        ## to create a blank project that has not been populated yet..
-        if projectDatasetDict:
-            projectDataSetItems = [
-                dict(projectDatasetDict[imageId], **{"projectName": projectName})
-                for imageId in projectDatasetDict
-            ]
+#         ## This only will run if the project actually has datasets, it's possible
+#         ## to create a blank project that has not been populated yet..
+#         if projectDatasetDict:
+#             projectDataSetItems = [
+#                 dict(projectDatasetDict[imageId], **{"projectName": projectName})
+#                 for imageId in projectDatasetDict
+#             ]
             
-            """Snippet of code that replaces "." with "-" when in the key of 
-            dictionary."""
-            for i in range(len(projectDataSetItems)):
-                d = projectDataSetItems[i]
+#             """Snippet of code that replaces "." with "-" when in the key of 
+#             dictionary."""
+#             for i in range(len(projectDataSetItems)):
+#                 d = projectDataSetItems[i]
 
-                for k in list(d.keys()):
-                    v = d[k]
+#                 for k in list(d.keys()):
+#                     v = d[k]
 
-                    if '.' in k:
-                        new_k = k.replace('.', '-')
+#                     if '.' in k:
+#                         new_k = k.replace('.', '-')
 
-                        del d[k]
+#                         del d[k]
 
-                        d[new_k] = v
+#                         d[new_k] = v
 
-                projectDataSetItems[i] = d
+#                 projectDataSetItems[i] = d
 
-            ### Now insert the bundle into mongo
-            operations = []
-            for a in projectDataSetItems:
-                operations.append(
-                    UpdateOne({"_id": a["_id"]}, {"$set": a}, upsert=True)
-                )
-            for chunk in chunks(operations, 500):
-                result = collection.bulk_write(chunk)
+#             ### Now insert the bundle into mongo
+#             operations = []
+#             for a in projectDataSetItems:
+#                 operations.append(
+#                     UpdateOne({"_id": a["_id"]}, {"$set": a}, upsert=True)
+#                 )
+#             for chunk in chunks(operations, 500):
+#                 result = collection.bulk_write(chunk)
 
-            ## Going to return the just inserted item Set..
-            projectImages = list(collection.find({"projectName": projectName}))
+#             ## Going to return the just inserted item Set..
+#             projectImages = list(collection.find({"projectName": projectName}))
 
-            return projectImages
-        else:
-            return None
-    return None
+#             return projectImages
+#         else:
+#             return None
+#     return None
 
 
 def getAnnotationNameCount(projectName):
@@ -264,7 +262,6 @@ def insertAnnotationData(annotationItems, projectName, debug=False):
         dict(item, **{"projectName": projectName}) for item in annotationItems
     ]
     ### The collection for annotations is called.. annotations!
-    print(len(annotationItems), "to be inserted or upserted into the mongo table..")
     ## See this:
     ## print(len(annot)) returns 4099
     ## len(set(x["_id"] for x in annot)) returns 1814
@@ -336,3 +333,120 @@ def get_all_records_df():
     records = [record.to_dict() for record in records]
     df = pd.DataFrame(records)
     return df
+
+
+def getProjects(fld_id: str, forceRefresh: bool = False) -> List[dict]:
+    """Get a list of NeuroTK folders for the user.
+
+    Args:
+        fld_id: DSA id of NeuroTK Projects folder.
+        forceRefresh: Referesh the mongo database if needed.
+
+    Returns:
+        List of project metadata.
+
+    """
+    # Mongo collection.
+    collection = mc['projectList']
+
+    # Get the project in collection.
+    projectListKey = f'{USER}/{fld_id}'
+    projectList = list(collection.find({"projectList": projectListKey}))
+
+    if projectList and not forceRefresh:
+        return projectList
+    else:
+        # Delete the current mongo document.
+        if projectList:
+            collection.delete_many({"projectList": projectListKey})
+
+        # Loop through public and then private folders.
+        projects = get_projects(gc, fld_id)
+        projects = {p['_id']: p for p in projects}
+
+        projects = [
+            dict(projects[imageId], **{"projectList": projectListKey})
+            for imageId in projects
+        ]
+
+        ### Now insert the bundle into mongo
+        operations = []
+        for a in projects:
+            operations.append(
+                UpdateOne({"_id": a["_id"]}, {"$set": a}, upsert=True)
+            )
+        for chunk in chunks(operations, 500):
+            _ = collection.bulk_write(chunk)
+
+        ## Going to return the just inserted item Set..
+        projectList = list(collection.find({"projectList": projectListKey}))
+
+        return projectList
+
+
+def getProjectDataset(
+        projectName: str, projectFolderId: str, forceRefresh: bool = False
+    ) -> List[dict]:
+    """
+    Given a projectName, return the data from local mongo database if it exists
+    otherwise pull from DSA using girder_client and add to mongo database.
+    """
+    # Mongo collection.
+    collection = mc["projectImages"]
+
+    # Get the project in collection.
+    projectImages = list(collection.find({"projectName": projectName}))
+
+    if projectImages and not forceRefresh:
+        # Return existing project.
+        return projectImages
+    else:
+        if projectImages:
+            collection.delete_many({"projectName": projectName})
+
+        # Get data from DSA.
+        projectDatasetDict = get_neuroTK_projectDatasets(projectFolderId)
+
+        ## This is a dictionary keyed by the image itemId... needs to be flattened before mongo insert..
+        ## Also don't forget to add the projectName or things will go badly
+
+        ## This only will run if the project actually has datasets, it's possible
+        ## to create a blank project that has not been populated yet..
+        if projectDatasetDict:
+            projectDataSetItems = [
+                dict(projectDatasetDict[imageId], **{"projectName": projectName})
+                for imageId in projectDatasetDict
+            ]
+            
+            """Snippet of code that replaces "." with "-" when in the key of 
+            dictionary."""
+            for i in range(len(projectDataSetItems)):
+                d = projectDataSetItems[i]
+
+                for k in list(d.keys()):
+                    v = d[k]
+
+                    if '.' in k:
+                        new_k = k.replace('.', '-')
+
+                        del d[k]
+
+                        d[new_k] = v
+
+                projectDataSetItems[i] = d
+
+            ### Now insert the bundle into mongo
+            operations = []
+            for a in projectDataSetItems:
+                operations.append(
+                    UpdateOne({"_id": a["_id"]}, {"$set": a}, upsert=True)
+                )
+            for chunk in chunks(operations, 500):
+                _ = collection.bulk_write(chunk)
+
+            ## Going to return the just inserted item Set..
+            projectImages = list(collection.find({"projectName": projectName}))
+
+            return projectImages
+        else:
+            return None

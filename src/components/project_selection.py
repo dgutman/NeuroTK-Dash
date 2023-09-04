@@ -9,17 +9,26 @@ import dash_bootstrap_components as dbc
 
 from .create_project_popup import create_project_popup
 from ..utils.api import get_projects
+from ..utils.database import getProjects
 from ..utils.settings import gc, PROJECTS_ROOT_FOLDER_ID, USER
 
 project_selection = html.Div(
     [
         dcc.Store(
             id="projects-store",
-            # data=get_projects(gc, PROJECTS_ROOT_FOLDER_ID),
         ),
         html.Div(id='load-project-store'),
         dbc.Row(
             [
+                dbc.Col(
+                    html.Div(
+                        html.Button(
+                            [html.I(className='fa-solid fa-arrows-rotate')],
+                            id='refresh-projects-bn'
+                        ), 
+                    ),
+                    width='auto'
+                ),
                 dbc.Col(
                     html.Div("Select project: ", style={"fontWeight": "bold"}),
                     align="start",
@@ -61,13 +70,16 @@ project_selection = html.Div(
 
 @callback(
     Output('projects-store', 'data'),
-    Input('load-project-store', 'children')
+    [
+        Input('load-project-store', 'children'),
+        Input('refresh-projects-bn', 'n_clicks')
+    ]
 )
-def start_store(_):
+def start_store(_, n_clicks: bool):
     """
     This is a simple trigger function that will initiate store loading.
     """
-    return get_projects(gc, PROJECTS_ROOT_FOLDER_ID)
+    return getProjects(PROJECTS_ROOT_FOLDER_ID, forceRefresh=n_clicks)
 
 
 @callback(
