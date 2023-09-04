@@ -25,9 +25,9 @@ MT3_CLASS = "mt-3"
 CLI_OUTPUT_STYLE = {
     "border": "1px solid #ddd",
     "padding": "10px",
-    "margin-top": "10px",
-    "border-radius": "5px",
-    "box-shadow": "2px 2px 12px #aaa",
+    "marginTop": "10px",
+    "borderRadius": "5px",
+    "boxShadow": "2px 2px 12px #aaa",
 }
 
 
@@ -276,7 +276,7 @@ def generate_dash_layout_from_slicer_cli(
 
             param_components.extend(
                 [
-                    html.Label(label_text, style={"margin-right": "10px"}),
+                    html.Label(label_text, style={"marginRight": "10px"}),
                     dcc.Input(
                         id={"type": "dynamic-input", "index": name},
                         value=float(default),
@@ -287,7 +287,7 @@ def generate_dash_layout_from_slicer_cli(
                             "width": "60px",
                             "textAlign": "right",
                             "border": "1px solid #ccc",
-                            "margin-right": "5px",
+                            "marginRight": "5px",
                             "margin": "2px 2px",  # vertical and horizontal margin
                             "appearance": "number-input",  # for Firefox
                             "MozAppearance": "number-input",  # for older Firefox versions
