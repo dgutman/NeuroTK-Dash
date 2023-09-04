@@ -33,14 +33,15 @@ dataset_view = html.Div(
                     ]
                 ),
                 dmc.TabsPanel(
-                    [
-                        html.Div(
-                            id="project-itemSet-div",
-                            children=[dag.AgGrid(id="project-itemSet-table")],
-                        ),
-                    ],
+                    html.Div(
+                        dcc.Loading(
+                            id='project-itemSet-div', 
+                            children=[dag.AgGrid(id="project-itemSet-table")], 
+                            type='circle'
+                        )
+                    ),
                     value="table",
-                    id="table_tab_panel",
+                    id="table_tab_panel"
                 ),
                 dmc.TabsPanel(
                     [
