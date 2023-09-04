@@ -9,6 +9,19 @@ from ..utils.settings import gc, dbConn
 from girder_client import GirderClient, HttpError
 
 
+def getAllItemAnnotations(annotationName=None):
+    ## This grabs/caches all of the annotations that a user has access too.. can be filtered based on annotation Name
+    ## This will also have functionality to normalize/cleanup results that are stored in the annotation object
+    ## For now I am focusing on pulling out the PPC data
+    annotationItemSet = gc.listResource("annotation")
+    annotationItemSet = list(annotationItemSet)
+    print(
+        "You have retrieved %d annotations from the DSA for the current API KEY"
+        % len(annotationItemSet)
+    )
+    return annotationItemSet
+
+
 def get_neuroTK_projectDatasets(projectFolderId: str):
     """
     Get all datasets from a project.
@@ -211,45 +224,6 @@ def lookup_job_record(search_dict):
         # print("No matching record found.")
         # print(str_search_dict)
         return None
-
-
-# def run_ppc(data, params):
-#     ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
-#     # print(gc.token)
-#     ## Test point set only running on small ROI to test code
-#     points = "[5000,5000,1000,1000]"
-
-#     jobStatus = []
-#     alreadyRan = []
-#     for i in data:
-#         item = gc.get(f"item/{i['_id']}")
-#         cliInputData = {
-#             "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
-#             "outputLabelImage": f"{item['name']}_ppc.tiff",
-#             "outputLabelImage_folder": "645a5fb76df8ba8751a8dd7d",
-#             "outputAnnotationFile": f"{item['name']}_ppc.anot",
-#             "outputAnnotationFile_folder": "645a5fb76df8ba8751a8dd7d",
-#             "returnparameterfile": f"{item['name']}_ppc.params",
-#             "returnparameterfile_folder": "645a5fb76df8ba8751a8dd7d",
-#         }
-#         cliInputData.update(params)
-#         cliInputData["region"] = points
-
-#         ### See if the job has already been submitting
-#         if not lookup_job_record(cliInputData):
-#             returned_val = gc.post(ppc_ext, data=cliInputData)
-
-#             ## Should I add the userID here as well?
-#             dbConn["dsaJobQueue"].insert_one(returned_val)
-
-#             jobStatus.append(returned_val)
-#         else:
-#             print("Job  was already submitted")
-#             alreadyRan.append(cliInputData)
-#     print(len(jobStatus), "jobs were submitted..")
-#     print(len(alreadyRan), "jobs are alreadya in the queue")
-
-#     return json.dumps(jobStatus)
 
 
 def submit_ppc_job(data, params):

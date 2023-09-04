@@ -4,8 +4,7 @@ import dash_mantine_components as dmc
 from .projects_frame import projects_frame
 from .analysis_frame import analysis_frame
 from .jobQueue import jobQueue_frame
-
-# from .ppcAnalysis import ppcRunner_frame
+from .annotation.annotation_frame import annotations_frame
 
 app_tabs = html.Div(
     [
@@ -16,6 +15,7 @@ app_tabs = html.Div(
                         dmc.Tab("Projects", value="projects"),
                         dmc.Tab("Analysis", value="analysis"),
                         dmc.Tab("Job Queue", value="jobQueue"),
+                        dmc.Tab("Annotations", value="annotations"),
                     ]
                 ),
                 dmc.TabsPanel(
@@ -40,9 +40,10 @@ app_tabs = html.Div(
                     ],
                     value="jobQueue",
                 ),
+                dmc.TabsPanel([annotations_frame], value="annotations"),
             ],
             orientation="horizontal",
-            value="analysis",
+            value="annotations",
             id="projects-tabs",
         )
     ]

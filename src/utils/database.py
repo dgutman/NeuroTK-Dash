@@ -6,9 +6,7 @@ from typing import List
 import pymongo
 from pymongo import UpdateOne
 
-from ..utils.settings import (
-    MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
-)
+from ..utils.settings import MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD
 from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets
 
 db = MongoEngine()
@@ -113,8 +111,8 @@ def getUniqueParamSets(annotationName):
 
 
 def getProjectDataset(
-        projectName: str, projectFolderId: str, forceRefresh: bool = False
-    ) -> List[dict]:
+    projectName: str, projectFolderId: str, forceRefresh: bool = False
+) -> List[dict]:
     """
     Given a projectName, return the data from local mongo database if it exists
     otherwise pull from DSA using girder_client and add to mongo database.
@@ -145,7 +143,7 @@ def getProjectDataset(
                 dict(projectDatasetDict[imageId], **{"projectName": projectName})
                 for imageId in projectDatasetDict
             ]
-            
+
             """Snippet of code that replaces "." with "-" when in the key of 
             dictionary."""
             for i in range(len(projectDataSetItems)):
@@ -154,8 +152,8 @@ def getProjectDataset(
                 for k in list(d.keys()):
                     v = d[k]
 
-                    if '.' in k:
-                        new_k = k.replace('.', '-')
+                    if "." in k:
+                        new_k = k.replace(".", "-")
 
                         del d[k]
 
@@ -181,21 +179,21 @@ def getProjectDataset(
     return None
 
 
-def getAnnotationNameCount(projectName):
-    """This will query the mongo database directly and get the distinct annotation names and the associated counts"""
+# def getAnnotationNameCount(projectName):
+#     """This will query the mongo database directly and get the distinct annotation names and the associated counts"""
 
-    # # Select your collection
-    collection = mc["annotationData"]
+#     # # Select your collection
+#     collection = mc["annotationData"]
 
-    # Define the aggregation pipeline
-    pipeline = [
-        {"$group": {"_id": "$annotation.name", "count": {"$sum": 1}}},
-        {"$project": {"annotationName": "$_id", "count": 1, "_id": 0}},
-        {"$sort": {"count": -1}},
-    ]
-    # Execute the aggregation pipeline
-    results = list(collection.aggregate(pipeline))
-    return results
+#     # Define the aggregation pipeline
+#     pipeline = [
+#         {"$group": {"_id": "$annotation.name", "count": {"$sum": 1}}},
+#         {"$project": {"annotationName": "$_id", "count": 1, "_id": 0}},
+#         {"$sort": {"count": -1}},
+#     ]
+#     # Execute the aggregation pipeline
+#     results = list(collection.aggregate(pipeline))
+#     return results
 
 
 def getUniqueParamSets(annotationName):
@@ -245,24 +243,87 @@ def getAnnotationNameCount(projectName):
 
     # Define the aggregation pipeline
     pipeline = [
-        {"$group": {"_id": "$annotation.name", "count": {"$sum": 1}}},
-        {"$project": {"annotationName": "$_id", "count": 1, "_id": 0}},
-        {"$sort": {"count": -1}},
+        {
+            "$group": {
+                "_id": "$annotation.name",
+                "total": {"$sum": 1},
+                "with_elements": {
+                    "$sum": {
+                        "$cond": [{"$ifNull": ["$annotation.elements", False]}, 1, 0]
+                    }
+                },
+            }
+        },
+        {
+            "$project": {
+                "annotationName": "$_id",
+                "count": "$total",
+                "count_with_elements": "$with_elements",
+                "_id": 0,
+            }
+        },
     ]
-    # Execute the aggregation pipeline
+
+    # s# # Execute the aggregation pipeline
     results = list(collection.aggregate(pipeline))
     return results
 
 
-# -------------------------------------------------------------------------------------------------
+def getElementSizeForAnnotations(annotation):
+    """Not Named well, but this will get the sum of the lengths of the elements.points arrays in all of the annotation documents"""
+    # Define the aggregation pipeline
+    collection = mc["annotationData"]
+    pipeline = [
+        {"$match": {"annotation.name": "gray-matter-fixed"}},
+        {
+            "$project": {
+                "annotationName": 1,
+                "totalPoints": {
+                    "$cond": [
+                        {
+                            "$and": [
+                                {"$isArray": "$annotation.elements"},
+                                {"$gt": [{"$size": "$annotation.elements"}, 0]},
+                            ]
+                        },
+                        {
+                            "$sum": {
+                                "$map": {
+                                    "input": "$annotation.elements",
+                                    "as": "element",
+                                    "in": {
+                                        "$cond": [
+                                            {"$isArray": "$$element.points"},
+                                            {"$size": "$$element.points"},
+                                            0,
+                                        ]
+                                    },
+                                }
+                            }
+                        },
+                        0,
+                    ]
+                },
+            }
+        },
+    ]
+
+    # Execute the aggregation pipeline
+    results = list(collection.aggregate(pipeline))
+
+    totalPointCounts = []
+    print(results[0])
+    # Print or further process the results
+    for result in results:
+        print(f"Document ID: {result['_id']}, Total Points: {result['totalPoints']}")
+        totalPointCounts.append(int(result["totalPoints"]))
+    return totalPointCounts
 
 
-def insertAnnotationData(annotationItems, projectName, debug=False):
+def insertAnnotationData(annotationItems, userName, debug=False):
     ### This will insert all of the annotations pulled from the DSA and also insert a projectName to keep things bundled/separate
     ## Add the projectName to all of the annotations as well
-    annotationItems = [
-        dict(item, **{"projectName": projectName}) for item in annotationItems
-    ]
+    annotationItems = [dict(item, **{"userName": userName}) for item in annotationItems]
     ### The collection for annotations is called.. annotations!
     print(len(annotationItems), "to be inserted or upserted into the mongo table..")
     ## See this:
