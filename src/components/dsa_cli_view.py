@@ -102,7 +102,7 @@ def generate_xml_panel(xml_content):
 
 @callback(Output("cliItems_store", "data"), Input("projectItem_store", "data"))
 def updateCliTasks(data):
-    print(len(data), "Items should be in the projectCLI Item Store")
+    # print(len(data), "Items should be in the projectCLI Item Store")
     return data
 
 

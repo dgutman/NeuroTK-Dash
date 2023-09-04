@@ -114,7 +114,6 @@ def create_cli_selector():
 @callback(Output("cliItems_store", "data"), Input("filteredItem_store", "data"))
 def updateCliTasks(data):
     if data:
-        print(len(data), "Items should be in the projectCLI Item Store")
         return data
 
 
