@@ -71,19 +71,23 @@ jobQueue_frame = dbc.Container(
 
 @callback(Output("job-status-pieChart", "figure"), Input("jobInfo_store", "data"))
 def createJobStatusPieChart(data):
-    df = pd.DataFrame(data)
-    # Count the frequency of each unique 'statusCode'
-    status_count = df["statusText"].value_counts().reset_index()
-    status_count.columns = ["status", "count"]
+    if data:
+        df = pd.DataFrame(data)
 
-    # Generate the pie chart
-    fig = px.pie(
-        status_count,
-        values="count",
-        names="status",
-        title="Distribution of Status Codes",
-    )
-    return fig
+        # Count the frequency of each unique 'statusCode'
+        status_count = df["statusText"].value_counts().reset_index()
+        status_count.columns = ["status", "count"]
+
+        # Generate the pie chart
+        fig = px.pie(
+            status_count,
+            values="count",
+            names="status",
+            title="Distribution of Status Codes",
+        )
+        return fig
+    else:
+        return px.pie()
 
 
 @callback(Output("jobData_table", "rowData"), Input("jobInfo_store", "data"))
@@ -99,9 +103,13 @@ def getJobInfoFromMongo(n_clicks):
     job_data = list(
         collection.find({}, {"_id": 1, "title": 1, "status": 1, "created": 1})
     )
-    df = pd.DataFrame(job_data)
-    df["statusText"] = df.status.map(jobStatusQueue_map)
-    return df.to_dict("records")
+
+    if job_data:
+        df = pd.DataFrame(job_data)
+        df["statusText"] = df.status.map(jobStatusQueue_map)
+        return df.to_dict("records")
+    else:
+        return []
 
 
 # Async Callback to be implemented
