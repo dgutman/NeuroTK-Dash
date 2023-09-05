@@ -3,14 +3,13 @@ This div should contain the project selection functionality including the
 dropdown menu to select available projects to the user, and the ability to
 create new projects via button.
 """
-from dash import html, dcc, Output, Input, callback, State
+from dash import html, dcc, Output, Input, callback, State, no_update
 from dash_mantine_components import Select
 import dash_bootstrap_components as dbc
 
 from .create_project_popup import create_project_popup
-from ..utils.api import get_projects
 from ..utils.database import getProjects
-from ..utils.settings import gc, PROJECTS_ROOT_FOLDER_ID, USER
+from ..utils.settings import PROJECTS_ROOT_FOLDER_ID
 
 project_selection = html.Div(
     [
@@ -91,7 +90,7 @@ def start_store(_, n_clicks: bool):
     Output("curProject_disp", "children"),
     Output("curProjectName_store", "data"),
     Input("projects-dropdown", "value"),
-    Input("projects-dropdown", "data"),
+    Input("projects-dropdown", "data"),  # not sure this should be here
 )
 def updateProjectNameStore(projectId, projectData):
     if projectId:
