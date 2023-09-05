@@ -167,3 +167,6 @@ bdsa-cache-directory*
 *cache*
 .vscode/settings.json
 dsaPointCloud/src/.env.old
+refactor/src/.env.mega
+refactor/.vscode/settings.json
+progress.txt

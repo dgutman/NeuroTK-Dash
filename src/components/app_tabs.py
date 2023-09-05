@@ -43,7 +43,7 @@ app_tabs = html.Div(
                 dmc.TabsPanel([annotations_frame], value="annotations"),
             ],
             orientation="horizontal",
-            value="annotations",
+            value="analysis",
             id="projects-tabs",
         )
     ]
