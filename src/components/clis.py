@@ -66,7 +66,14 @@ def create_cli_selector():
                         value="PositivePixelCount",
                         data=list(AVAILABLE_CLI_TASKS.keys()),
                         style={"maxWidth": 300},
-                    )
+                    ),
+                    dmc.Select(
+                        label="Image Mask Name",
+                        id="mask-name-for-cli",
+                        value="gray-matter-from-xmls",
+                        data=["", "gray-matter-from-xmls", "gray-matter-fixed"],
+                        style={"maxWidth": 300},
+                    ),
                 ]
             ),
             dbc.Row(
@@ -308,6 +315,7 @@ def generate_dash_layout_from_slicer_cli(
         Input("cli-submit-button", "n_clicks"),
         Input("curCLI_params", "data"),
         State("cliItems_store", "data"),
+        State("mask-name-for-cli", "value"),
     ],
     running=[
         (Output("cli-submit-button", "disabled"), True, False),
@@ -324,12 +332,13 @@ def generate_dash_layout_from_slicer_cli(
         Output("job-submit-progress-bar", "max"),
     ],
 )
-def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun):
+def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun, maskName):
     if n_clicks:
-        maxJobsToSubmit = 400
+        print(maskName, "is current mask name to lookup")
+        maxJobsToSubmit = 500
         jobSubmitList = []
         for i in range(maxJobsToSubmit):
-            jobOutput = submit_ppc_job(itemsToRun[i], curCLI_params)
+            jobOutput = submit_ppc_job(itemsToRun[i], curCLI_params, maskName)
             jobSubmitList.append(jobOutput)
 
             set_progress((str(i + 1), str(maxJobsToSubmit)))

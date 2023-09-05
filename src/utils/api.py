@@ -9,6 +9,50 @@ from ..utils.settings import gc, dbConn
 from girder_client import GirderClient, HttpError
 
 
+def get_points(rois, delineator=["-1, -1"]):
+    """
+    Takes rois as a list of list of integers and returns them properly formatted for PPC via DSA
+    Can also handle cases where rois is a list of dictionaries with a "points" key
+    All rois have form [[int, int, int], [int, int, int], ..., [int, int, int]]
+    This is true even of those rois stored in a dictionary
+    Assumes the points exist in a 2D plane and so only takes the first two values from each sub-list/point
+    There are cases where the rois can be of the same from but already be in 2D form (i.e. [int, int])
+    The function is not impacted by this difference and will behave the same
+    Points are returned as a string representation of the list with each roi delineated by the provided delineator
+    """
+    points = []
+    region_count = len(rois)
+
+    delineate = region_count > 1
+
+    for ind, roi in enumerate(rois, start=1):
+        if isinstance(roi, list):
+            [points.extend([str(item) for item in val[:2]]) for val in roi]
+        else:
+            # getting all non-zero points, converting to string and adding to points liste
+            [points.extend([str(item) for item in val[:2]]) for val in roi["points"]]
+
+        # don't want to add delineator to the last roi since it doesn't need to be delineated
+        if (delineate) and (ind != region_count):
+            points.extend(delineator)
+
+    points = f"[{', '.join(points)}]"
+    return points
+
+
+def getAllItemAnnotations(annotationName=None):
+    ## This grabs/caches all of the annotations that a user has access too.. can be filtered based on annotation Name
+    ## This will also have functionality to normalize/cleanup results that are stored in the annotation object
+    ## For now I am focusing on pulling out the PPC data
+    annotationItemSet = gc.listResource("annotation")
+    annotationItemSet = list(annotationItemSet)
+    print(
+        "You have retrieved %d annotations from the DSA for the current API KEY"
+        % len(annotationItemSet)
+    )
+    return annotationItemSet
+
+
 def get_neuroTK_projectDatasets(projectFolderId: str):
     """
     Get all datasets from a project.
@@ -211,9 +255,9 @@ def lookup_job_record(search_dict):
         # print("No matching record found.")
         # print(str_search_dict)
         return None
-    
 
-def submit_ppc_job(data, params):
+
+def submit_ppc_job(data, params, maskName=None):
     ppc_ext = "slicer_cli_web/dsarchive_histomicstk_latest/PositivePixelCount/run"
     # print(gc.token)
     ## Test point set only running on small ROI to test code
@@ -231,6 +275,24 @@ def submit_ppc_job(data, params):
     }
     cliInputData.update(params)
     cliInputData["region"] = points
+
+    if maskName:
+        print("Should be fetching point set from", maskName, "for", item["_id"])
+        ## Lookup annotation data for this image..
+        # print(item)
+        ## TO DO.. what if there is more than one mask with the same name.. to be fixed
+        maskPointSet = dbConn["annotationData"].find_one(
+            {"itemId": item["_id"], "annotation.name": maskName},
+            {"annotation.elements": 1},
+        )
+        if maskPointSet:
+            print("Found a mask point set!!")
+            maskRegionPoints = get_points(maskPointSet["annotation"]["elements"])
+            cliInputData["region"] = maskRegionPoints
+            print(len(maskRegionPoints), "mask length was generated")
+            # print(get_points(maskPointSet))
+        # {itemId: "646655476df8ba8751afe0d8","annotation.name": "gray-matter-fixed"}
+
     if not lookup_job_record(cliInputData):
         jobSubmission_response = gc.post(ppc_ext, data=cliInputData)
         ## Should I add the userID here as well?

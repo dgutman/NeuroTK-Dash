@@ -17,7 +17,8 @@ project_selection = html.Div(
         dcc.Store(
             id="projects-store",
         ),
-        html.Div(id='load-project-store'),
+        dcc.Store(id="curProjectName_store"),
+        html.Div(id="load-project-store"),
         dbc.Row(
             [
                 dbc.Col(
@@ -34,16 +35,19 @@ project_selection = html.Div(
                     align="start",
                     width="auto",
                 ),
-                dbc.Col(Select(
-                    data=[], id="projects-dropdown", 
-                    placeholder='No project selected.'
-                )),
+                dbc.Col(
+                    Select(
+                        data=[],
+                        id="projects-dropdown",
+                        placeholder="No project selected.",
+                    )
+                ),
                 dbc.Col(
                     html.Div(
                         html.Button(
                             [html.I(className="fa-solid fa-plus")],
                             title="create new project",
-                            id='open-create-project-bn'
+                            id="open-create-project-bn",
                         )
                     ),
                     align="end",
@@ -62,7 +66,7 @@ project_selection = html.Div(
                 ),
             ]
         ),
-        create_project_popup
+        create_project_popup,
     ],
     id="project-selection",
 )
@@ -82,6 +86,23 @@ def start_store(_, n_clicks: bool):
     return getProjects(PROJECTS_ROOT_FOLDER_ID, forceRefresh=n_clicks)
 
 
+## Adding current project info to the main top bar
+@callback(
+    Output("curProject_disp", "children"),
+    Output("curProjectName_store", "data"),
+    Input("projects-dropdown", "value"),
+    Input("projects-dropdown", "data"),
+)
+def updateProjectNameStore(projectId, projectData):
+    if projectId:
+        for p in projectData:
+            if p["value"] == projectId:
+                return (
+                    html.Div(["Current project: ", html.Strong(f"{p['label']}")]),
+                    p["label"],
+                )
+
+
 @callback(
     Output("projects-dropdown", "data"),
     Input("projects-store", "data"),
@@ -89,10 +110,8 @@ def start_store(_, n_clicks: bool):
 def populate_projects(data):
     """
     Populate the projects dropdown.
-    """    
-    options = [
-        {"value": project["_id"], "label": project["key"]} for project in data
-    ]
+    """
+    options = [{"value": project["_id"], "label": project["key"]} for project in data]
 
     if len(options):
         return options

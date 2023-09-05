@@ -17,19 +17,19 @@ def generate_generic_DataTable(df, id_val, col_defs={}, exportable=False):
                     # "flex": 1,
                     "filterParams": {"debounceMs": 2500},
                     "floatingFilter": True,
+                    "sortable": True,
+                    "resizable": True,
                 },
                 columnDefs=col_defs,
                 rowData=df.to_dict("records"),
-                dashGridOptions={
-                    "pagination": True, "paginationAutoPageSize": True
-                },
+                dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
                 # columnSize="sizeToFit",
                 csvExportParams={
                     "fileName": f"{id_val.replace('-', '_')}.csv",
                 }
                 if exportable
                 else {},
-                style={'height': '75vh'}
+                style={"height": "75vh"},
             ),
         ]
     )
