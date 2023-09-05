@@ -5,10 +5,10 @@ FILE: create_project_popup.py
 """
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-from dash import html, Output, Input, State, callback
+from dash import html, Output, Input, State, callback, no_update
 
 from ..utils.settings import USER, PROJECTS_ROOT_FOLDER_ID, gc
-from ..utils.api import get_projects
+from ..utils.database import getProjects
 
 create_project_popup = dbc.Modal(
     [
@@ -57,15 +57,22 @@ create_project_popup = dbc.Modal(
 @callback(
     Output('create-project-popup', 'is_open'),
     Input('open-create-project-bn', 'n_clicks'),
-    prevent_initial_call=True
+    prevent_initial_call=False
 )
-def open_create_project_popup(n_clicks):
+def open_create_project_popup(n_clicks: int):
     """
     Open the window for creating new projects.
 
+    Args:
+        n_clicks: Number of times the button to open up the "create projects
+            modal" has been clicked.
+
+    Returns:
+        None if the button has not been clicked, otherwise returns the input
+        n_clicks. 
+
     """
-    if n_clicks:
-        return True
+    return n_clicks
     
 
 @callback(
@@ -73,12 +80,20 @@ def open_create_project_popup(n_clicks):
     Input('new-project-name', 'value'),
     prevent_initial_call=True
 )
-def disable_create_project_bn(value):
+def disable_create_project_bn(new_project_name: str):
     """
-    Disable or enable button for creating new project.
+    Disable the button to create a project when the input field (i.e. the name) 
+    is empty.
 
+    Args:
+        new_project_name: 
+
+    Returns:
+        True if there is text in the input project name text box or False 
+        otherwise.
+    
     """
-    return False if value else True
+    return False if new_project_name else True
     
 
 @callback(
@@ -100,8 +115,9 @@ def create_new_project(n_clicks, data, state, value):
     Logic for creating a new project.
 
     """
+    # When the create new project button is clicked.
     if n_clicks:
-        # Check list of project names
+        # Check for new project.
         new_project = f'{USER}/{value}'
 
         if new_project in [d['key'] for d in data]:
@@ -120,11 +136,7 @@ def create_new_project(n_clicks, data, state, value):
             # Create the project folder.
             _ = gc.createFolder(user_fld['_id'], value)
 
-            from pprint import pprint
-            jc = get_projects(gc, PROJECTS_ROOT_FOLDER_ID)
-            # pprint(jc)
-
-            return jc, False, True
+            return getProjects(PROJECTS_ROOT_FOLDER_ID, forceRefresh=True), False, True
         
     return data if len(data) else [], False, True
 
@@ -159,7 +171,7 @@ def update_dropdown_value(data, value, hide, selected_project):
     """
     if value:
         if not hide:
-            return selected_project, value
+            return no_update, value
 
         for d in data:
             if d['name'] == value:
