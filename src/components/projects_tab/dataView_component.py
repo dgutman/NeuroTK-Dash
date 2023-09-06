@@ -1,7 +1,7 @@
 from dash import html
 from dash import Input, Output, State, ALL, callback
 import dash_bootstrap_components as dbc
-from ..utils.settings import DSA_BASE_URL, gc
+from ...utils.settings import DSA_BASE_URL, gc
 import dash
 
 ### This will generate a dataview component, similar to what we have been using in Webix

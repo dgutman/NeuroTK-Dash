@@ -5,12 +5,13 @@ from typing import List
 import pandas as pd
 import dash_ag_grid as dag
 
-from ..utils.database import getProjectDataset
-from ..utils.helpers import generate_generic_DataTable
+from ...utils.database import getProjectDataset
+from ...utils.helpers import generate_generic_DataTable
+from ...utils.settings import gc
+from ...utils.api import get_datasets_list
+
 from .dataView_component import generateDataViewLayout
 from .add_dataset_popup import add_dataset_popup
-from ..utils.settings import gc
-from ..utils.api import get_datasets_list
 
 
 dataset_view = html.Div(

@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from dash_mantine_components import Select
 from typing import List
 
-from ..utils.settings import gc
+from ...utils.settings import gc
 from .create_task_popup import create_task_popup
 
 task_selection = html.Div(

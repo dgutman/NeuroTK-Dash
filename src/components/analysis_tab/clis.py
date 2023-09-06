@@ -1,14 +1,12 @@
 from dash import html, dcc, Input, Output, State, ALL, callback
-from ..utils.settings import AVAILABLE_CLI_TASKS, SingletonDashApp
+from ...utils.settings import AVAILABLE_CLI_TASKS, SingletonDashApp
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 import json
 import xml.etree.ElementTree as ET
 import dash
-from ..utils.api import submit_ppc_job
+from ...utils.api import submit_ppc_job
 from collections import Counter
-
-# from ..utils.database import insertJobData
 
 
 ## Note because of the way I am importing the app object, do NOT use @callback, use app.callback here
@@ -364,7 +362,7 @@ def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun, maskName):
             f"{json.dumps(Counter(submissionStatus))} from a total list of {len(jobSubmitList)}"
         )
         
-    return html.Div()
+    # return html.Div()
 
 
 dsa_cli_view_layout = dbc.Container(
