@@ -78,7 +78,10 @@ dataset_view = html.Div(
 
 @callback(
     Output("projectItem_store", "data"),
-    [Input("projects-dropdown", "value"), Input("add-dataset-bn", "n_clicks")],
+    [
+        Input("projects-dropdown", "value"), 
+        Input("add-dataset-bn", "n_clicks")
+    ],
     [
         State("projects-dropdown", "data"),
         State("projects-store", "data"),

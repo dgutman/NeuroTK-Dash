@@ -8,7 +8,7 @@ from dash_mantine_components import Select
 import dash_bootstrap_components as dbc
 
 from .create_project_popup import create_project_popup
-from ...utils.database import getProjects
+from ...utils.database import getProjects, getProjectDataset
 from ...utils.settings import PROJECTS_ROOT_FOLDER_ID
 
 project_selection = html.Div(
@@ -22,12 +22,18 @@ project_selection = html.Div(
         dbc.Row(
             [
                 dbc.Col(
-                    html.Div(
-                        html.Button(
-                            [html.I(className='fa-solid fa-arrows-rotate')],
-                            id='refresh-projects-bn'
-                        ), 
+                    html.Button(
+                        [html.I(className='fa-solid fa-arrows-rotate')],
+                        id='refresh-item-store',
+                        style={'background-color': 'orange'}
                     ),
+                    width='auto'
+                ),
+                dbc.Col(
+                    html.Button(
+                        [html.I(className='fa-solid fa-arrows-rotate')],
+                        id='refresh-projects-bn'
+                    ), 
                     width='auto'
                 ),
                 dbc.Col(
@@ -73,6 +79,44 @@ project_selection = html.Div(
 
 
 @callback(
+    Output("projectItem_store", "data", allow_duplicate=True),
+    Input('refresh-item-store', 'n_clicks'),
+    [
+        State("projects-dropdown", "data"),
+        State("projects-dropdown", "value")
+    ],
+    prevent_initial_call=True
+)
+def refresh_projectItem_store(n_clicks, available_projects, project_id):
+    """
+    Update the project item store.
+    """
+    if n_clicks:
+        # Get the project name.
+
+        # Get the name of the project.
+        projectName = None
+
+        for project in available_projects:
+            if project["value"] == project_id:
+                projectName = project["label"]
+                break
+
+        if projectName:
+            # Get the project items (images) from the Project folder.
+            projectItemSet = getProjectDataset(
+                projectName, project_id, forceRefresh=True
+            )
+
+            return projectItemSet if projectItemSet else []
+        else:
+            raise Exception('Could not find the project in the dropdown.')
+    else:
+        return no_update
+
+
+
+@callback(
     Output('projects-store', 'data'),
     [
         Input('load-project-store', 'children'),
@@ -92,8 +136,10 @@ def start_store(_, n_clicks: bool):
         Output("curProject_disp", "children"),
         Output("curProjectName_store", "data")
     ],
-    Input("projects-dropdown", "value"),
-    State("projects-dropdown", "data"),
+    [
+        Input("projects-dropdown", "value"),
+        Input("projects-dropdown", "data"),
+    ],
     prevent_initial_call=True
 )
 def updateProjectNameStore(projectId, projectData):
