@@ -7,8 +7,8 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import html, Output, Input, State, callback, no_update
 
-from ..utils.settings import USER, PROJECTS_ROOT_FOLDER_ID, gc
-from ..utils.database import getProjects
+from ...utils.settings import USER, PROJECTS_ROOT_FOLDER_ID, gc
+from ...utils.database import getProjects
 
 create_project_popup = dbc.Modal(
     [

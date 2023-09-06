@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from dash import html, Output, Input, State, callback
 
-from ..utils.settings import USER, PROJECTS_ROOT_FOLDER_ID, gc
+from ...utils.settings import USER, PROJECTS_ROOT_FOLDER_ID, gc
 
 create_task_popup = dbc.Modal(
     [

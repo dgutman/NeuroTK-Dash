@@ -1,12 +1,13 @@
 from dash import html, dcc, callback, Input, Output, State, dcc
 import dash_ag_grid
-from ..utils.database import mc
 import dash_bootstrap_components as dbc
-from ..utils.api import gc
 import dash, json
 import pandas as pd
-from ..utils.settings import dbConn
 import plotly.express as px
+
+from ...utils.database import mc
+from ...utils.api import gc
+from ...utils.settings import dbConn
 
 jobStatusQueue_map = {4: "fail", 3: "sucess", 2: "running", 1: "queued", 0: "inactive"}
 # status codes -- 4: fail, 3: success, 0: inactive, 1/2: queued/running
@@ -32,7 +33,7 @@ jobQueue_button_controls = html.Div(
 )
 
 
-jobQueue_frame = dbc.Container(
+jobqueue_frame = html.Div(dbc.Container(
     [
         dbc.Row(jobQueue_button_controls),
         dbc.Row(
@@ -66,7 +67,7 @@ jobQueue_frame = dbc.Container(
         ),
         dbc.Row([html.Div(id="refreshStatusDiv")]),
     ]
-)
+))
 
 
 @callback(Output("job-status-pieChart", "figure"), Input("jobInfo_store", "data"))

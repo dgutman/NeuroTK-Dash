@@ -8,8 +8,8 @@ from dash_mantine_components import Select
 import dash_bootstrap_components as dbc
 
 from .create_project_popup import create_project_popup
-from ..utils.database import getProjects
-from ..utils.settings import PROJECTS_ROOT_FOLDER_ID
+from ...utils.database import getProjects
+from ...utils.settings import PROJECTS_ROOT_FOLDER_ID
 
 project_selection = html.Div(
     [
@@ -105,7 +105,7 @@ def updateProjectNameStore(projectId, projectData):
                     p["label"]
                 )
     else:
-        html.Div(), ''
+        return html.Div(['Current project: ', html.Strong('no project selected')]), ''
 
 
 @callback(

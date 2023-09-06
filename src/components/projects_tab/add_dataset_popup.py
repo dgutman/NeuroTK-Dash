@@ -5,7 +5,7 @@ from dash import html, Output, Input, callback, State
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 from typing import List
-from ..utils.api import get_datasets_list
+from ...utils.api import get_datasets_list
 
 add_dataset_popup = dbc.Modal(
     [
