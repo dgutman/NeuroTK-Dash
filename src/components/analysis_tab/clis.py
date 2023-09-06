@@ -92,10 +92,6 @@ def create_cli_selector():
                     dcc.Store(id="cliImageList_store"),
                     dbc.Col(
                         [
-                            # dmc.Text(
-                            #     id="cliParam-json-output",
-                            #     style=CLI_OUTPUT_STYLE,
-                            # ),
                             dmc.Text(
                                 "Other Info Here TBD",
                                 style=CLI_OUTPUT_STYLE,
@@ -325,6 +321,8 @@ def generate_dash_layout_from_slicer_cli(
         Input("curCLI_params", "data"),
         State("cliItems_store", "data"),
         State("mask-name-for-cli", "value"),
+        State('tasks-dropdown', 'value'),
+        State('task-store', 'data')
     ],
     running=[
         (Output("cli-submit-button", "disabled"), True, False),
@@ -341,9 +339,34 @@ def generate_dash_layout_from_slicer_cli(
         Output("job-submit-progress-bar", "max"),
     ],
 )
-def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun, maskName):
+def submitCLItasks(
+    set_progress, n_clicks, curCLI_params, itemsToRun, maskName, 
+    selected_task, task_store
+):
     if n_clicks:
-        print(maskName, "is current mask name to lookup")
+        from pprint import pprint
+
+        # print('Current CLI parameters:')
+
+        # pprint(curCLI_params)
+
+        # print('\nList of items to run:')
+
+        # pprint(itemsToRun)
+        
+        # Get DSA id of selected task.
+        task_id = None
+
+        for task in task_store:
+            if selected_task == task:
+                task_id = task_store[task]['_id']
+                break
+        
+        if not task_id:
+            raise Exception('Task not found in task store, but alert.')
+        else:
+            print(task_id)
+
         maxJobsToSubmit = 500
         jobSubmitList = []
         for i in range(maxJobsToSubmit):
@@ -351,10 +374,10 @@ def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun, maskName):
             jobSubmitList.append(jobOutput)
 
             set_progress((str(i + 1), str(maxJobsToSubmit)))
-        if jobSubmitList:
-            print(len(jobSubmitList), "jobs were submitted..")
-        else:
-            print("No items were set to run..")
+        # if jobSubmitList:
+        #     print(len(jobSubmitList), "jobs were submitted..")
+        # else:
+        #     print("No items were set to run..")
 
         submissionStatus = [x["status"] for x in jobSubmitList]
 
@@ -362,8 +385,6 @@ def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun, maskName):
             f"{json.dumps(Counter(submissionStatus))} from a total list of {len(jobSubmitList)}"
         )
         
-    # return html.Div()
-
 
 dsa_cli_view_layout = dbc.Container(
     [

@@ -12,7 +12,7 @@ from .create_task_popup import create_task_popup
 
 task_selection = html.Div(
     [
-        dcc.Store(id="task-store", data=[]),
+        dcc.Store(id="task-store", data=''),
         dbc.Row(
             [
                 dbc.Col(
@@ -79,6 +79,7 @@ def update_current_task(selected_task):
         Output('new-task-name', 'value'),
         Output('create-task-popup', 'is_open', allow_duplicate=True),
         Output('create-task-alert', 'children'),
+        Output('task-store', 'data')
     ],
     [
         Input("projects-dropdown", "value"),
@@ -125,10 +126,10 @@ def populate_tasks(
     if n_clicks and is_open:
         # If create task button has been clicked before and the window is open.
         # Create Tasks folder if it does not exist.
-        tasks_fld = gc.createFolder(project_id, 'Tasks',  reuseExisting=True)
+        tasks_fld = gc.createFolder(project_id, 'Tasks', reuseExisting=True)
         
         # Grab list of current task item names.
-        tasks = [item['name'] for item in gc.listItem(tasks_fld['_id'])]
+        tasks = {item['name']: item for item in gc.listItem(tasks_fld['_id'])}
 
         if new_task_name in tasks:
             # Task exists, switch default return values.
@@ -139,24 +140,23 @@ def populate_tasks(
             selected_task = current_task  # don't change the selected task
         else:
             # Create the new task item.
-            _ = gc.createItem(tasks_fld['_id'], new_task_name)
-            tasks.append(new_task_name)
+            tasks[new_task_name] = gc.createItem(tasks_fld['_id'], new_task_name)
             selected_task = new_task_name  # switch selected task to new task
             is_open = False  # close the create task window
     elif project_id:
         # Project has been switched, get new task list.
         tasks_fld = gc.createFolder(project_id, 'Tasks', reuseExisting=True)
-        tasks = [item['name'] for item in gc.listItem(tasks_fld['_id'])]
+        tasks = {item['name']: item for item in gc.listItem(tasks_fld['_id'])}
     else:
         # No project selected.
-        tasks = []
+        tasks = {}
 
     # Format the tasks to go in a dmc.Select data.
     if tasks:
-        tasks = [
-            {'value': task, 'label': task} for task in sorted(tasks)
+        options = [
+            {'value': task, 'label': task} for task in tasks
         ]
 
-        return tasks, selected_task, hide, returned_name, is_open, alert_message
+        return options, selected_task, hide, returned_name, is_open, alert_message, tasks
     else:
-        return [], selected_task, hide, returned_name, is_open, alert_message
+        return [], selected_task, hide, returned_name, is_open, alert_message, []
