@@ -183,7 +183,10 @@ def updateProjectItemSetTable(
     """
     # If there are items read them into dataframe.
     if projectItemSet:
-        df = pd.json_normalize(projectItemSet)
+        """No need to normalize the project item set, it should be 
+        in strings of key / value pairs. If not then read with 
+        pd.json_normalize instead."""
+        df = pd.DataFrame(projectItemSet)
 
         # If task is selected then filter by the task.
         if selectedTask:
@@ -200,6 +203,32 @@ def updateProjectItemSetTable(
                 cols_to_drop.append(col)
 
         df = df.drop(columns=cols_to_drop)
+
+        # Re-organize the order of the tables so the most relevant columns are first.
+        cols = df.columns.tolist()
+
+        new_cols = []
+        schema_cols = []
+        clinical_cols = []
+        other_cols = []
+
+        if '_id' in cols:
+            new_cols.append('_id')
+        if 'name' in cols:
+            new_cols.append('name')
+
+        for col in cols:
+            if col not in ('_id', 'name'):
+                if col.startswith('npSchema'):
+                    schema_cols.append(col)
+                elif col.startswith('npClinical'):
+                    clinical_cols.append(col)
+                else:
+                    other_cols.append(col)
+                    
+        new_cols += schema_cols + clinical_cols + other_cols
+
+        df = df[new_cols]
 
         return [generate_generic_DataTable(df, "project-itemSet-table")]
 

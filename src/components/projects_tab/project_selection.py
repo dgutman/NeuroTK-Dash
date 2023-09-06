@@ -25,14 +25,17 @@ project_selection = html.Div(
                     html.Button(
                         [html.I(className='fa-solid fa-arrows-rotate')],
                         id='refresh-item-store',
-                        style={'background-color': 'orange'}
+                        style={'background-color': 'orange'},
+                        title='Refresh current project item store.',
+                        disabled=True
                     ),
                     width='auto'
                 ),
                 dbc.Col(
                     html.Button(
                         [html.I(className='fa-solid fa-arrows-rotate')],
-                        id='refresh-projects-bn'
+                        id='refresh-projects-bn',
+                        title='Refresh the availble projects.'
                     ), 
                     width='auto'
                 ),
@@ -76,6 +79,19 @@ project_selection = html.Div(
     ],
     id="project-selection",
 )
+
+
+@callback(
+    Output('refresh-item-store', 'disabled'),
+    Input('projects-dropdown', 'value'),
+    prevent_initial_call=True
+)
+def refresh_itemStore_state(selected_project):
+    """
+    Disable the refresh new project button if a project is not selected.
+
+    """
+    return False if selected_project else True
 
 
 @callback(
@@ -147,11 +163,17 @@ def updateProjectNameStore(projectId, projectData):
         for p in projectData:
             if p["value"] == projectId:
                 return (
-                    html.Div(["Current project: ", html.Strong(f"{p['label']}")]),
+                    html.Div(
+                        ["Current project: ", html.Strong(f"{p['label']}")],
+                        style={"color": "#fcfcfc"}
+                    ),
                     p["label"]
                 )
     else:
-        return html.Div(['Current project: ', html.Strong('no project selected')]), ''
+        return html.Div(
+            ['Current project: ', html.Strong('no project selected')],
+            style={"color": "#fcfcfc"}
+        ), ''
 
 
 @callback(

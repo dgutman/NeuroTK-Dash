@@ -2,7 +2,7 @@
 Selection of task through the a dropdown or creating of a new task via a 
 button popup window.
 """
-from dash import html, dcc, Output, Input, State, callback
+from dash import html, dcc, Output, Input, State, callback, no_update
 import dash_bootstrap_components as dbc
 from dash_mantine_components import Select
 from typing import List
@@ -52,6 +52,23 @@ task_selection = html.Div(
     ],
     id="task-selection",
 )
+
+
+@callback(
+    Output('curTask_disp', 'children'),
+    Input('tasks-dropdown', 'value')
+)
+def update_current_task(selected_task):
+    if selected_task:
+        return html.Div(
+            ["Current task: ", html.Strong(selected_task)], 
+            style={"color": "#fcfcfc"}
+        )
+    else:
+        return html.Div(
+            ['Current task: ', html.Strong('no task selected')],
+            style={"color": "#fcfcfc"}
+        )
 
 
 @callback(
