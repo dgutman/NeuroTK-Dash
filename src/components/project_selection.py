@@ -105,7 +105,7 @@ def updateProjectNameStore(projectId, projectData):
                     p["label"]
                 )
     else:
-        htlm.Div(), []
+        html.Div(), ''
 
 
 @callback(

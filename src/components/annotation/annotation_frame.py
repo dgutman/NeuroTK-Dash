@@ -14,7 +14,7 @@ from ...utils.database import insertAnnotationData
 ## Note because of the way I am importing the app object, do NOT use @callback, use app.callback here
 
 curAppObject = SingletonDashApp()
-print(curAppObject.app.title, "Object was loaded..")
+# print(curAppObject.app.title, "Object was loaded..")
 
 app = curAppObject.app  ## I find this very confusing..
 
@@ -163,6 +163,7 @@ annotations_frame = html.Div(
     Output("annotations_store", "data"),
     Input("pull-from-girder-button", "n_clicks"),
     State("curProjectName_store", "data"),
+    prevent_initial_call=True
 )
 def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
     if n_clicks:
@@ -179,11 +180,10 @@ def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
 
 
 @app.callback(
-    [Output("unique_annots_datatable_div", "children")],
-    [
-        Input("refresh-annotations-button", "n_clicks"),
-        State("curProjectName_store", "data"),
-    ],
+    Output("unique_annots_datatable_div", "children"),
+    Input("refresh-annotations-button", "n_clicks"),
+    State("curProjectName_store", "data"),
+    prevent_initial_call=True
 )
 def createAnnotationNameCountTable(n_clicks, projectName, debug=False):
     """This gets the list of distinct annotation names and returns a table with the numer and names of annotations"""
@@ -203,6 +203,7 @@ def createAnnotationNameCountTable(n_clicks, projectName, debug=False):
     Output("annotation_details_panel", "children"),
     Input("annotation_name_counts_table", "cellClicked"),
     State("annotation_name_counts_table", "virtualRowData"),
+    prevent_initial_call=True
 )
 def generateAnnotationSpecificViz(cellClicked, rowData):
     ## Depending on the annotation cell Clicked, this may generate different graphs
