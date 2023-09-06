@@ -169,7 +169,9 @@ def update_dropdown_value(data, value, hide, selected_project):
     Update the value of the project dropdown.
     
     """
+    # If there is a value in the new project screen
     if value:
+        # The popup must be open for this to count
         if not hide:
             return no_update, value
 

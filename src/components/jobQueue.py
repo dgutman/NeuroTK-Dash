@@ -122,8 +122,9 @@ def refresh_jobs(n_clicks):
         return dash.no_update
 
     collection = dbConn["dsaJobQueue"]
-    # Find jobs with status 0
-    jobs = collection.find({"status": 0})
+
+    # Find jobs with status 0 == inactive
+    jobs = collection.find({"status": {'$in': [0, 1, 2]}})
 
     ## TO DO.. maybe enumerate this or something?
     jobsScanned = 0
@@ -131,8 +132,9 @@ def refresh_jobs(n_clicks):
         job_id = job["_id"]
         currentJobInfo = gc.get(f"job/{job_id}")
         newStatus = currentJobInfo["status"]
-        # Update MongoDB
-        # print(json.dumps(newStatus, indent=2))
+
+        # Update the mongo database.
         collection.update_one({"_id": job_id}, {"$set": {"status": newStatus}})
         jobsScanned += 1
+    
     return [html.Div(jobsScanned, "were scanned")]

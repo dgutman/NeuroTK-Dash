@@ -116,15 +116,21 @@ def create_cli_selector():
 ### Update this cliItems from the main table data.
 ## TO DO-- DO NOT ALLOW THE CLI TO bE SUBMITTED IF THERE ARE NO ACTUAL]
 ## ITEMS TO RUN.. its confusing..
-
-
-@callback(Output("cliItems_store", "data"), Input("filteredItem_store", "data"))
+@callback(
+    Output("cliItems_store", "data"), 
+    Input("filteredItem_store", "data")
+)
 def updateCliTasks(data):
     if data:
         return data
+    else:
+        return []
 
 
-@callback(Output("cliItemStats", "children"), Input("cliItems_store", "data"))
+@callback(
+    Output("cliItemStats", "children"), 
+    Input("cliItems_store", "data"),
+)
 def displayImagesForCLI(data):
     # print(len(data), "items in imagelist..")
     ## This gets the data from the itemSet store, it really needs to be the
@@ -134,6 +140,8 @@ def displayImagesForCLI(data):
     if data:
         ## TO DO ... ADD SOME MORE MATH TO DISPLAY OTHER PROPERTIES
         return html.Div(f"Items in Task List: {len(data)} ")
+    else:
+        return html.Div()
 
 
 ### This reads the XML files from Disk.. in future could also pull them
@@ -143,7 +151,10 @@ def read_xml_content(dsa_task_name):
         return fp.read().strip()
 
 
-@callback(Output("cli-output", "children"), Input("cli-select", "value"))
+@callback(
+    Output("cli-output", "children"), 
+    Input("cli-select", "value")
+)
 def show_cli_param_ui(selected_cli_task):
     xml_content = read_xml_content(selected_cli_task)
     # xml_panel = generate_xml_panel(xml_content)
@@ -352,6 +363,8 @@ def submitCLItasks(set_progress, n_clicks, curCLI_params, itemsToRun, maskName):
         return html.Div(
             f"{json.dumps(Counter(submissionStatus))} from a total list of {len(jobSubmitList)}"
         )
+        
+    return html.Div()
 
 
 dsa_cli_view_layout = dbc.Container(

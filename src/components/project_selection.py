@@ -15,6 +15,7 @@ project_selection = html.Div(
     [
         dcc.Store(
             id="projects-store",
+            data=' '
         ),
         dcc.Store(id="curProjectName_store"),
         html.Div(id="load-project-store"),
@@ -85,21 +86,26 @@ def start_store(_, n_clicks: bool):
     return getProjects(PROJECTS_ROOT_FOLDER_ID, forceRefresh=n_clicks)
 
 
-## Adding current project info to the main top bar
+# Adding current project info to the main top bar
 @callback(
-    Output("curProject_disp", "children"),
-    Output("curProjectName_store", "data"),
+    [
+        Output("curProject_disp", "children"),
+        Output("curProjectName_store", "data")
+    ],
     Input("projects-dropdown", "value"),
-    Input("projects-dropdown", "data"),  # not sure this should be here
+    State("projects-dropdown", "data"),
+    prevent_initial_call=True
 )
 def updateProjectNameStore(projectId, projectData):
-    if projectId:
+    if projectId and projectData:
         for p in projectData:
             if p["value"] == projectId:
                 return (
                     html.Div(["Current project: ", html.Strong(f"{p['label']}")]),
-                    p["label"],
+                    p["label"]
                 )
+    else:
+        htlm.Div(), []
 
 
 @callback(
