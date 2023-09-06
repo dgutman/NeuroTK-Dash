@@ -8,7 +8,6 @@ import dash
 from dash import html
 from src.utils.settings import SingletonDashApp
 
-
 neuroTK_dashapp = SingletonDashApp()
 
 app = neuroTK_dashapp.app

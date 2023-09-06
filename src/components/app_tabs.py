@@ -16,7 +16,9 @@ app_tabs = html.Div(
                         dmc.Tab("Analysis", value="analysis"),
                         dmc.Tab("Job Queue", value="jobQueue"),
                         dmc.Tab("Annotations", value="annotations"),
-                    ]
+                    ],
+                    
+                    style={'backgroundColor': '#e4e6f0', 'activeBackgroundColor': 'red'}
                 ),
                 dmc.TabsPanel(
                     [
@@ -50,6 +52,9 @@ app_tabs = html.Div(
             orientation="horizontal",
             value="projects",
             id="projects-tabs",
+            color='#6384c6',
+            inverted=True,
+            variant='pills',
         )
     ]
 )
