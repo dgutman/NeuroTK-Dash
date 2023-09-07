@@ -1,4 +1,4 @@
-from dash import html, dcc, callback, Output, Input, State
+from dash import html, dcc, callback, Output, Input, State, no_update
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 from typing import List
@@ -18,6 +18,7 @@ dataset_view = html.Div(
     [
         dcc.Store("filteredItem_store"),
         dcc.Store("projectItem_store"),
+        dcc.Store('taskItem_store'),
         dcc.Store("dataset-item-store", data=get_datasets_list()),
         dmc.Tabs(
             [
@@ -72,6 +73,7 @@ dataset_view = html.Div(
             value="table",
         ),
         add_dataset_popup,
+        html.Button('test', id='test')
     ]
 )
 
@@ -163,7 +165,10 @@ def updateProjectItemStore(
 
 @callback(
     Output("project-itemSet-div", "children"),
-    [Input("tasks-dropdown", "value"), Input("projectItem_store", "data")],
+    [
+        Input("tasks-dropdown", "value"), 
+        Input("projectItem_store", "data")
+    ],
     prevent_initial_call=True,
 )
 def updateProjectItemSetTable(
@@ -237,16 +242,38 @@ def updateProjectItemSetTable(
 
 @callback(
     Output("filteredItem_store", "data"),
-    Input("project-itemSet-table", "filterModel"),
-    State("project-itemSet-table", "virtualRowData"),
+    [
+        Input("project-itemSet-table", "filterModel"),
+        Input('projectItem_store', 'data')
+    ],
+    [
+        State("project-itemSet-table", "virtualRowData"),
+        State('tasks-dropdown', 'value'),
+    ],
     prevent_initial_call=True,
 )
-def updateFilteredItemStore(filterModel, virtualRowData):
+def updateFilteredItemStore(_, project_item_store, virtualRowData, selected_task):
     # We update the filtered item store from changes to the table.
     if virtualRowData is not None and len(virtualRowData):
+        # Return the virtual row data.
         return virtualRowData
+    elif selected_task:
+        # Return the just the task items.
+        task_key = f'taskAssigned_{selected_task}'
 
-    return []
+        task_items = []
+
+        for item in project_item_store:
+            if item.get(task_key) == 'Assigned':
+                task_items.append(item)
+
+        if task_items:
+            return task_items
+        else:
+            # If there are not task items then return the entire project data.
+            return project_item_store
+    else:
+        return []
 
 
 @callback(

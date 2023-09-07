@@ -137,7 +137,7 @@ def populate_tasks(
             is_open = True  # keep create task window open
             returned_name = new_task_name  # keep existing name
             alert_message = f'"{new_task_name}" task already exists.'
-            selected_task = current_task  # don't change the selected task
+            selected_task = no_update  # don't change the selected task
         else:
             # Create the new task item.
             tasks[new_task_name] = gc.createItem(tasks_fld['_id'], new_task_name)

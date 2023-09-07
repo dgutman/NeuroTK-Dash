@@ -108,8 +108,6 @@ def refresh_projectItem_store(n_clicks, available_projects, project_id):
     Update the project item store.
     """
     if n_clicks:
-        # Get the project name.
-
         # Get the name of the project.
         projectName = None
 

@@ -1,14 +1,15 @@
-from dash import html, dcc, Input, Output, State, ALL, callback
+from dash import html, dcc, Input, Output, State, ALL, callback, no_update
 from ...utils.settings import AVAILABLE_CLI_TASKS, SingletonDashApp
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 import json
-import xml.etree.ElementTree as ET
-import dash
-from ...utils.api import submit_ppc_job
 from collections import Counter
+from typing import List
 
-
+from ...utils.api import submit_ppc_job
+from ...utils.settings import gc
+from ...utils.helpers import generate_dash_layout_from_slicer_cli
+from ...utils.database import getProjectDataset
 ## Note because of the way I am importing the app object, do NOT use @callback, use app.callback here
 
 curAppObject = SingletonDashApp()
@@ -35,6 +36,7 @@ cli_button_controls = html.Div(
             "Submit CLI",
             id="cli-submit-button",
             className="mr-2 btn btn-warning",
+            disabled=True
         ),
         html.Button(
             id="cli-job-cancel-button",
@@ -114,11 +116,9 @@ def create_cli_selector():
     Output("cliItems_store", "data"), 
     Input("filteredItem_store", "data")
 )
-def updateCliTasks(data):
-    if data:
-        return data
-    else:
-        return []
+def updateCliTasks(filtered_store):
+    # If the task is selected, but there is not filtered item store. Then
+    return filtered_store if filtered_store else []
 
 
 @callback(
@@ -143,16 +143,79 @@ def displayImagesForCLI(data):
 def read_xml_content(dsa_task_name):
     with open(f"src/slicer-cli-xmls/{dsa_task_name}.xml", "r") as fp:
         return fp.read().strip()
+    
+
+@callback(
+    [
+        Output('cli-select', 'value'),
+        Output('mask-name-for-cli', 'value'),
+        Output('cli-select', 'disabled'),
+        Output('mask-name-for-cli', 'disabled')
+    ],
+    [
+        Input('tasks-dropdown', 'value'),
+        Input('task-store', 'data')
+    ]
+)
+def select_task_cli(selected_task, task_store):
+    """When choosing a new task, if the task has already been run then
+    switch the CLI select to the correct value.
+    """
+    if selected_task:
+        task = task_store.get(selected_task)
+            
+        if task is None:
+            raise Exception('Selected task is not in task store, there is a BUG!')
+
+        # Set the cli select and annotation mask dropdown to options if needed.
+        meta = task.get('meta', {})
+
+        if meta.get('images'):
+            return meta['cli'], meta['roi'], True, True
+
+    return no_update, no_update, False, False
 
 
 @callback(
-    Output("cli-output", "children"), 
-    Input("cli-select", "value")
+    Output("cli-output", "children"),
+    [
+        Input("cli-select", "value"),
+        Input('tasks-dropdown', 'value'),
+        Input('task-store', 'data')
+    ],
+    prevent_initial_call=True
 )
-def show_cli_param_ui(selected_cli_task):
+def show_cli_param_ui(selected_cli_task, selected_task, task_store):
     xml_content = read_xml_content(selected_cli_task)
-    # xml_panel = generate_xml_panel(xml_content)
-    dsa_cli_task_layout = generate_dash_layout_from_slicer_cli(xml_content)
+
+    # Default values to send back when on new task.
+    params = {}
+    
+    # Decide if the UI should be in disabled or enabled.
+    if selected_task:
+        task = task_store.get(selected_task)
+            
+        if task is None:
+            raise Exception('Selected task is not in task store, there is a BUG!')
+
+        meta = task.get('meta', {})
+
+
+        if meta.get('images'):
+            if 'params' not in meta:
+                raise Exception('Images list saved to task without params, this is a BUG!')
+            
+            params = meta['params']
+            
+            disabled = True
+        else:
+            disabled = False
+    else:
+        disabled = False
+    
+    dsa_cli_task_layout = generate_dash_layout_from_slicer_cli(
+        xml_content, disabled=disabled, params=params
+    )
 
     return [dsa_cli_task_layout]
 
@@ -169,163 +232,21 @@ def update_json_output(*args):
     return result
 
 
-def generate_dash_layout_from_slicer_cli(
-    xml_string, paramSetsToIgnore=["Frame and Style", "Dask"]
-):
-    root = ET.fromstring(xml_string)
-
-    ## TO DO:  Hide anything related to DASK and Frame and Style--- this is not reevant
-
-    # There are certain parameters that should not be made directly visible in the UI such as a specific image
-    ## At least for now...
-    paramsToHide = []
-
-    components = []
-
-    for param in root.findall(".//parameters"):
-        param_components = []
-
-        label = param.find("label").text if param.find("label") is not None else ""
-        if label in paramSetsToIgnore:
-            continue
-        param_components.append(html.H4(label, className="card-title"))
-
-        ## This loops through all the various parameters, I want to hide image params for now..
-        hideImageParam = True
-        if not hideImageParam:
-            for image in param.findall("image"):
-                name = image.find("name").text if image.find("name") is not None else ""
-                label_text = (
-                    image.find("label").text if image.find("label") is not None else ""
-                )
-                param_components.extend(
-                    [html.Label(label_text), dcc.Upload(id=name), html.Br()]
-                )
-
-        for region in param.findall("region"):
-            name = region.find("name").text if region.find("name") is not None else ""
-            label_text = (
-                region.find("label").text if region.find("label") is not None else ""
-            )
-            default = (
-                region.find("default").text
-                if region.find("default") is not None
-                else ""
-            )
-            param_components.extend(
-                [
-                    html.Label(label_text),
-                    dcc.Input(
-                        id={"type": "dynamic-input", "index": name},
-                        value=default,
-                        type="text",
-                        readOnly=False,
-                    ),
-                    html.Br(),
-                ]
-            )
-
-        for enum in param.findall("string-enumeration"):
-            name = enum.find("name").text if enum.find("name") is not None else ""
-            label_text = (
-                enum.find("label").text if enum.find("label") is not None else ""
-            )
-            options = [elem.text for elem in enum.findall("element")]
-            param_components.extend(
-                [
-                    html.Label(label_text),
-                    dcc.Dropdown(
-                        id={"type": "dynamic-input", "index": name},
-                        options=[{"label": op, "value": op} for op in options],
-                        value=options[0],
-                        clearable=False,
-                        style={"maxWidth": 300},
-                    ),
-                    html.Br(),
-                ]
-            )
-
-        for vector in param.findall("double-vector"):
-            name = vector.find("name").text if vector.find("name") is not None else ""
-            label_text = (
-                vector.find("label").text if vector.find("label") is not None else ""
-            )
-            default = (
-                vector.find("default").text
-                if vector.find("default") is not None
-                else ""
-            )
-            param_components.extend(
-                [
-                    html.Label(label_text),
-                    dcc.Input(id=name, value=default, type="text", readOnly=False),
-                    html.Br(),
-                ]
-            )
-        for float_param in param.findall("float"):
-            name = (
-                float_param.find("name").text
-                if float_param.find("name") is not None
-                else ""
-            )
-            label_text = (
-                float_param.find("label").text
-                if float_param.find("label") is not None
-                else ""
-            )
-            default = (
-                float_param.find("default").text
-                if float_param.find("default") is not None
-                else ""
-            )
-
-            # Validate that the default value is a float
-            try:
-                float(default)
-            except ValueError:
-                default = 0
-
-            param_components.extend(
-                [
-                    html.Label(label_text, style={"marginRight": "10px"}),
-                    dcc.Input(
-                        id={"type": "dynamic-input", "index": name},
-                        value=float(default),
-                        type="number",
-                        step=0.01,
-                        readOnly=False,
-                        style={
-                            "width": "60px",
-                            "textAlign": "right",
-                            "border": "1px solid #ccc",
-                            "marginRight": "5px",
-                            "margin": "2px 2px",  # vertical and horizontal margin
-                            "appearance": "number-input",  # for Firefox
-                            "MozAppearance": "number-input",  # for older Firefox versions
-                            "WebkitAppearance": "number-input",  # for Chrome and modern browsers
-                        },
-                    ),
-                    html.Br(),
-                ]
-            )
-
-        components.append(dbc.Card(dbc.CardBody(param_components), className="mb-3"))
-
-    return dbc.Container(components, className="mt-3")
-
-
 @app.long_callback(
-    output=Output("cli-output-status", "children"),
+    output=[
+        Output("cli-output-status", "children"),
+        Output('task-store', 'data', allow_duplicate=True)
+    ],
     inputs=[
         Input("cli-submit-button", "n_clicks"),
-        Input("curCLI_params", "data"),
+        State("curCLI_params", "data"),
         State("cliItems_store", "data"),
         State("mask-name-for-cli", "value"),
         State('tasks-dropdown', 'value'),
-        State('task-store', 'data')
+        State('task-store', 'data'),
     ],
     running=[
-        (Output("cli-submit-button", "disabled"), True, False),
+        (Output("cli-submit-button", "disabled"), True, True),
         (Output("cli-job-cancel-button", "disabled"), False, True),
         (
             Output("job-submit-progress-bar", "style"),
@@ -338,23 +259,31 @@ def generate_dash_layout_from_slicer_cli(
         Output("job-submit-progress-bar", "value"),
         Output("job-submit-progress-bar", "max"),
     ],
+    prevent_initial_call=True
 )
 def submitCLItasks(
-    set_progress, n_clicks, curCLI_params, itemsToRun, maskName, 
-    selected_task, task_store
+    set_progress, 
+    n_clicks: int, 
+    curCLI_params: dict, 
+    itemsToRun: List[dict], 
+    maskName: str, 
+    selected_task: str, 
+    task_store: List[dict],
 ):
+    """
+    Submit a CLI task - though right now this will only work with ppc.
+
+    Args:
+        n_clicks: This is the button to submit CLI task. Check if positive to run.
+        curCLI_params: Dictionary of the params in the CLI panel.
+        itemsToRun: List of DSA items to run.
+        maskName: Name of mask which is used to determine the region to run CLI on.
+        selected_task: CLI is tied to a task, this is the current selected task.
+        task_store: Selected task is just the task name, not the id of it. The id is
+            stored in the task_store.
+    
+    """
     if n_clicks:
-        from pprint import pprint
-
-        # print('Current CLI parameters:')
-
-        # pprint(curCLI_params)
-
-        # print('\nList of items to run:')
-
-        # pprint(itemsToRun)
-        
-        # Get DSA id of selected task.
         task_id = None
 
         for task in task_store:
@@ -364,30 +293,99 @@ def submitCLItasks(
         
         if not task_id:
             raise Exception('Task not found in task store, but alert.')
-        else:
-            print(task_id)
+        
+        # Submit metadata to the task.
+        task_metadata = {
+            'images': [item['_id'] for item in itemsToRun],
+            'cli': 'PositivePixelCount',
+            'params': curCLI_params,
+            'roi': maskName
+        }
 
-        maxJobsToSubmit = 500
+        item = gc.addMetadataToItem(task_id, metadata=task_metadata)
+
+        # Update this item on the task store.
+        task_store[item['name']] = item
+
+        # Submit the jobs
         jobSubmitList = []
-        for i in range(maxJobsToSubmit):
-            jobOutput = submit_ppc_job(itemsToRun[i], curCLI_params, maskName)
+        n_jobs = len(itemsToRun)
+        
+        for i, item in enumerate(itemsToRun):
+            jobOutput = submit_ppc_job(item, curCLI_params, maskName)
             jobSubmitList.append(jobOutput)
 
-            set_progress((str(i + 1), str(maxJobsToSubmit)))
-        # if jobSubmitList:
-        #     print(len(jobSubmitList), "jobs were submitted..")
-        # else:
-        #     print("No items were set to run..")
+            set_progress((str(i + 1), str(n_jobs)))
+
+        if jobSubmitList:
+            print(len(jobSubmitList), "jobs submitted.")
+        else:
+            print("No jobs to submit.")
 
         submissionStatus = [x["status"] for x in jobSubmitList]
 
         return html.Div(
             f"{json.dumps(Counter(submissionStatus))} from a total list of {len(jobSubmitList)}"
-        )
-        
+        ), task_store
+    
+
+@callback(
+    Output("projectItem_store", "data", allow_duplicate=True),
+    Input("cli-submit-button", "n_clicks"),
+    [
+        State("projects-dropdown", "data"),
+        State("projects-dropdown", "value"),
+    ],
+    prevent_initial_call=True
+)
+def update_task_list(n_clicks, available_projects, project_id):
+    if n_clicks:
+        # Update the project list.
+        projectItemSet = []
+
+        for project in available_projects:
+            if project["value"] == project_id:
+                projectName = project["label"]
+
+                projectItemSet = getProjectDataset(
+                    projectName, project_id, forceRefresh=True
+                )
+
+                return projectItemSet
+                    
 
 dsa_cli_view_layout = dbc.Container(
     [
         dbc.Row(create_cli_selector()),
     ]
 )
+
+
+@callback(
+    Output('cli-submit-button', 'disabled'),
+    Input('tasks-dropdown', 'value'),
+    State('task-store', 'data')
+)
+def toggle_cli_bn_state(selected_task, task_store):
+    """ 
+    Disable the submit CLI button when no task is selected.
+    """
+    if selected_task:
+        # There is a task selected, get this task.
+        from pprint import pprint
+        
+        task = task_store.get(selected_task)
+        
+        if task is None:
+            raise Exception('Selected task is not in task store, there is a BUG!')
+        
+        # DEBUG - always return False
+        # return False
+        
+        # Check the metadata for images - if it exists then the button should disable.
+        if task.get('meta', {}).get('images'):
+            return True
+        else:
+            return False
+
+    return True

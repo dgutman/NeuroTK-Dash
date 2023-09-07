@@ -277,7 +277,7 @@ def submit_ppc_job(data, params, maskName=None):
     cliInputData["region"] = points
 
     if maskName:
-        print("Should be fetching point set from", maskName, "for", item["_id"])
+        # print("Should be fetching point set from", maskName, "for", item["_id"])
         ## Lookup annotation data for this image..
         # print(item)
         ## TO DO.. what if there is more than one mask with the same name.. to be fixed
