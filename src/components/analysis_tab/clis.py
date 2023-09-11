@@ -43,7 +43,7 @@ cli_button_controls = html.Div(
             id="cli-job-cancel-button",
             className="mr-2 btn btn-danger",
             children="Cancel Running Job!",
-            disabled=True
+            disabled=True,
         ),
         dbc.Progress(
             id="job-submit-progress-bar",
@@ -60,6 +60,7 @@ def create_cli_selector():
         [
             dcc.Store(id="cliItems_store"),
             dcc.Store(id="curCLI_params", data={}),
+            dcc.Store(id="taskJobQueue_store", data={}),
             dbc.Row(
                 [
                     dmc.Select(
@@ -76,7 +77,12 @@ def create_cli_selector():
                         data=["", "gray-matter-from-xmls", "gray-matter-fixed"],
                         style={"maxWidth": 300},
                     ),
-                    html.Button("Refresh Task Status",id='task-status-button',  className="mr-2 btn btn-danger", style={"maxWidth":300})
+                    html.Button(
+                        "Refresh Task Status",
+                        id="task-status-button",
+                        className="mr-2 btn btn-danger",
+                        style={"maxWidth": 300},
+                    ),
                 ]
             ),
             dbc.Row(
@@ -102,7 +108,7 @@ def create_cli_selector():
                                 style=CLI_OUTPUT_STYLE,
                             ),
                             html.Div(id="cli-output-status"),
-                            html.Div(id="debugjobtaskstatus")
+                            html.Div(id="debugjobtaskstatus"),
                         ],
                         width=3,
                     ),
@@ -113,20 +119,15 @@ def create_cli_selector():
     )
 
 
-## Create callback for when the app loads to see the status of jobs already submitted or running
-
 @callback(
-    Output("debugjobtaskstatus","children"),
-    Input("task-status-button","n_clicks"),
-    [
-        State("curCLI_params","data"), 
-        State("cliItems_store", "data")
-    ],
-    prevent_initial_call=True
+    Output("debugjobtaskstatus", "children"),
+    Input("task-status-button", "n_clicks"),
+    [State("curCLI_params", "data"), State("cliItems_store", "data")],
+    prevent_initial_call=True,
 )
 def refreshTaskStatus(n_clicks, cliParams, items):
     """Look up the status of each job for this task."""
-    ### This will check the dsaJobQueue mongo collection, and given a list of imageID's 
+    ### This will check the dsaJobQueue mongo collection, and given a list of imageID's
     ## and a parameter set, will see what jobs have been run and/or submitted
     if n_clicks:
         status_list = {}
@@ -137,7 +138,8 @@ def refreshTaskStatus(n_clicks, cliParams, items):
 
             print(status)
 
-        return html.Div(f'You have clicked this button {n_clicks} times.')
+        return html.Div(f"You have clicked this button {n_clicks} times.")
+
 
 ### Update this cliItems from the main table data.
 ## TO DO-- DO NOT ALLOW THE CLI TO bE SUBMITTED IF THERE ARE NO ACTUAL]
@@ -261,6 +263,7 @@ def update_json_output(*args):
     output=[
         Output("cli-output-status", "children"),
         Output("task-store", "data", allow_duplicate=True),
+        Output("taskJobQueue_store", "data"),
     ],
     inputs=[
         Input("cli-submit-button", "n_clicks"),
@@ -275,15 +278,15 @@ def update_json_output(*args):
         (Output("cli-job-cancel-button", "disabled"), False, True),
         (
             Output("job-submit-progress-bar", "style"),
-            {"visibility": "visible", 'width':'25vw'},
-            {"visibility": "visible", "width": '25vw'},
+            {"visibility": "visible", "width": "25vw"},
+            {"visibility": "visible", "width": "25vw"},
         ),
     ],
     cancel=[Input("cli-job-cancel-button", "n_clicks")],
     progress=[
         Output("job-submit-progress-bar", "value"),
         Output("job-submit-progress-bar", "label"),
-        Output("job-submit-progress-bar", 'max')
+        Output("job-submit-progress-bar", "max"),
     ],
     prevent_initial_call=True,
 )
@@ -351,12 +354,21 @@ def submitCLItasks(
         #     print("No jobs to submit.")
 
         submissionStatus = [x["status"] for x in jobSubmitList]
+        print(jobSubmitList[0])
+
+        ## Can get the entire jobStatus cleverely..
+
+        currentJobStatusInfo = [x["girderResponse"]["status"] for x in jobSubmitList]
+        from collections import Counter
+
+        print(Counter(currentJobStatusInfo))
 
         return (
             html.Div(
                 f"{json.dumps(Counter(submissionStatus))} from a total list of {len(jobSubmitList)}"
             ),
             task_store,
+            jobSubmitList,
         )
 
 

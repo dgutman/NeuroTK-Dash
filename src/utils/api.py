@@ -230,9 +230,6 @@ def get_datasets_list() -> List[dict]:
 ### Adding job import here
 
 
-
-
-
 def lookup_job_record(search_dict, userName):
     # Initialize MongoDB client
     collection = dbConn["dsaJobQueue"]
@@ -241,7 +238,7 @@ def lookup_job_record(search_dict, userName):
     ## Need to cast all the values to a string and also add the _original_params to the key
     str_search_dict = {f"_original_params.{k}": str(v) for k, v in search_dict.items()}
     ## Adding in userKey to the lookup dictionary
-    str_search_dict['user'] = USER
+    str_search_dict["user"] = USER
     ## KNOWLEDGE:  So the original_params are only returned by the job submission function
     ## IT does not appear these are directly embedded in an actual job Item on the DSA itself..
     ## Neer to verify this behavior with Manthey
@@ -270,7 +267,6 @@ def submit_ppc_job(data, params, maskName=None):
     try:
         item = gc.get(f"item/{data['_id']}")
 
-        
         cliInputData = {
             "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
             "outputLabelImage": f"{item['name']}_ppc.tiff",
@@ -301,19 +297,20 @@ def submit_ppc_job(data, params, maskName=None):
             # {itemId: "646655476df8ba8751afe0d8","annotation.name": "gray-matter-fixed"}
     except KeyError:
         print("Large Image lookup failed perhaps?")
-        return {"status": "FAILED"}
+        return {"status": "FAILED", "girderResponse": {"status": "JobSubmitFailed"}}
         ## TO DO Figure out how we want to report these...
 
+    jobCached_info = lookup_job_record(cliInputData, USER)
 
-    if not lookup_job_record(cliInputData,USER):
+    if not jobCached_info:
         jobSubmission_response = gc.post(ppc_ext, data=cliInputData)
         ## Should I add the userID here as well?
 
-        jobSubmission_response['user'] = USER
+        jobSubmission_response["user"] = USER
 
         dbConn["dsaJobQueue"].insert_one(jobSubmission_response)
         return {"status": "SUBMITTED", "girderResponse": jobSubmission_response}
 
     else:
         # print("Job  was already submitted")
-        return {"status": "CACHED"}
+        return {"status": "CACHED", "girderResponse": jobCached_info}
