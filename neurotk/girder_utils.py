@@ -233,3 +233,30 @@ def get_collection(gc: GirderClient, collection_name: str) -> dict:
     for collection in gc.get(f'collection?text={collection_name}&limit=50'):
         if collection['name'] == collection_name:
             return collection
+
+        
+def lookup_resource(gc: GirderClient, path: str, 
+                    resource_type: str = 'collection') -> dict | None:
+    """
+    Lookup a resource by given path. You can lookup a collection, folder, or
+    user with this function.
+    
+    Args:
+        gc: Girder client.
+        path: Absolute DSA path to folder or collection (always start with 
+            collection for folders) or user to look up if resource_type is user.
+        resource_type: If looking for user set to "user" otherwise set to 
+            "collection".
+            
+    Returns:
+        Metadata dictionary for collection, folder, or user or None if not
+        found.
+    
+    """
+    if resource_type not in ('user', 'collection'):
+        raise ValueError(f'Resource type should be "user" or "collection".')
+    
+    try:
+        return gc.get(f'resource/lookup?path=%2F{resource_type}%2F{path}')
+    except HttpError:
+        return None
