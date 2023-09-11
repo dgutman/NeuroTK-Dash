@@ -7,7 +7,12 @@ import pymongo
 from pymongo import UpdateOne
 
 from ..utils.settings import (
-    MONGO_URI, MONGODB_DB, MONGODB_USERNAME, MONGODB_PASSWORD, USER, gc
+    MONGO_URI,
+    MONGODB_DB,
+    MONGODB_USERNAME,
+    MONGODB_PASSWORD,
+    USER,
+    gc,
 )
 from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets, get_projects
 
@@ -150,14 +155,16 @@ def getUniqueParamSets(annotationName):
     return results
 
 
-def getAnnotationNameCount(projectName):
+def getAnnotationNameCount(userName):
     """This will query the mongo database directly and get the distinct annotation names and the associated counts"""
+    """The user name is added to segregate data"""
 
     # # Select your collection
     collection = mc["annotationData"]
 
     # Define the aggregation pipeline
     pipeline = [
+        {"$match": {"userName": USER}},
         {
             "$group": {
                 "_id": "$annotation.name",
@@ -177,6 +184,7 @@ def getAnnotationNameCount(projectName):
                 "_id": 0,
             }
         },
+        {"$sort": {"count": -1}},
     ]
 
     # s# # Execute the aggregation pipeline
@@ -189,7 +197,7 @@ def getElementSizeForAnnotations(annotation):
     # Define the aggregation pipeline
     collection = mc["annotationData"]
     pipeline = [
-        {"$match": {"annotation.name": "gray-matter-fixed"}},
+        {"$match": {"annotation.name": annotation}},
         {
             "$project": {
                 "annotationName": 1,
@@ -230,7 +238,7 @@ def getElementSizeForAnnotations(annotation):
     print(results[0])
     # Print or further process the results
     for result in results:
-        print(f"Document ID: {result['_id']}, Total Points: {result['totalPoints']}")
+        # print(f"Document ID: {result['_id']}, Total Points: {result['totalPoints']}")
         totalPointCounts.append(int(result["totalPoints"]))
     return totalPointCounts
 
@@ -325,10 +333,10 @@ def getProjects(fld_id: str, forceRefresh: bool = False) -> List[dict]:
 
     """
     # Mongo collection.
-    collection = mc['projectList']
+    collection = mc["projectList"]
 
     # Get the project in collection.
-    projectListKey = f'{USER}/{fld_id}'
+    projectListKey = f"{USER}/{fld_id}"
     projectList = list(collection.find({"projectList": projectListKey}))
 
     if projectList and not forceRefresh:
@@ -340,7 +348,7 @@ def getProjects(fld_id: str, forceRefresh: bool = False) -> List[dict]:
 
         # Loop through public and then private folders.
         projects = get_projects(gc, fld_id)
-        projects = {p['_id']: p for p in projects}
+        projects = {p["_id"]: p for p in projects}
 
         projects = [
             dict(projects[imageId], **{"projectList": projectListKey})
@@ -350,9 +358,7 @@ def getProjects(fld_id: str, forceRefresh: bool = False) -> List[dict]:
         ### Now insert the bundle into mongo
         operations = []
         for a in projects:
-            operations.append(
-                UpdateOne({"_id": a["_id"]}, {"$set": a}, upsert=True)
-            )
+            operations.append(UpdateOne({"_id": a["_id"]}, {"$set": a}, upsert=True))
         for chunk in chunks(operations, 500):
             _ = collection.bulk_write(chunk)
 
@@ -363,8 +369,8 @@ def getProjects(fld_id: str, forceRefresh: bool = False) -> List[dict]:
 
 
 def getProjectDataset(
-        projectName: str, projectFolderId: str, forceRefresh: bool = False
-    ) -> List[dict]:
+    projectName: str, projectFolderId: str, forceRefresh: bool = False
+) -> List[dict]:
     """
     Given a projectName, return the data from local mongo database if it exists
     otherwise pull from DSA using girder_client and add to mongo database.
@@ -395,7 +401,7 @@ def getProjectDataset(
                 dict(projectDatasetDict[imageId], **{"projectName": projectName})
                 for imageId in projectDatasetDict
             ]
-            
+
             """Snippet of code that replaces "." with "-" when in the key of 
             dictionary."""
             for i in range(len(projectDataSetItems)):
@@ -404,8 +410,8 @@ def getProjectDataset(
                 for k in list(d.keys()):
                     v = d[k]
 
-                    if '.' in k:
-                        new_k = k.replace('.', '-')
+                    if "." in k:
+                        new_k = k.replace(".", "-")
 
                         del d[k]
 
@@ -430,14 +436,14 @@ def getProjectDataset(
             return None
 
 
-def lookup_jobInfo_for_user_task( imageIdList, search_dict):
+def lookup_jobInfo_for_user_task(imageIdList, search_dict):
     ### Given a list of imageIds, the username which we get some gc.settings
     ### and a seach dict of the parameter set we are interested in, this will
     ## return the status for every image in the list, as well as jobSubmitTime if we can find it
     ## Need to cast all the values to a string and also add the _original_params to the key
     str_search_dict = {f"_original_params.{k}": str(v) for k, v in search_dict.items()}
     ## Adding in userKey to the lookup dictionary
-    str_search_dict['user'] = USER
+    str_search_dict["user"] = USER
 
     record_set = collection.find_one(str_search_dict)
     print(len(record_set))
