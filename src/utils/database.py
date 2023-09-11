@@ -428,3 +428,18 @@ def getProjectDataset(
             return projectImages
         else:
             return None
+
+
+def lookup_jobInfo_for_user_task( imageIdList, search_dict):
+    ### Given a list of imageIds, the username which we get some gc.settings
+    ### and a seach dict of the parameter set we are interested in, this will
+    ## return the status for every image in the list, as well as jobSubmitTime if we can find it
+    ## Need to cast all the values to a string and also add the _original_params to the key
+    str_search_dict = {f"_original_params.{k}": str(v) for k, v in search_dict.items()}
+    ## Adding in userKey to the lookup dictionary
+    str_search_dict['user'] = USER
+
+    record_set = collection.find_one(str_search_dict)
+    print(len(record_set))
+
+    pass
