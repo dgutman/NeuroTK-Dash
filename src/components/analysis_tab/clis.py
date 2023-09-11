@@ -6,8 +6,8 @@ import json
 from collections import Counter
 from typing import List
 
-from ...utils.api import submit_ppc_job
-from ...utils.settings import gc
+from ...utils.api import submit_ppc_job, lookup_job_record
+from ...utils.settings import gc, USER
 from ...utils.helpers import generate_dash_layout_from_slicer_cli
 from ...utils.database import getProjectDataset
 
@@ -37,17 +37,18 @@ cli_button_controls = html.Div(
             "Submit CLI",
             id="cli-submit-button",
             className="mr-2 btn btn-warning",
-            disabled=False,
+            disabled=True,
         ),
         html.Button(
             id="cli-job-cancel-button",
             className="mr-2 btn btn-danger",
             children="Cancel Running Job!",
+            disabled=True
         ),
         dbc.Progress(
             id="job-submit-progress-bar",
             className="progress-bar-success",
-            style={"visibility": "hidden", "width": 250},
+            style={"visibility": "hidden"},
         ),
     ],
     className="d-grid gap-2 d-md-flex justify-content-md-begin",
@@ -114,16 +115,29 @@ def create_cli_selector():
 
 ## Create callback for when the app loads to see the status of jobs already submitted or running
 
-@callback(Output("debugjobtaskstatus","children"),
-Input("task-status-button","n_clicks"),
-State("curCLI_params","data"))
-def refreshTaskStatus(n_clicks,cliParams):
+@callback(
+    Output("debugjobtaskstatus","children"),
+    Input("task-status-button","n_clicks"),
+    [
+        State("curCLI_params","data"), 
+        State("cliItems_store", "data")
+    ],
+    prevent_initial_call=True
+)
+def refreshTaskStatus(n_clicks, cliParams, items):
+    """Look up the status of each job for this task."""
     ### This will check the dsaJobQueue mongo collection, and given a list of imageID's 
     ## and a parameter set, will see what jobs have been run and/or submitted
-    print("You have pressed this button %d times", n_clicks)
-    print("and the current cliParams are..")
-    print(cliParams)
-    return html.Div("I was indeed updated..")
+    if n_clicks:
+        status_list = {}
+
+        for item in items:
+            # Look up this item.
+            status = lookup_job_record(cliParams, USER)
+
+            print(status)
+
+        return html.Div(f'You have clicked this button {n_clicks} times.')
 
 ### Update this cliItems from the main table data.
 ## TO DO-- DO NOT ALLOW THE CLI TO bE SUBMITTED IF THERE ARE NO ACTUAL]
@@ -257,18 +271,19 @@ def update_json_output(*args):
         State("task-store", "data"),
     ],
     running=[
-        (Output("cli-submit-button", "disabled"), False, True),
+        (Output("cli-submit-button", "disabled"), True, False),
         (Output("cli-job-cancel-button", "disabled"), False, True),
         (
             Output("job-submit-progress-bar", "style"),
-            {"visibility": "visible"},
-            {"visibility": "visible"},
+            {"visibility": "visible", 'width':'25vw'},
+            {"visibility": "visible", "width": '25vw'},
         ),
     ],
     cancel=[Input("cli-job-cancel-button", "n_clicks")],
     progress=[
         Output("job-submit-progress-bar", "value"),
         Output("job-submit-progress-bar", "label"),
+        Output("job-submit-progress-bar", 'max')
     ],
     prevent_initial_call=True,
 )
@@ -328,12 +343,12 @@ def submitCLItasks(
 
             jobStatuspercent = ((i + 1) / n_jobs) * 100
 
-            set_progress((str(i + 1), f"{jobStatuspercent:.2f}%"))
+            set_progress((str(i + 1), f"{jobStatuspercent:.2f}%", n_jobs))
 
-        if jobSubmitList:
-            print(len(jobSubmitList), "jobs submitted.")
-        else:
-            print("No jobs to submit.")
+        # if jobSubmitList:
+        #     print(len(jobSubmitList), "jobs submitted.")
+        # else:
+        #     print("No jobs to submit.")
 
         submissionStatus = [x["status"] for x in jobSubmitList]
 
@@ -377,31 +392,29 @@ dsa_cli_view_layout = dbc.Container(
 )
 
 
-# @callback(
-#     Output("cli-submit-button", "disabled"),
-#     Input("tasks-dropdown", "value"),
-#     State("task-store", "data"),
-# )
-# def toggle_cli_bn_state(selected_task, task_store):
-#     """
-#     Disable the submit CLI button when no task is selected.
-#     """
-#     if selected_task:
-#         # There is a task selected, get this task.
-#         from pprint import pprint
+@callback(
+    Output("cli-submit-button", "disabled"),
+    Input("tasks-dropdown", "value"),
+    State("task-store", "data"),
+)
+def toggle_cli_bn_state(selected_task, task_store):
+    """
+    Disable the submit CLI button when no task is selected.
+    """
+    if selected_task:
+        # There is a task selected, get this task.
+        task = task_store.get(selected_task)
 
-#         task = task_store.get(selected_task)
+        if task is None:
+            raise Exception("Selected task is not in task store, there is a BUG!")
 
-#         if task is None:
-#             raise Exception("Selected task is not in task store, there is a BUG!")
+        # DEBUG - always return False
+        return False
 
-#         # DEBUG - always return False
-#         return False
+        # # Check the metadata for images - if it exists then the button should disable.
+        # if task.get("meta", {}).get("images"):
+        #     return True
+        # else:
+        #     return False
 
-#         # Check the metadata for images - if it exists then the button should disable.
-#         if task.get("meta", {}).get("images"):
-#             return True
-#         else:
-#             return False
-
-#     return True
+    return True
