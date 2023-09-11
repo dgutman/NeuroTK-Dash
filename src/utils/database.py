@@ -155,14 +155,16 @@ def getUniqueParamSets(annotationName):
     return results
 
 
-def getAnnotationNameCount(projectName):
+def getAnnotationNameCount(userName):
     """This will query the mongo database directly and get the distinct annotation names and the associated counts"""
+    """The user name is added to segregate data"""
 
     # # Select your collection
     collection = mc["annotationData"]
 
     # Define the aggregation pipeline
     pipeline = [
+        {"$match": {"userName": USER}},
         {
             "$group": {
                 "_id": "$annotation.name",
@@ -182,6 +184,7 @@ def getAnnotationNameCount(projectName):
                 "_id": 0,
             }
         },
+        {"$sort": {"count": -1}},
     ]
 
     # s# # Execute the aggregation pipeline
@@ -194,7 +197,7 @@ def getElementSizeForAnnotations(annotation):
     # Define the aggregation pipeline
     collection = mc["annotationData"]
     pipeline = [
-        {"$match": {"annotation.name": "gray-matter-fixed"}},
+        {"$match": {"annotation.name": annotation}},
         {
             "$project": {
                 "annotationName": 1,
@@ -235,7 +238,7 @@ def getElementSizeForAnnotations(annotation):
     print(results[0])
     # Print or further process the results
     for result in results:
-        print(f"Document ID: {result['_id']}, Total Points: {result['totalPoints']}")
+        # print(f"Document ID: {result['_id']}, Total Points: {result['totalPoints']}")
         totalPointCounts.append(int(result["totalPoints"]))
     return totalPointCounts
 
@@ -431,18 +434,3 @@ def getProjectDataset(
             return projectImages
         else:
             return None
-
-
-def lookup_jobInfo_for_user_task(imageIdList, search_dict):
-    ### Given a list of imageIds, the username which we get some gc.settings
-    ### and a seach dict of the parameter set we are interested in, this will
-    ## return the status for every image in the list, as well as jobSubmitTime if we can find it
-    ## Need to cast all the values to a string and also add the _original_params to the key
-    str_search_dict = {f"_original_params.{k}": str(v) for k, v in search_dict.items()}
-    ## Adding in userKey to the lookup dictionary
-    str_search_dict["user"] = USER
-    collection = []
-    record_set = collection.find_one(str_search_dict)
-    print(len(record_set))
-
-    pass
