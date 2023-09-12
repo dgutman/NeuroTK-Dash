@@ -2,9 +2,9 @@ from dash import html, dcc, Input, Output, State, ALL, callback, no_update
 from ...utils.settings import AVAILABLE_CLI_TASKS, SingletonDashApp
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
-import json
-from collections import Counter
 from typing import List
+from pandas import DataFrame
+import plotly.express as px
 
 from ...utils.api import submit_ppc_job, lookup_job_record
 from ...utils.settings import gc, USER
@@ -16,7 +16,6 @@ from ...utils.database import getProjectDataset
 curAppObject = SingletonDashApp()
 app = curAppObject.app
 ## I find this very confusing.. but binding to main dash app claass
-
 
 # Constants
 CLI_SELECTOR_STYLE = {"marginLeft": "30px"}
@@ -61,6 +60,7 @@ def create_cli_selector():
             dcc.Store(id="cliItems_store"),
             dcc.Store(id="curCLI_params", data={}),
             dcc.Store(id="taskJobQueue_store", data={}),
+            # dcc.Store(id="cliImageList_store", data={}),
             dbc.Row(
                 [
                     dmc.Select(
@@ -77,12 +77,6 @@ def create_cli_selector():
                         data=["", "gray-matter-from-xmls", "gray-matter-fixed"],
                         style={"maxWidth": 300},
                     ),
-                    html.Button(
-                        "Refresh Task Status",
-                        id="task-status-button",
-                        className="mr-2 btn btn-danger",
-                        style={"maxWidth": 300},
-                    ),
                 ]
             ),
             dbc.Row(
@@ -96,49 +90,23 @@ def create_cli_selector():
                     ),
                     dbc.Col(
                         [
-                            html.Div(id="cliItemStats", style=CLI_OUTPUT_STYLE),
-                        ],
-                        width=3,
-                    ),
-                    dcc.Store(id="cliImageList_store"),
-                    dbc.Col(
-                        [
-                            dmc.Text(
-                                "Other Info Here TBD",
-                                style=CLI_OUTPUT_STYLE,
+                            dbc.Row(
+                                html.Div(id="cliItemStats", style=CLI_OUTPUT_STYLE)
                             ),
-                            html.Div(id="cli-output-status"),
-                            html.Div(id="debugjobtaskstatus"),
+                            dbc.Row(
+                                dcc.Graph(
+                                    id="task-pie-chart",
+                                    style={"visibility": "hidden"},
+                                )
+                            ),
                         ],
-                        width=3,
+                        width=6,
                     ),
                 ]
             ),
         ],
         style=CLI_SELECTOR_STYLE,
     )
-
-
-@callback(
-    Output("debugjobtaskstatus", "children"),
-    Input("task-status-button", "n_clicks"),
-    [State("curCLI_params", "data"), State("cliItems_store", "data")],
-    prevent_initial_call=True,
-)
-def refreshTaskStatus(n_clicks, cliParams, items):
-    """Look up the status of each job for this task."""
-    ### This will check the dsaJobQueue mongo collection, and given a list of imageID's
-    ## and a parameter set, will see what jobs have been run and/or submitted
-    if n_clicks:
-        status_list = {}
-
-        for item in items:
-            # Look up this item.
-            status = lookup_job_record(cliParams, USER)
-
-            print(status)
-
-        return html.Div(f"You have clicked this button {n_clicks} times.")
 
 
 ### Update this cliItems from the main table data.
@@ -261,9 +229,11 @@ def update_json_output(*args):
 
 @app.long_callback(
     output=[
-        Output("cli-output-status", "children"),
+        # Output("cli-output-status", "children"),
         Output("task-store", "data", allow_duplicate=True),
         Output("taskJobQueue_store", "data"),
+        Output("task-pie-chart", "style"),
+        Output("task-pie-chart", "figure"),
     ],
     inputs=[
         Input("cli-submit-button", "n_clicks"),
@@ -348,28 +318,35 @@ def submitCLItasks(
 
             set_progress((str(i + 1), f"{jobStatuspercent:.2f}%", n_jobs))
 
-        # if jobSubmitList:
-        #     print(len(jobSubmitList), "jobs submitted.")
-        # else:
-        #     print("No jobs to submit.")
-
         submissionStatus = [x["status"] for x in jobSubmitList]
-        print(jobSubmitList[0])
 
         ## Can get the entire jobStatus cleverely..
-
         currentJobStatusInfo = [x["girderResponse"]["status"] for x in jobSubmitList]
-        from collections import Counter
 
-        print(Counter(currentJobStatusInfo))
+        # Convert the current job status info into a dataframe for graphing
+        df = []
 
-        return (
-            html.Div(
-                f"{json.dumps(Counter(submissionStatus))} from a total list of {len(jobSubmitList)}"
-            ),
-            task_store,
-            jobSubmitList,
-        )
+        for status in currentJobStatusInfo:
+            if status == "JobSubmitFailed":
+                df.append(["Broken Image", -1, 1])
+            elif status == 0:
+                df.append(["Inactive", status, 1])
+            elif status == 1:
+                df.append(["Queued", status, 1])
+            elif status == 2:
+                df.append(["Running", status, 1])
+            elif status == 3:
+                df.append(["Complete", status, 1])
+            elif status == 4:
+                df.append(["Fail", status, 1])
+            else:
+                df.append(["Unknown", status, 1])
+
+        df = DataFrame(df, columns=["Label", "Status Code", "Counts"])
+
+        fig = px.pie(df, values="Counts", names="Label", hole=0.3)
+
+        return task_store, jobSubmitList, {"visibility": "visible"}, fig
 
 
 @callback(

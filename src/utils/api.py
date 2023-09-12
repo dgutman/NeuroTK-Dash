@@ -296,7 +296,6 @@ def submit_ppc_job(data, params, maskName=None):
                 # print(get_points(maskPointSet))
             # {itemId: "646655476df8ba8751afe0d8","annotation.name": "gray-matter-fixed"}
     except KeyError:
-        print("Large Image lookup failed perhaps?")
         return {"status": "FAILED", "girderResponse": {"status": "JobSubmitFailed"}}
         ## TO DO Figure out how we want to report these...
 

@@ -73,7 +73,7 @@ button_controls = html.Div(
 annotations_frame = html.Div(
     [
         html.Div(id="annotationPull_status"),
-        dcc.Store("annotations_store"),
+        dcc.Store(id="annotations_store"),
         button_controls,
         dbc.Progress(
             id="annotationDetails_update_pbar",
@@ -194,8 +194,8 @@ def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
     Output("unique_annots_datatable_div", "children"),
     Input("refresh-annotations-button", "n_clicks"),
     State("curProjectName_store", "data"),
-)  #     prevent_initial_call=True,
-# )
+    prevent_initial_call=True,
+)
 def createAnnotationNameCountTable(n_clicks, projectName, debug=False):
     """This gets the list of distinct annotation names and returns a table with the numer and names of annotations"""
     annotationCount = pd.DataFrame(getAnnotationNameCount(projectName))
