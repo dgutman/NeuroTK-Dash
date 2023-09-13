@@ -18,7 +18,7 @@ dataset_view = html.Div(
     [
         dcc.Store("filteredItem_store"),
         dcc.Store("projectItem_store"),
-        dcc.Store('taskItem_store'),
+        dcc.Store("taskItem_store"),
         dcc.Store("dataset-item-store", data=get_datasets_list()),
         dmc.Tabs(
             [
@@ -37,13 +37,13 @@ dataset_view = html.Div(
                 dmc.TabsPanel(
                     html.Div(
                         dcc.Loading(
-                            id='project-itemSet-div', 
-                            children=[dag.AgGrid(id="project-itemSet-table")], 
-                            type='circle'
+                            id="project-itemSet-div",
+                            children=[dag.AgGrid(id="project-itemSet-table")],
+                            type="circle",
                         )
                     ),
                     value="table",
-                    id="table_tab_panel"
+                    id="table_tab_panel",
                 ),
                 dmc.TabsPanel(
                     [
@@ -56,13 +56,22 @@ dataset_view = html.Div(
                                     active_page=1,
                                     max_value=1,
                                 ),
-                                html.Div(id="cards-container"),
+                                html.Div(
+                                    id="cards-container",
+                                    style={
+                                        "display": "flex",
+                                        "justify-content": "space-around",
+                                        "flex-wrap": "wrap",
+                                        "max-width": "300px",
+                                    },
+                                ),
                                 dbc.RadioItems(
                                     id="size-selector",
                                     value="small",  # Default value
                                     inline=True,
                                 ),
                             ],
+                            style={"overflow-y": "auto", "max-height": "100vh"},
                         ),
                     ],
                     value="images",
@@ -73,17 +82,14 @@ dataset_view = html.Div(
             value="table",
         ),
         add_dataset_popup,
-        html.Button('test', id='test')
+        html.Button("test", id="test"),
     ]
 )
 
 
 @callback(
     Output("projectItem_store", "data"),
-    [
-        Input("projects-dropdown", "value"), 
-        Input("add-dataset-bn", "n_clicks")
-    ],
+    [Input("projects-dropdown", "value"), Input("add-dataset-bn", "n_clicks")],
     [
         State("projects-dropdown", "data"),
         State("projects-store", "data"),
@@ -165,10 +171,7 @@ def updateProjectItemStore(
 
 @callback(
     Output("project-itemSet-div", "children"),
-    [
-        Input("tasks-dropdown", "value"), 
-        Input("projectItem_store", "data")
-    ],
+    [Input("tasks-dropdown", "value"), Input("projectItem_store", "data")],
     prevent_initial_call=True,
 )
 def updateProjectItemSetTable(
@@ -188,8 +191,8 @@ def updateProjectItemSetTable(
     """
     # If there are items read them into dataframe.
     if projectItemSet:
-        """No need to normalize the project item set, it should be 
-        in strings of key / value pairs. If not then read with 
+        """No need to normalize the project item set, it should be
+        in strings of key / value pairs. If not then read with
         pd.json_normalize instead."""
         df = pd.DataFrame(projectItemSet)
 
@@ -217,20 +220,20 @@ def updateProjectItemSetTable(
         clinical_cols = []
         other_cols = []
 
-        if '_id' in cols:
-            new_cols.append('_id')
-        if 'name' in cols:
-            new_cols.append('name')
+        if "_id" in cols:
+            new_cols.append("_id")
+        if "name" in cols:
+            new_cols.append("name")
 
         for col in cols:
-            if col not in ('_id', 'name'):
-                if col.startswith('npSchema'):
+            if col not in ("_id", "name"):
+                if col.startswith("npSchema"):
                     schema_cols.append(col)
-                elif col.startswith('npClinical'):
+                elif col.startswith("npClinical"):
                     clinical_cols.append(col)
                 else:
                     other_cols.append(col)
-                    
+
         new_cols += schema_cols + clinical_cols + other_cols
 
         df = df[new_cols]
@@ -242,13 +245,10 @@ def updateProjectItemSetTable(
 
 @callback(
     Output("filteredItem_store", "data"),
-    [
-        Input("project-itemSet-table", "filterModel"),
-        Input('projectItem_store', 'data')
-    ],
+    [Input("project-itemSet-table", "filterModel"), Input("projectItem_store", "data")],
     [
         State("project-itemSet-table", "virtualRowData"),
-        State('tasks-dropdown', 'value'),
+        State("tasks-dropdown", "value"),
     ],
     prevent_initial_call=True,
 )
@@ -259,12 +259,12 @@ def updateFilteredItemStore(_, project_item_store, virtualRowData, selected_task
         return virtualRowData
     elif selected_task:
         # Return the just the task items.
-        task_key = f'taskAssigned_{selected_task}'
+        task_key = f"taskAssigned_{selected_task}"
 
         task_items = []
 
         for item in project_item_store:
-            if item.get(task_key) == 'Assigned':
+            if item.get(task_key) == "Assigned":
                 task_items.append(item)
 
         if task_items:

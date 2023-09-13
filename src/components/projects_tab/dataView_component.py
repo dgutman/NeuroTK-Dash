@@ -59,7 +59,7 @@ def generate_cards(subset, selected_size):
                         ),
                     ],
                     className="mb-4",
-                    style={"width": 192, "height": 192, "margin": 2},
+                    style={"width": "192px", "height": "192px", "margin": "2px"},
                     id=card_id,  # add id to each card
                 ),
                 md=column_width,  # Adjusted column width
@@ -87,7 +87,13 @@ def generateDataViewLayout(itemSet):
         1 if len(itemSet) % sizes["small"]["page_size"] > 0 else 0
     )
     pagination = dbc.Pagination(
-        id="pagination", size="sm", active_page=1, max_value=initial_max_page
+        id="pagination",
+        size="sm",
+        active_page=1,
+        fully_expanded=False,
+        first_last=True,
+        previous_next=True,
+        max_value=initial_max_page,
     )
 
     # We will initially display only the first page of cards. The callback will handle subsequent updates.
