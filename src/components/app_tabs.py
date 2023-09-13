@@ -17,8 +17,10 @@ app_tabs = html.Div(
                         dmc.Tab("Job Queue", value="jobQueue"),
                         dmc.Tab("Annotations", value="annotations"),
                     ],
-                    
-                    style={'backgroundColor': '#e4e6f0', 'activeBackgroundColor': 'red'}
+                    style={
+                        "backgroundColor": "#e4e6f0",
+                        "activeBackgroundColor": "red",
+                    },
                 ),
                 dmc.TabsPanel(
                     [
@@ -42,19 +44,14 @@ app_tabs = html.Div(
                     ],
                     value="jobQueue",
                 ),
-                dmc.TabsPanel(
-                    [
-                        annotations_frame
-                    ], 
-                    value="annotations"
-                )
+                dmc.TabsPanel([annotations_frame], value="annotations"),
             ],
             orientation="horizontal",
             value="projects",
             id="projects-tabs",
-            color='#6384c6',
+            color="#6384c6",
             inverted=True,
-            variant='pills',
+            variant="pills",
         )
     ]
 )

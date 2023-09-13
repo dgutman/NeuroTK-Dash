@@ -1,5 +1,7 @@
+"""Utility functions."""
 from typing import List
 from os import makedirs
+from typing import List
 
 
 def create_dirs(dirs: List[str], exist_ok: bool = True):
@@ -41,3 +43,26 @@ def replace_last_occurence(string: str, old: str, new: str,
                              'parameter to False.')
             
     return new.join(string.rsplit(old, 1))
+
+
+def contours_to_points(contours: List) -> List:
+    """Convert a list of opencv contours (i.e. contour shape is 
+    (num_points, 1, 2) with x, y order) to a list of x,y point in format 
+    ready to push as DSA annotations. This form is a list of lists with 
+    [x, y, z] format where the z is always 0.
+    
+    Args:
+        contours: List of numpy arrays in opencv contour format
+
+    Returns:
+        Points in DSA format.
+    
+    """
+    points = []
+    
+    for contour in contours:
+        points.append([
+            [float(pt[0][0]), float(pt[0][1]), 0] for pt in contour
+        ])
+        
+    return points

@@ -9,7 +9,6 @@ from ...utils.helpers import generate_generic_DataTable
 import pandas as pd
 from dash_ag_grid import AgGrid
 from ...utils.api import getAllItemAnnotations
-from ...utils.database import insertAnnotationData
 
 ## Note because of the way I am importing the app object, do NOT use @callback, use app.callback here
 
@@ -22,6 +21,7 @@ from ...utils.database import (
     getAnnotationNameCount,
     getUniqueParamSets,
     getElementSizeForAnnotations,
+    insertAnnotationData,
 )
 
 
@@ -30,7 +30,6 @@ from ...utils.database import (
 ## the other one is unique parameters/other specs that I parse from the
 ## annotations.. this makes the most sense for positive pixel count
 ## but may work for others depending on what type of data we are stuffing in them
-
 
 unique_annots_datatable = html.Div([], id="unique_annots_datatable_div")
 
@@ -41,69 +40,7 @@ unique_params_datatable = html.Div(
     [AgGrid(id="annotation_name_counts_table")], id="unique_params_datatable_div"
 )
 
-
 ## Adding in some temp code to learn how to do async callbacks
-
-
-@app.long_callback(
-    output=Output("paragraph_id", "children"),
-    inputs=[
-        Input("pull-full-annotation-button", "n_clicks"),
-        State("curProjectName_store", "data"),
-    ],
-    running=[
-        (Output("pull-full-annotation-button", "disabled"), True, False),
-        (Output("cancel_button_id", "disabled"), False, True),
-        (
-            Output("paragraph_id", "style"),
-            {"visibility": "hidden"},
-            {"visibility": "visible"},
-        ),
-        (
-            Output("progress_bar", "style"),
-            {"visibility": "visible"},
-            {"visibility": "hidden"},
-        ),
-    ],
-    cancel=[Input("cancel_button_id", "n_clicks")],
-    progress=[Output("progress_bar", "value"), Output("progress_bar", "max")],
-    prevent_initial_call=True,
-)
-def pull_annotation_elements(set_progress, n_clicks, projectName):
-    """When I pull annotation in bulk, we do not return individual elelements
-    as if can be very slow, so this will grab elements in the background and update"""
-    collection = dbConn["annotationData"]
-
-    ## Fix logic here in case there aRE no documents with missing elements..
-    # Count documents where the "elements" key does not exist and projectName is "evanPPC"
-    docCount = collection.count_documents(
-        {"projectName": projectName, "annotation.elements": {"$exists": False}}
-    )
-
-    # Since I am still debugging,I don't want to run this on more than 100 docs as a time
-    maxDocsToPull = 300
-
-    if docCount < maxDocsToPull:
-        maxDocsToPull = docCount
-
-    print(f"There are a total of {docCount} annotations to look up")
-
-    for i in range(maxDocsToPull):
-        ## pull and update a single annotation document
-        # find a document that has no elements
-        doc_with_no_element = collection.find_one(
-            {"projectName": projectName, "annotation.elements": {"$exists": False}}
-        )
-        ## Now pull the data from the api
-        fullAnnotationDoc = gc.get(f"annotation/{doc_with_no_element['_id']}")
-        collection.update_one(
-            {"_id": doc_with_no_element["_id"]}, {"$set": fullAnnotationDoc}
-        )
-
-        set_progress((str(i + 1), str(maxDocsToPull)))
-    return dash.no_update
-    # return [f"Clicked {n_clicks} times"] ## I actually don't want this div to be updated
-
 
 button_controls = html.Div(
     [
@@ -135,55 +72,129 @@ button_controls = html.Div(
 ## TO DO: Refactor style bar so it is on top of the buttons
 annotations_frame = html.Div(
     [
-        html.Div(id="paragraph_id"),
-        dcc.Store("annotations_store"),
+        html.Div(id="annotationPull_status"),
+        dcc.Store(id="annotations_store"),
         button_controls,
-        html.Progress(
-            id="progress_bar",
+        dbc.Progress(
+            id="annotationDetails_update_pbar",
             className="progress-bar-success",
-            style={"visibility": "hidden"},
+            style={"visibility": "hidden", "width": 250},
         ),
         dbc.Row(
             [
                 dbc.Col([unique_annots_datatable], width=5),
                 dbc.Col(
                     [dbc.Row([unique_params_datatable])],
-                    width=7,
+                    width=2,
                 ),
+                dbc.Col(annotation_details_panel, width=5),
             ]
         ),
-        dbc.Row(annotation_details_panel),
     ],
 )
 
 
+@app.long_callback(
+    output=Output("annotationPull_status", "children"),
+    inputs=[
+        Input("pull-full-annotation-button", "n_clicks"),
+        State("curProjectName_store", "data"),
+    ],
+    running=[
+        (Output("pull-full-annotation-button", "disabled"), True, False),
+        (Output("cancel_button_id", "disabled"), False, True),
+        (
+            Output("annotationPull_status", "style"),
+            {"visibility": "hidden"},
+            {"visibility": "visible"},
+        ),
+        (
+            Output("annotationDetails_update_pbar", "style"),
+            {"visibility": "visible"},
+            {"visibility": "hidden"},
+        ),
+        (
+            Output("annotationDetails_update_pbar", "style"),
+            {"visibility": "visible"},
+            {"visibility": "visible"},
+        ),
+    ],
+    cancel=[Input("cancel_button_id", "n_clicks")],
+    progress=[
+        Output("annotationDetails_update_pbar", "value"),
+        Output("annotationDetails_update_pbar", "label"),
+    ],
+    prevent_initial_call=True,
+)
+def pull_annotation_elements(set_progress, n_clicks, projectName):
+    """When I pull annotation in bulk, we do not return individual elelements
+    as if can be very slow, so this will grab elements in the background and update"""
+    collection = dbConn["annotationData"]
+
+    ## Fix logic here in case there aRE no documents with missing elements..
+    # Count documents where the "elements" key does not exist filtered by USER
+    ## This may eventually cause errors if multiple users have access to the same annotation
+
+    docCount = collection.count_documents(
+        {"userName": USER, "annotation.elements": {"$exists": False}}
+    )
+
+    # Since I am still debugging,I don't want to run this on more than 100 docs as a time
+    maxDocsToPull = 1000
+
+    if docCount < maxDocsToPull:
+        maxDocsToPull = docCount
+
+    print(f"There are a total of {docCount} annotations to look up")
+
+    for i in range(maxDocsToPull):
+        ## pull and update a single annotation document
+        # find a document that has no elements
+        doc_with_no_element = collection.find_one(
+            {"userName": USER, "annotation.elements": {"$exists": False}}
+        )
+        ## Now pull the data from the api
+        fullAnnotationDoc = gc.get(f"annotation/{doc_with_no_element['_id']}")
+        collection.update_one(
+            {"_id": doc_with_no_element["_id"]}, {"$set": fullAnnotationDoc}
+        )
+
+        jobStatuspercent = ((i + 1) / maxDocsToPull) * 100
+        set_progress((str(i + 1), f"{jobStatuspercent:.2f}%"))
+    return dash.no_update
+    # return [f"Clicked {n_clicks} times"] ## I actually don't want this div to be updated
+
+
+## TO DO is add long callback here
 ## This pulls the entire list of accessible annotations from the girder Database
 ## TO DO:  Add in some sort of date filter by last updated perhaps?
 @app.callback(
     Output("annotations_store", "data"),
     Input("pull-from-girder-button", "n_clicks"),
     State("curProjectName_store", "data"),
-    prevent_initial_call=True
+    # prevent_initial_call=True,
 )
 def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
     if n_clicks:
         print("Available annotations being pulled")
         allAvailableAnnotations = getAllItemAnnotations()
         print(len(allAvailableAnnotations))
-        ### Now update the database...
-        if not curProjectName:
-            curProjectName = "evanPPC"
-            ## I don't think the annotations need/should be filtered by projectName..
-        status = insertAnnotationData(allAvailableAnnotations, USER)
-        print(status)
-        ## TO   DO-- MAKE THIS ASYNCHRONOUS
+    else:
+        allAvailableAnnotations = getAnnotationNameCount(curProjectName)
+        return allAvailableAnnotations
+
+    # ### Now update the database...
+    #     ## I don't think the annotations need/should be filtered by projectName..
+    # status = insertAnnotationData(allAvailableAnnotations, USER)
+    # print(status)
+    ## TO   DO-- MAKE THIS ASYNCHRONOUS
 
 
 @app.callback(
     Output("unique_annots_datatable_div", "children"),
     Input("refresh-annotations-button", "n_clicks"),
     State("curProjectName_store", "data"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def createAnnotationNameCountTable(n_clicks, projectName, debug=False):
     """This gets the list of distinct annotation names and returns a table with the numer and names of annotations"""
@@ -203,7 +214,7 @@ def createAnnotationNameCountTable(n_clicks, projectName, debug=False):
     Output("annotation_details_panel", "children"),
     Input("annotation_name_counts_table", "cellClicked"),
     State("annotation_name_counts_table", "virtualRowData"),
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def generateAnnotationSpecificViz(cellClicked, rowData):
     ## Depending on the annotation cell Clicked, this may generate different graphs

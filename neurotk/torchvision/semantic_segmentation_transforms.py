@@ -22,7 +22,7 @@ class Compose(object):
     def __init__(self, transforms: list):
         self.transforms = transforms
         
-    def __call__(self, image: Image, mask: Image):
+    def __call__(self, image: Image.Image, mask: Image.Image):
         """
         Args:
             image: Image.
@@ -42,8 +42,8 @@ class ToTensor(object):
     """Transform image and mask to tensor.     
     
     """
-    def __call__(self, image: Union[Image, Tensor], 
-                 mask: Union[Image, Tensor]):
+    def __call__(self, image: Union[Image.Image, Tensor], 
+                 mask: Union[Image.Image, Tensor]):
         """    
         Args:
             image: Image.
@@ -75,8 +75,8 @@ class Normalize(object):
     def __init__(self, mean: [int, int, int], std: [int, int, int]):
         self.transform = transforms.Normalize(mean=mean, std=std)
         
-    def __call__(self, image: Union[Image, Tensor], 
-                 mask: Union[Image, Tensor]):
+    def __call__(self, image: Union[Image.Image, Tensor], 
+                 mask: Union[Image.Image, Tensor]):
         """
         Args:
             image: Image.
@@ -115,11 +115,12 @@ class Resize(object):
         self.transform = transforms.Resize(size, interpolation=interpolation,
                                            antialias=antialias)
         self.label_transform = transforms.Resize(
-            size, interpolation=InterpolationMode.NEAREST_EXACT
+            size, interpolation=InterpolationMode.NEAREST,
+            antialias=True
         )
 
-    def __call__(self, image: Union[Image, Tensor], 
-                 mask: Union[Image, Tensor]):
+    def __call__(self, image: Union[Image.Image, Tensor], 
+                 mask: Union[Image.Image, Tensor]):
         """
         Args:
             image: Image.
@@ -145,8 +146,8 @@ class RandomHorizontalFlip(object):
     def __init__(self, p: float = 0.5):
         self.p = p
         
-    def __call__(self, image: Union[Image, Tensor], 
-                 mask: Union[Image, Tensor]):
+    def __call__(self, image: Union[Image.Image, Tensor], 
+                 mask: Union[Image.Image, Tensor]):
         """
         Args:
             image: Image.
@@ -176,8 +177,8 @@ class RandomVerticalFlip():
     def __init__(self, p=0.5):
         self.p = p
         
-    def __call__(self, image: Union[Image, Tensor], 
-                 mask: Union[Image, Tensor]):
+    def __call__(self, image: Union[Image.Image, Tensor], 
+                 mask: Union[Image.Image, Tensor]):
         """
         Args:
             image: Image.
@@ -299,8 +300,8 @@ class ColorJitter():
             saturation=saturation, hue=hue
         )
         
-    def __call__(self, image: Union[Image, Tensor], 
-                 mask: Union[Image, Tensor]):
+    def __call__(self, image: Union[Image.Image, Tensor], 
+                 mask: Union[Image.Image, Tensor]):
         """
         Args:
             image: Image.
