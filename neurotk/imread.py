@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
 
-def imread(fp: str) -> np.array:
+def imread(fp: str, grayscale: bool = False) -> np.ndarray:
     """
     Read image file*.
 
@@ -10,9 +10,13 @@ def imread(fp: str) -> np.array:
     
     Args:
         fp: Filepath to image.
+        grayscale: Read image as grayscale.
     
     Returns:
         Image as numpy array.
     
     """
-    return cv.cvtColor(cv.imread(fp), cv.COLOR_BGR2RGB)
+    if grayscale:
+        return cv.imread(fp, cv.IMREAD_GRAYSCALE)
+    else:
+        return cv.cvtColor(cv.imread(fp), cv.COLOR_BGR2RGB)
