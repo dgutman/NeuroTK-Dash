@@ -194,20 +194,21 @@ def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
     Output("unique_annots_datatable_div", "children"),
     Input("refresh-annotations-button", "n_clicks"),
     State("curProjectName_store", "data"),
-    prevent_initial_call=True,
+    # prevent_initial_call=True,
 )
 def createAnnotationNameCountTable(n_clicks, projectName, debug=False):
     """This gets the list of distinct annotation names and returns a table with the numer and names of annotations"""
+
+    ## Need to make sure we deal with case where there is no annotation
+    ## that has ever been pulled from girder.
+
     annotationCount = pd.DataFrame(getAnnotationNameCount(projectName))
+    if len(annotationCount) > 0:
+        annotationCountPanel = generate_generic_DataTable(
+            annotationCount, id_val="annotation_name_counts_table"
+        )
 
-    if debug:
-        print(annotationCount)
-
-    annotationCountPanel = generate_generic_DataTable(
-        annotationCount, id_val="annotation_name_counts_table"
-    )
-
-    return [annotationCountPanel]
+        return [annotationCountPanel]
 
 
 @app.callback(
