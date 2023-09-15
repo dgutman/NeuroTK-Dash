@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 
 
-def imwrite(fp: str, img: np.array, grayscale: bool = False):
+def imwrite(fp: str, img: np.ndarray, grayscale: bool = False):
     """Write image to file.
     
     Args:
