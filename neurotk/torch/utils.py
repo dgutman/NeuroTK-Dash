@@ -5,6 +5,7 @@ from ..torchvision.semantic_segmentation_transforms import (
 import torch
 import cv2 as cv
 import numpy as np
+import torch.nn as nn
 
 
 def predict_mask(model, img, size=256, norm=None, thresh=0.7):
@@ -53,3 +54,29 @@ def predict_mask(model, img, size=256, norm=None, thresh=0.7):
         mask = cv.resize(mask, orig_shape, None, None, cv.INTER_NEAREST)
 
         return mask
+    
+
+def count_parameters(model: nn.Module, trainable_only: bool = True) -> int:
+    """Count the number of parameters in a model.
+    
+    Source: 
+        https://discuss.pytorch.org/t/how-do-i-check-the-number-of-parameters-of-a-model/4325/8
+    
+    Args:
+        model: Model.
+        trainable_only: Only count parameters that are trainable.
+        
+    Returns:
+        Number of parameters.
+    
+    """
+    n_params = 0
+    
+    for p in model.parameters():
+        if trainable_only and not p.requires_grad:
+            # Skip non-trainable parameters.
+            continue
+        
+        n_params += p.numel()
+
+    return n_params

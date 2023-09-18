@@ -47,6 +47,8 @@ def parse_opt():
     )
     parser.add_argument('--lr', type=float, default=1e-4, 
                         help='Learning rate.')
+    parser.add_argument('--input-mode', type=str, default='rgb',
+                        help='grayscale or rgb images.')
 
     return parser.parse_args()
     
@@ -96,7 +98,7 @@ def main():
     }
 
     # Create model.
-    model = deeplabv3_model()
+    model = deeplabv3_model(input_mode=opt.input_mode)
     
     # Optimizer gets fed in the model parameters and learning rate.
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr)

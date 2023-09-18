@@ -1,7 +1,9 @@
 """Utility functions."""
 from typing import List
-from os import makedirs
 from typing import List
+
+from os import makedirs
+from os.path import basename, splitext
 
 
 def create_dirs(dirs: List[str], exist_ok: bool = True):
@@ -66,3 +68,22 @@ def contours_to_points(contours: List) -> List:
         ])
         
     return points
+
+
+def get_filename(fp: str, prune_ext: bool = True) -> str:
+    """Get the filename of a filepath.
+
+    Args:
+        fp: Filepath.
+        prune_ext: Remove extension.
+    
+    Returns:
+        Filename.
+
+    """
+    fn = basename(fp)
+
+    if prune_ext:
+        fn = splitext(fn)[0]
+
+    return fn
