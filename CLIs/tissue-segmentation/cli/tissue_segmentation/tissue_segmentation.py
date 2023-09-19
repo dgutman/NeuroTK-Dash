@@ -62,7 +62,7 @@ def main(args):
     )[0][:, :, :3]
     
     # Pad the image.
-    img = reshape_with_pad(img, (args.size, args.size), pad=(255, 255, 255))
+    img = reshape_with_pad(img, args.size, pad=(255, 255, 255))
 
     # Load the pretrained model.
     model = deeplabv3_model()
