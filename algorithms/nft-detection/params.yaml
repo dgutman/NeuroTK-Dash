@@ -1,0 +1,17 @@
+# Full list of arguments: https://docs.ultralytics.com/modes/train/#resuming-interrupted-trainings
+# Full list of hyperprams: https://docs.ultralytics.com/usage/cfg/#augmentation
+# Settings
+verbose: true
+
+# Hyperparameters
+box: 0.05
+cls: 0.3
+
+# Data Augmentation
+hsv_h: 0.015
+hsv_s: 0.2
+hsv_v: 0.4
+scale: 0.1
+flipud: 0.5
+fliplr: 0.5
+mosaic: 0.0
