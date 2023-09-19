@@ -21,7 +21,7 @@
       <label>Size</label>
       <index>1</index>
       <description>Thumbnail size to do tissue detection on.</description>
-      <default>256</default>
+      <default>512</default>
     </integer>
     <float>
       <name>thresh</name>
@@ -37,10 +37,17 @@
       <description>Smooth the tissue contours.</description>
       <default>0.1</default>
     </float>
+    <int>
+      <name>kernel</name>
+      <label>Gaussian Kernel Size</label>
+      <index>4</index>
+      <description>Kernel size of gaussian smoothing on prediction mask.</description>
+      <default>5</default>
+    </int>
     <string>
       <name>docname</name>
       <label>docname</label>
-      <index>4</index>
+      <index>5</index>
       <description>Annotation document name.</description>
       <default>tissue</default>
     </string>
@@ -49,7 +56,7 @@
       <label>Output Tissue Annotation File</label>
       <description>Output NFT annotation file (*.anot)</description>
       <channel>output</channel>
-      <index>5</index>
+      <index>6</index>
     </file>
   </parameters>
 

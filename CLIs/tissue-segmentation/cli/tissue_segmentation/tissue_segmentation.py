@@ -27,6 +27,25 @@ from neurotk.utils import contours_to_points
     
 #     return parser.parse_args()
 
+def reshape_with_pad(img, size, pad = (255, 255, 255)):
+    """Reshape an image into a square aspect ratio without changing the original
+    image aspect ratio - i.e. use padding.
+    
+    """
+    h, w = img.shape[:2]
+
+    if w > h:
+        img = cv.copyMakeBorder(img, 0, w-h, 0, 0, cv.BORDER_CONSTANT, None, 
+                                pad)
+    else:
+        img = cv.copyMakeBorder(img, 0, 0, 0, h-w, cv.BORDER_CONSTANT, None, 
+                                pad)
+
+    # Reshape the image.
+    img = cv.resize(img, (size, size), None, None, cv.INTER_NEAREST)
+
+    return img
+
     
 def main(args):
     # Tile source.
@@ -41,16 +60,24 @@ def main(args):
     img = ts.getThumbnail(
         width=args.size, height=args.size, **kwargs
     )[0][:, :, :3]
+    
+    # Pad the image.
+    img = reshape_with_pad(img, (args.size, args.size), pad=(255, 255, 255))
 
     # Load the pretrained model.
     model = deeplabv3_model()
     model.load_state_dict(
-        torch.load('/opt/scw/cli/tissue_segmentation/best.pt', map_location=torch.device('cpu'))
+        torch.load('/opt/scw/cli/tissue_segmentation/best.pt', 
+                   map_location=torch.device('cpu'))
     )
     model.eval()
 
     pred = predict_mask(model, img, size=args.size, thresh=args.thresh)
-
+    
+    # Smooth the mask.
+    pred = cv.blur(pred, (args.kernel, args.kernel))
+    pred = (pred > 0).astype(np.uint8) * 255
+    
     # Extract contours.
     contours = cv.findContours(pred, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)[0]
     
