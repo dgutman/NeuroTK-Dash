@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <executable>
   <category>npFxns</category>
-  <title>NFT Detection</title>
+  <title>Tissue Detection</title>
   <description>Detect NFTs using object dection deep learning model.</description>
   <version>0.1.0</version>
   <license>Apache 2.0</license>
@@ -16,7 +16,7 @@
       <index>0</index>
       <description>Input image</description>
     </image>
-    <ing>
+    <int>
       <name>size</name>
       <label>Size</label>
       <index>1</index>
