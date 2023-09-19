@@ -16,13 +16,13 @@
       <index>0</index>
       <description>Input image</description>
     </image>
-    <integer>
+    <ing>
       <name>size</name>
       <label>Size</label>
       <index>1</index>
       <description>Thumbnail size to do tissue detection on.</description>
       <default>512</default>
-    </integer>
+    </int>
     <float>
       <name>thresh</name>
       <label>Threshold</label>
