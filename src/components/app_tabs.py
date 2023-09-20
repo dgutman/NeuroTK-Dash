@@ -5,6 +5,7 @@ from .projects_tab import projects_frame
 from .analysis_tab import analysis_frame
 from .jobqueue_tab import jobqueue_frame
 from .annotations_tab import annotations_frame
+from .browse_annotations_tab import browse_annotations_frame
 
 app_tabs = html.Div(
     [
@@ -16,6 +17,7 @@ app_tabs = html.Div(
                         dmc.Tab("Analysis", value="analysis"),
                         dmc.Tab("Job Queue", value="jobQueue"),
                         dmc.Tab("Annotations", value="annotations"),
+                        dmc.Tab("Annotation Browser", value="browse_annotations"),
                     ],
                     style={
                         "backgroundColor": "#e4e6f0",
@@ -45,9 +47,10 @@ app_tabs = html.Div(
                     value="jobQueue",
                 ),
                 dmc.TabsPanel([annotations_frame], value="annotations"),
+                dmc.TabsPanel([browse_annotations_frame], value="browse_annotations"),
             ],
             orientation="horizontal",
-            value="projects",
+            value="browse_annotations",
             id="projects-tabs",
             color="#6384c6",
             inverted=True,

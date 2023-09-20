@@ -77,6 +77,12 @@ def create_cli_selector():
                         data=["", "gray-matter-from-xmls", "gray-matter-fixed"],
                         style={"maxWidth": 300},
                     ),
+                    html.Button(
+                        "Refresh Task Status",
+                        id="task-status-button",
+                        className="mr-2 btn btn-danger",
+                        style={"maxWidth": 300},
+                    ),
                 ]
             ),
             dbc.Row(
@@ -99,6 +105,8 @@ def create_cli_selector():
                                     style={"visibility": "hidden"},
                                 )
                             ),
+                            html.Div(id="cli-output-status"),
+                            html.Div(id="debugjobtaskstatus"),
                         ],
                         width=6,
                     ),
@@ -107,6 +115,23 @@ def create_cli_selector():
         ],
         style=CLI_SELECTOR_STYLE,
     )
+
+
+## Create callback for when the app loads to see the status of jobs already submitted or running
+
+
+@callback(
+    Output("debugjobtaskstatus", "children"),
+    Input("task-status-button", "n_clicks"),
+    State("curCLI_params", "data"),
+)
+def refreshTaskStatus(n_clicks, cliParams):
+    ### This will check the dsaJobQueue mongo collection, and given a list of imageID's
+    ## and a parameter set, will see what jobs have been run and/or submitted
+    # print("You have pressed this button %d times", n_clicks)
+    # print("and the current cliParams are..")
+    # print(cliParams)
+    return html.Div("I was indeed updated..")
 
 
 ### Update this cliItems from the main table data.
