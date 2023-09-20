@@ -50,7 +50,7 @@ app_tabs = html.Div(
                 dmc.TabsPanel([browse_annotations_frame], value="browse_annotations"),
             ],
             orientation="horizontal",
-            value="browse_annotations",
+            value="projects",
             id="projects-tabs",
             color="#6384c6",
             inverted=True,
