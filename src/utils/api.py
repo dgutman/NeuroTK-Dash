@@ -299,9 +299,7 @@ def submit_ppc_job(data, params, maskName=None):
         return {"status": "FAILED", "girderResponse": {"status": "JobSubmitFailed"}}
         ## TO DO Figure out how we want to report these...
 
-    jobCached_info = lookup_job_record(cliInputData, USER)
-
-    if not jobCached_info:
+    if not lookup_job_record(cliInputData, USER):
         jobSubmission_response = gc.post(ppc_ext, data=cliInputData)
         ## Should I add the userID here as well?
 

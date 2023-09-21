@@ -16,6 +16,11 @@ from ..utils.settings import (
 )
 from ..utils.api import get_thumbnail_as_b64, get_neuroTK_projectDatasets, get_projects
 
+
+## TO DO:  Think about the dsaItemId versus just using the ID, what if the item occurs in multiple datasets..
+
+## This will break things
+
 db = MongoEngine()
 mc = pymongo.MongoClient(
     MONGO_URI, username=MONGODB_USERNAME, password=MONGODB_PASSWORD
@@ -120,6 +125,7 @@ def getUniqueParamSets(annotationName):
     ### Given an annotationName, this will generate a list of unique parameter sets that were used for the analysis
     ### One thing to think about, not all annotations were algorithmically generated so will need to come up with logic
     ### To figure this out in the future..
+
     # # Select your collection
     collection = mc["annotationData"]
 
@@ -155,16 +161,23 @@ def getUniqueParamSets(annotationName):
     return results
 
 
-def getAnnotationNameCount(userName):
+def getAnnotationNameCount(userName, itemListFilter=None):
     """This will query the mongo database directly and get the distinct annotation names and the associated counts"""
-    """The user name is added to segregate data"""
+    """The user name is added to segregate data
+        The ItemListFilter will allow me to filter by a list of itemID's based on either the currentProject
+        or currentTask depending on what options are passed otherwise it will return all annotations a user has access too
+    
+    """
+    match_query = {"userName": USER}
 
+    if itemListFilter:
+        match_query["itemId"] = {"$in": itemListFilter}
     # # Select your collection
     collection = mc["annotationData"]
 
     # Define the aggregation pipeline
     pipeline = [
-        {"$match": {"userName": USER}},
+        {"$match": match_query},
         {
             "$group": {
                 "_id": "$annotation.name",
@@ -235,7 +248,7 @@ def getElementSizeForAnnotations(annotation):
     results = list(collection.aggregate(pipeline))
 
     totalPointCounts = []
-    print(results[0])
+    # print(results[0])
     # Print or further process the results
     for result in results:
         # print(f"Document ID: {result['_id']}, Total Points: {result['totalPoints']}")
@@ -434,3 +447,18 @@ def getProjectDataset(
             return projectImages
         else:
             return None
+
+
+# def lookup_jobInfo_for_user_task(imageIdList, search_dict):
+#     ### Given a list of imageIds, the username which we get some gc.settings
+#     ### and a seach dict of the parameter set we are interested in, this will
+#     ## return the status for every image in the list, as well as jobSubmitTime if we can find it
+#     ## Need to cast all the values to a string and also add the _original_params to the key
+#     str_search_dict = {f"_original_params.{k}": str(v) for k, v in search_dict.items()}
+#     ## Adding in userKey to the lookup dictionary
+#     str_search_dict["user"] = USER
+
+#     record_set = collection.find_one(str_search_dict)
+#     print(len(record_set))
+
+#     pass
