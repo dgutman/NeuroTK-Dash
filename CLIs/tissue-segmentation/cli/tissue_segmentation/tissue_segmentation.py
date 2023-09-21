@@ -54,15 +54,25 @@ def main(args):
     # Get size of WSI.
     ts_metadata = ts.getMetadata()
     w, h = ts_metadata['sizeX'], ts_metadata['sizeY']
+    
+    print(f'Size of WSI: {w}, {h}')
 
     # Get thumbnail of image at the desired size.
     kwargs = dict(format=large_image.tilesource.TILE_FORMAT_NUMPY)
-    img = ts.getThumbnail(
-        width=args.size, height=args.size, **kwargs
-    )[0][:, :, :3]
+    
+    if w > h:
+        img = ts.getThumbnail(width=args.size, **kwargs)[0][:, :, :3]
+    else:
+        img = ts.getThumbnail(height=args.size, **kwargs)[0][:, :, :3]
+        
+    print(f'Original size of thumbnail: {img.shape}')
+    lr_h, lr_w = img.shape[:2]
+    sf_h, sf_w = h / lr_h, w / lr_w
     
     # Pad the image.
     img = reshape_with_pad(img, args.size, pad=(255, 255, 255))
+    
+    print(f'Size of thumbnail after reshape: {img.shape}')
 
     # Load the pretrained model.
     model = deeplabv3_model()
@@ -74,9 +84,11 @@ def main(args):
 
     pred = predict_mask(model, img, size=args.size, thresh=args.thresh)
     
+    print(f'Size of prediction: {pred.shape}')
+    
     # Smooth the mask.
-    pred = cv.blur(pred, (args.kernel, args.kernel))
-    pred = (pred > 0).astype(np.uint8) * 255
+    # pred = cv.blur(pred, (args.kernel, args.kernel))
+    # pred = (pred > 0).astype(np.uint8) * 255
     
     # Extract contours.
     contours = cv.findContours(pred, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)[0]
@@ -90,9 +102,6 @@ def main(args):
     # Convert the list of contours to points in DSA format.
     tissue_points = contours_to_points(smoothed_contours)
 
-    # Scale factor
-    sf = h / pred.shape[0]
-
     # Convert each contour into a list dictionary to pass as an annotation 
     # DSA element.
     tissue_els = []
@@ -104,7 +113,12 @@ def main(args):
             continue
             
         # Scale the points
-        pt = np.array(pt) * sf
+        pt = np.array(pt) 
+        print(f'Points shape: {pt.shape}')
+        
+        pt = pt * [sf_w, sf_h, 1]
+        
+        pt = pt.astype(int)
         
         tissue_els.append({
             'group': args.docname,
