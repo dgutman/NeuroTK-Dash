@@ -1,0 +1,11 @@
+[
+    {
+        "lineWidth": 2,
+        "lineColor": "rgb(0, 255, 0)",
+        "id": "nuclei",
+        "label": {
+            "value": "Nuclei"
+        },
+        "group": "nuclei"
+    }
+]
