@@ -1,6 +1,6 @@
 """Utility functions."""
 from typing import List
-from typing import List
+from shapely.geometry.polygon import Polygon
 
 from os import makedirs
 from os.path import basename, splitext
@@ -87,3 +87,34 @@ def get_filename(fp: str, prune_ext: bool = True) -> str:
         fn = splitext(fn)[0]
 
     return fn
+
+
+def im_to_txt_path(impath: str, txt_dir: str = '/labels/', ext='txt'):
+    """Replace the last occurance of /images/ to /labels/ in the given image 
+    path and change extension to .txt
+    
+    Args:
+        impath: Filepath to image.
+        txt_dir: Replace last occurence of '/images/' with this value.
+        ext: Replace with this extension.
+    
+    Returns:
+        Updated filepath.
+    
+    """
+    splits = impath.rsplit('/images/', 1)
+    return splitext(f'/{txt_dir}/'.join(splits))[0] + f'.{ext}'
+
+
+def corners_to_polygon(x1: int, y1: int, x2: int, y2: int) -> Polygon:
+    """Return a Polygon from shapely with the box coordinates given the top left and bottom right corners of a 
+    rectangle (can be rotated).
+    
+    Args:
+        x1, y1, x2, y2: Coordinates of the top left corner (point 1) and the bottom right corner (point 2) of a box.
+        
+    Returns:
+        Shapely polygon object of the box.
+        
+    """
+    return Polygon([(x1, y1), (x2, y1), (x2, y2), (x1, y2)])
