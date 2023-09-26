@@ -338,12 +338,12 @@ def submitCLItasks(
         n_jobs = len(itemsToRun)
 
         for i, item in enumerate(itemsToRun):
-            if selected_task == "PositivePixelCount":
+            if selected_cli == "PositivePixelCount":
                 jobOutput = submit_ppc_job(item, curCLI_params, maskName)
-            elif selected_task == "tissue_segmentation":
+            elif selected_cli == "tissue_segmentation":
                 jobOutput = submit_tissue_detection(item, curCLI_params)
             else:
-                raise Exception(f"{selected_task} does not have a submit function!")
+                raise Exception(f"{selected_cli} does not have a submit function!")
 
             jobSubmitList.append(jobOutput)
 
