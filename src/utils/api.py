@@ -316,16 +316,16 @@ def submit_ppc_job(data, params, maskName=None):
 
 
 def submit_tissue_detection(data, params):
-    """Submitt tissue detection CLI to set of images."""
+    """Submit tissue detection CLI to set of images."""
     cli_ext = "slicer_cli_web/jvizcar_tissue-detection_latest/tissue_segmentation/run"
 
     try:
         item = gc.get(f"item/{data['_id']}")
 
         cliInputData = {
-            "inputImageFile": item["largeImage"]["fileId"],  # WSI ID
-            "outputAnnotationFile": f"{item['name']}_tissue-detection.anot",
-            "outputAnnotationFile_folder": "6512fb223c737ca0f21dab57",
+            "in_file": item["largeImage"]["fileId"],  # WSI ID
+            "tissueAnnotationFile": f"{item['name']}_tissue-detection.anot",
+            "tissueAnnotationFile_folder": "6512fb223c737ca0f21dab57",
         }
         cliInputData.update(params)
 

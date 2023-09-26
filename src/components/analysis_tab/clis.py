@@ -36,7 +36,7 @@ cli_button_controls = html.Div(
             "Submit CLI",
             id="cli-submit-button",
             className="mr-2 btn btn-warning",
-            disabled=True,
+            disabled=False,
         ),
         html.Button(
             id="cli-job-cancel-button",
@@ -66,7 +66,7 @@ def create_cli_selector():
                     dmc.Select(
                         label="Select CLI",
                         id="cli-select",
-                        value="PositivePixelCount",
+                        value="tissue_segmentation",  ### NEED TO FIX LOGIC-- THJIS NEEDS TO CHANGE
                         data=list(AVAILABLE_CLI_TASKS.keys()),
                         style={"maxWidth": 300},
                     ),
@@ -227,7 +227,7 @@ def show_cli_param_ui(selected_cli_task, selected_task, task_store):
 
             params = meta["params"]
 
-            disabled = True
+            disabled = False  ## CHANGED LOGIC
         else:
             disabled = False
     else:
@@ -267,6 +267,7 @@ def update_json_output(*args):
         State("mask-name-for-cli", "value"),
         State("tasks-dropdown", "value"),
         State("task-store", "data"),
+        State("cli-select", "value"),
     ],
     running=[
         (Output("cli-submit-button", "disabled"), True, False),
@@ -293,6 +294,7 @@ def submitCLItasks(
     maskName: str,
     selected_task: str,
     task_store: List[dict],
+    selected_cli: str,
 ):
     """
     Submit a CLI task - though right now this will only work with ppc.
@@ -321,7 +323,7 @@ def submitCLItasks(
         # Submit metadata to the task.
         task_metadata = {
             "images": [item["_id"] for item in itemsToRun],
-            "cli": "PositivePixelCount",
+            "cli": selected_cli,
             "params": curCLI_params,
             "roi": maskName,
         }
