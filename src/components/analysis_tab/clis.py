@@ -6,7 +6,7 @@ from typing import List
 from pandas import DataFrame
 import plotly.express as px
 
-from ...utils.api import submit_ppc_job, lookup_job_record
+from ...utils.api import submit_ppc_job, submit_tissue_detection
 from ...utils.settings import gc, USER
 from ...utils.helpers import generate_dash_layout_from_slicer_cli
 from ...utils.database import getProjectDataset
@@ -336,7 +336,13 @@ def submitCLItasks(
         n_jobs = len(itemsToRun)
 
         for i, item in enumerate(itemsToRun):
-            jobOutput = submit_ppc_job(item, curCLI_params, maskName)
+            if selected_task == "PositivePixelCount":
+                jobOutput = submit_ppc_job(item, curCLI_params, maskName)
+            elif selected_task == "tissue_segmentation":
+                jobOutput = submit_tissue_detection(item, curCLI_params)
+            else:
+                raise Exception(f"{selected_task} does not have a submit function!")
+
             jobSubmitList.append(jobOutput)
 
             jobStatuspercent = ((i + 1) / n_jobs) * 100

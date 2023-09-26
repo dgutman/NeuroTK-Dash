@@ -194,7 +194,8 @@ def updateProjectItemSetTable(
         """No need to normalize the project item set, it should be
         in strings of key / value pairs. If not then read with
         pd.json_normalize instead."""
-        df = pd.DataFrame(projectItemSet)
+        # Normalize the dataframe.
+        df = pd.json_normalize(projectItemSet, sep="-")
 
         # If task is selected then filter by the task.
         if selectedTask:

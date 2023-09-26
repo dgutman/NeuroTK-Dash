@@ -40,11 +40,14 @@ def generate_generic_DataTable(df, id_val, col_defs={}, exportable=False):
 
 
 def generate_dash_layout_from_slicer_cli(
-    xml_string, paramSetsToIgnore=["Frame and Style", "Dask"], disabled=False, params=None
+    xml_string,
+    paramSetsToIgnore=("Frame and Style", "Dask", "Girder API URL and Key"),
+    disabled=False,
+    params=None,
 ):
     if params is None:
         params = {}
-    
+
     root = ET.fromstring(xml_string)
 
     ## TO DO:  Hide anything related to DASK and Frame and Style--- this is not reevant
@@ -59,12 +62,15 @@ def generate_dash_layout_from_slicer_cli(
         param_components = []
 
         label = param.find("label").text if param.find("label") is not None else ""
+
         if label in paramSetsToIgnore:
             continue
-        param_components.append(html.H4(label, className="card-title"))
+
+        param_components.append(html.H4("Inputs", className="card-title"))
 
         ## This loops through all the various parameters, I want to hide image params for now..
         hideImageParam = True
+
         if not hideImageParam:
             for image in param.findall("image"):
                 name = image.find("name").text if image.find("name") is not None else ""
@@ -93,7 +99,31 @@ def generate_dash_layout_from_slicer_cli(
                         value=params.get(name, default),
                         type="text",
                         readOnly=False,
-                        disabled=disabled
+                        disabled=disabled,
+                    ),
+                    html.Br(),
+                ]
+            )
+
+        for region in param.findall("string"):
+            name = region.find("name").text if region.find("name") is not None else ""
+            label_text = (
+                region.find("label").text if region.find("label") is not None else ""
+            )
+            default = (
+                region.find("default").text
+                if region.find("default") is not None
+                else ""
+            )
+            param_components.extend(
+                [
+                    html.Label(label_text),
+                    dcc.Input(
+                        id={"type": "dynamic-input", "index": name},
+                        value=params.get(name, default),
+                        type="text",
+                        readOnly=False,
+                        disabled=disabled,
                     ),
                     html.Br(),
                 ]
@@ -115,7 +145,7 @@ def generate_dash_layout_from_slicer_cli(
                         value=params.get(name, options[0]),
                         clearable=False,
                         style={"maxWidth": 300},
-                        disabled=disabled
+                        disabled=disabled,
                     ),
                     html.Br(),
                 ]
@@ -134,7 +164,13 @@ def generate_dash_layout_from_slicer_cli(
             param_components.extend(
                 [
                     html.Label(label_text),
-                    dcc.Input(id=name, value=params.get(name, default), type="text", readOnly=False, disabled=disabled),
+                    dcc.Input(
+                        id=name,
+                        value=params.get(name, default),
+                        type="text",
+                        readOnly=False,
+                        disabled=disabled,
+                    ),
                     html.Br(),
                 ]
             )
@@ -180,7 +216,57 @@ def generate_dash_layout_from_slicer_cli(
                             "MozAppearance": "number-input",  # for older Firefox versions
                             "WebkitAppearance": "number-input",  # for Chrome and modern browsers
                         },
-                        disabled=disabled
+                        disabled=disabled,
+                    ),
+                    html.Br(),
+                ]
+            )
+
+        for int_param in param.findall("integer"):
+            name = (
+                int_param.find("name").text
+                if int_param.find("name") is not None
+                else ""
+            )
+
+            label_text = (
+                int_param.find("label").text
+                if int_param.find("label") is not None
+                else ""
+            )
+
+            default = (
+                int_param.find("default").text
+                if int_param.find("default") is not None
+                else ""
+            )
+
+            # Validate that the default value is a float
+            try:
+                int(default)
+            except ValueError:
+                default = 0
+
+            param_components.extend(
+                [
+                    html.Label(label_text, style={"marginRight": "10px"}),
+                    dcc.Input(
+                        id={"type": "dynamic-input", "index": name},
+                        value=params.get(name, int(default)),
+                        type="number",
+                        step=1,
+                        readOnly=False,
+                        style={
+                            "width": "60px",
+                            "textAlign": "right",
+                            "border": "1px solid #ccc",
+                            "marginRight": "5px",
+                            "margin": "2px 2px",  # vertical and horizontal margin
+                            "appearance": "number-input",  # for Firefox
+                            "MozAppearance": "number-input",  # for older Firefox versions
+                            "WebkitAppearance": "number-input",  # for Chrome and modern browsers
+                        },
+                        disabled=disabled,
                     ),
                     html.Br(),
                 ]

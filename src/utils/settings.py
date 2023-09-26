@@ -117,6 +117,10 @@ else:
 AVAILABLE_CLI_TASKS = {
     "PositivePixelCount": {"name": "Positive Pixel Count", "dsa_name": "PPC"},
     "nft_detection": {"name": "NFT Detector", "dsa_name": "nft_detection"},
+    "tissue_segmentation": {
+        "name": "Tissue Detector",
+        "dsa_name": "tissue_segmentation",
+    },
 }
 
 ## Move database connection to here
