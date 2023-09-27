@@ -140,14 +140,10 @@ def pull_annotation_elements(set_progress, n_clicks, projectName):
     )
 
     # Since I am still debugging,I don't want to run this on more than 100 docs as a time
-    maxDocsToPull = 1000
-
-    if docCount < maxDocsToPull:
-        maxDocsToPull = docCount
 
     print(f"There are a total of {docCount} annotations to look up")
 
-    for i in range(maxDocsToPull):
+    for i in range(docCount):
         ## pull and update a single annotation document
         # find a document that has no elements
         doc_with_no_element = collection.find_one(
@@ -165,6 +161,9 @@ def pull_annotation_elements(set_progress, n_clicks, projectName):
     # return [f"Clicked {n_clicks} times"] ## I actually don't want this div to be updated
 
 
+debug = False
+
+
 ## TO DO is add long callback here
 ## This pulls the entire list of accessible annotations from the girder Database
 ## TO DO:  Add in some sort of date filter by last updated perhaps?
@@ -179,14 +178,14 @@ def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
         print("Available annotations being pulled")
         allAvailableAnnotations = getAllItemAnnotations()
         print(len(allAvailableAnnotations))
+
+        status = insertAnnotationData(allAvailableAnnotations, USER)
+        if debug:
+            print(status)
     else:
-        allAvailableAnnotations = getAnnotationNameCount(curProjectName)
+        allAvailableAnnotations = getAnnotationNameCount(USER)
         return allAvailableAnnotations
 
-    # ### Now update the database...
-    #     ## I don't think the annotations need/should be filtered by projectName..
-    # status = insertAnnotationData(allAvailableAnnotations, USER)
-    # print(status)
     ## TO   DO-- MAKE THIS ASYNCHRONOUS
 
 
@@ -202,7 +201,7 @@ def createAnnotationNameCountTable(n_clicks, projectName, debug=False):
     ## Need to make sure we deal with case where there is no annotation
     ## that has ever been pulled from girder.
 
-    annotationCount = pd.DataFrame(getAnnotationNameCount(projectName))
+    annotationCount = pd.DataFrame(getAnnotationNameCount(USER))
     if len(annotationCount) > 0:
         annotationCountPanel = generate_generic_DataTable(
             annotationCount, id_val="annotation_name_counts_table"
