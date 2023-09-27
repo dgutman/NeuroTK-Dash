@@ -74,7 +74,12 @@ def create_cli_selector():
                         label="Image Mask Name",
                         id="mask-name-for-cli",
                         value="gray-matter-from-xmls",
-                        data=["", "gray-matter-from-xmls", "gray-matter-fixed"],
+                        data=[
+                            "",
+                            "gray-matter-from-xmls",
+                            "gray-matter-fixed",
+                            "tissue",
+                        ],
                         style={"maxWidth": 300},
                     ),
                     html.Button(
