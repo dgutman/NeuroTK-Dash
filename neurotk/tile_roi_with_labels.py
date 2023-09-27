@@ -16,7 +16,7 @@ from os.path import isfile, join
 def tile_roi_with_labels(
     fp: str, save_dir: str, tile_size: int = 1280, stride: int = None, 
     boundary_thr: float = 0.2, fill: Tuple[int] = (114, 114, 114), 
-    box_thr: float = 0.5
+    box_thr: float = 0.5, grayscale: bool = False
 ) -> DataFrame:
     """Tile an ROI image with labels.
     
@@ -30,13 +30,14 @@ def tile_roi_with_labels(
             have sufficient area in boundary to be included (0.0 - 1.0).
         fill: RGB when padding image.
         box_thr: Area threshold of box that must be in a tile.
+        grayscale: True to treat images as grayscale.
        
     Returns:
         Metadata of tiles saved.
         
     """
     # read the image
-    img = imread(fp)
+    img = imread(fp, grayscale=grayscale)
     h, w = img.shape[:2]
     
     # look for labels and boundaries
@@ -121,7 +122,7 @@ def tile_roi_with_labels(
             tile_df.append([img_fp, fp, x1, y1, tile_size])
             
             if not isfile(img_fp):
-                imwrite(img_fp, tile)
+                imwrite(img_fp, tile, grayscale=grayscale)
                 
             # Find all boxes that intersect
             label_intersection = label_df.geometry.intersection(tile_pol).area
