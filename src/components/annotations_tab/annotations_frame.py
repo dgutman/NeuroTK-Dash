@@ -155,7 +155,7 @@ def pull_annotation_elements(set_progress, n_clicks, projectName):
             {"_id": doc_with_no_element["_id"]}, {"$set": fullAnnotationDoc}
         )
 
-        jobStatuspercent = ((i + 1) / maxDocsToPull) * 100
+        jobStatuspercent = ((i + 1) / docCount) * 100
         set_progress((str(i + 1), f"{jobStatuspercent:.2f}%"))
     return dash.no_update
     # return [f"Clicked {n_clicks} times"] ## I actually don't want this div to be updated
