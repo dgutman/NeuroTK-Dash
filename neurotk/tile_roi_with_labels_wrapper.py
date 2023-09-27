@@ -9,7 +9,7 @@ def tile_roi_with_labels_wrapper(
     fps: List[str], save_dir: Union[str, List[str]], tile_size: int = 1280, 
     stride: int = None, boundary_thr: float = 0.2, nproc: int = 10,
     fill: Tuple[int] = (114, 114, 114), box_thr: float = 0.5, 
-    notebook: bool = False
+    notebook: bool = False, grayscale: bool = False
 ) -> DataFrame:
     """Tile an ROI image with labels.
     
@@ -26,7 +26,8 @@ def tile_roi_with_labels_wrapper(
         fill: RGB when padding image.
         box_thr: Area threshold of box that must be in a tile.
         notebook: Select which type of tqdm to use.
-       
+        grayscale: True to treat images as grayscale.
+        
     Returns:
         Metadata of tiles saved.
         
@@ -47,7 +48,10 @@ def tile_roi_with_labels_wrapper(
         jobs = [
             pool.apply_async(
                 func=tile_roi_with_labels, 
-                args=(fp, sd, tile_size, stride, boundary_thr, fill, box_thr,)) 
+                args=(
+                    fp, sd, tile_size, stride, boundary_thr, fill, box_thr,
+                    grayscale
+                )) 
             for fp, sd in zip(fps, save_dir)]
         
         tile_df = [job.get() for job in tqdm(jobs)]

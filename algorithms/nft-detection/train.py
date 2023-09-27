@@ -14,7 +14,7 @@ def parse_args():
                         help='Directory to put model subdirectories.')
     parser.add_argument('--name', type=str, default='exp',
                         help='Model directory.')
-    parser.add_argument('--exist-ok', type=bool, default=False,
+    parser.add_argument('--exist-ok', action='store_true',
                         help='Overwrite files.')
     parser.add_argument('--device', type=str, default=0,
                         help='GPU ids, such as 0, 1, 2 or [0, 1] or cpu.')
