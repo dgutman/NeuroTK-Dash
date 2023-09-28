@@ -170,10 +170,8 @@ debug = False
 @app.callback(
     Output("annotations_store", "data"),
     Input("pull-from-girder-button", "n_clicks"),
-    State("curProjectName_store", "data"),
-    # prevent_initial_call=True,
 )
-def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
+def pullBasicAnnotationDataFromGirder(n_clicks):
     if n_clicks:
         print("Available annotations being pulled")
         allAvailableAnnotations = getAllItemAnnotations()
@@ -185,8 +183,6 @@ def pullBasicAnnotationDataFromGirder(n_clicks, curProjectName):
     else:
         allAvailableAnnotations = getAnnotationNameCount(USER)
         return allAvailableAnnotations
-
-    ## TO   DO-- MAKE THIS ASYNCHRONOUS
 
 
 @app.callback(
