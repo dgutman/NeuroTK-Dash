@@ -9,7 +9,7 @@ from ..utils.settings import gc, dbConn, USER
 from girder_client import GirderClient, HttpError
 
 
-def get_points(rois, delineator=["-1, -1"]):
+def get_points(elements, delineator=(", -1, -1, ")):
     """
     Takes rois as a list of list of integers and returns them properly formatted for PPC via DSA
     Can also handle cases where rois is a list of dictionaries with a "points" key
@@ -21,23 +21,17 @@ def get_points(rois, delineator=["-1, -1"]):
     Points are returned as a string representation of the list with each roi delineated by the provided delineator
     """
     points = []
-    region_count = len(rois)
 
-    delineate = region_count > 1
+    for el in elements:
+        if el.get("type") == "polyline":
+            if el.get("points"):
+                el_points = np.array(el["points"])[:, :2].astype(str)
+                el_points = el_points.flatten().tolist()
+                points.append(", ".join(el_points))
 
-    for ind, roi in enumerate(rois, start=1):
-        if isinstance(roi, list):
-            [points.extend([str(item) for item in val[:2]]) for val in roi]
-        else:
-            # getting all non-zero points, converting to string and adding to points liste
-            [points.extend([str(item) for item in val[:2]]) for val in roi["points"]]
+    points = delineator.join(points)
 
-        # don't want to add delineator to the last roi since it doesn't need to be delineated
-        if (delineate) and (ind != region_count):
-            points.extend(delineator)
-
-    points = f"[{', '.join(points)}]"
-    return points
+    return f"[{points}]"
 
 
 def getAllItemAnnotations(annotationName=None):
@@ -45,9 +39,9 @@ def getAllItemAnnotations(annotationName=None):
     ## This will also have functionality to normalize/cleanup results that are stored in the annotation object
     ## For now I am focusing on pulling out the PPC data
     annotationItemSet = gc.listResource("annotation", limit=1000000000)
-    
+
     annotationItemSet = list(annotationItemSet)
-    
+
     return annotationItemSet
 
 
@@ -225,9 +219,6 @@ def get_datasets_list() -> List[dict]:
     return datasets
 
 
-### Adding job import here
-
-
 def lookup_job_record(search_dict, userName):
     # Initialize MongoDB client
     collection = dbConn["dsaJobQueue"]
@@ -286,31 +277,32 @@ def submit_ppc_job(data, params, maskName=None):
                 {"itemId": item["_id"], "annotation.name": maskName},
                 {"annotation.elements": 1},
             )
+
             if maskPointSet:
-                print("Found a mask point set!!")
                 maskRegionPoints = get_points(maskPointSet["annotation"]["elements"])
+
                 cliInputData["region"] = maskRegionPoints
-                print(len(maskRegionPoints), "mask length was generated")
-                # print(get_points(maskPointSet))
-            # {itemId: "646655476df8ba8751afe0d8","annotation.name": "gray-matter-fixed"}
+            else:
+                return {
+                    "status": "FAILED",
+                    "girderResponse": {"status": "JobSubmitFailed"},
+                }
+
     except KeyError:
         return {"status": "FAILED", "girderResponse": {"status": "JobSubmitFailed"}}
-        ## TO DO Figure out how we want to report these...
 
-    if not lookup_job_record(cliInputData, USER):
+    record = lookup_job_record(cliInputData, USER)
+
+    if record:
+        return {"status": "CACHED", "girderResponse": None}
+    else:
         jobSubmission_response = gc.post(ppc_ext, data=cliInputData)
-        ## Should I add the userID here as well?
 
         jobSubmission_response["user"] = USER
 
         dbConn["dsaJobQueue"].insert_one(jobSubmission_response)
-        return {"status": "SUBMITTED", "girderResponse": jobSubmission_response}
 
-    else:
-        # print("Job  was already submitted")
-        # JC: jobCached_info is not even defined!
-        # return {"status": "CACHED", "girderResponse": jobCached_info}
-        return {"status": "CACHED", "girderResponse": None}
+        return {"status": "SUBMITTED", "girderResponse": jobSubmission_response}
 
 
 def submit_tissue_detection(data, params):
