@@ -1,0 +1,4 @@
+{
+  "TissueSegmentation": {"type": "python"},
+  "NucleiDetectionYOLO": {"type": "python"}
+}

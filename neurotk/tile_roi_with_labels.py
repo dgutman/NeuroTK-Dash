@@ -7,7 +7,7 @@ import cv2 as cv
 
 from . import imread, imwrite
 from .utils import im_to_txt_path, get_filename, corners_to_polygon
-from .yolo_utils import read_yolo_label
+from .yolo.utils import read_yolo_label
 
 from os import makedirs
 from os.path import isfile, join

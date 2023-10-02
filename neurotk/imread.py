@@ -1,6 +1,7 @@
 import cv2 as cv
 import numpy as np
 
+
 def imread(fp: str, grayscale: bool = False) -> np.ndarray:
     """
     Read image file*.
