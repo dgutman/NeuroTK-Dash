@@ -77,7 +77,7 @@ def main(args):
     # Load the pretrained model.
     model = deeplabv3_model()
     model.load_state_dict(
-        torch.load('/opt/scw/cli/tissue_segmentation/best.pt', 
+        torch.load('/opt/scw/cli/TissueSegmentation/best.pt', 
                    map_location=torch.device('cpu'))
     )
     model.eval()

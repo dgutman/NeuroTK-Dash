@@ -16,15 +16,15 @@ RUN apt update
 RUN apt install -y git
 RUN apt-get install ffmpeg libsm6 libxext6 -y
 
+# Install additional Python libraries.
+RUN pip install ultralytics
+RUN pip install geopandas
+
 RUN mkdir /opt/scw
 RUN git clone https://github.com/dgutman/NeuroTK-Dash.git /opt/scw/NeuroTK-Dash
 COPY . /opt/scw
 WORKDIR /opt/scw/cli
 
-# Install additional Python libraries.
-RUN pip install ultralytics
-RUN pip install geopandas
-
 ENV PYTHONUNBUFFERED=TRUE
 
-# ENTRYPOINT ["/bin/bash", "docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "docker-entrypoint.sh"]

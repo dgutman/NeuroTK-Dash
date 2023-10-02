@@ -33,9 +33,17 @@ def main(args):
     to the DSA as annotations.
     
     """
+    import torch
+    
+    print('Is cuda available?')
+    print(torch.cuda.is_available())
+    
     # Load model.
-    model = YOLO('/opt/scw/cli/NucleiDetectionYOLO/best.pt')
-        
+    print('Trying to load YOLO weights')
+    model = YOLO('/opt/scw/cli/DAPINucleiDetection/best.pt')
+    print("YOLO weights loaded.")
+    
+    print('Inferencing....')
     pred_df = wsi_inference(
         args.in_file, 
         model,
@@ -47,6 +55,7 @@ def main(args):
         fill=(0, 0, 0),
         contained_thr=args.contained_thr
     )
+    print('Inference complete!')
     
     # Push results to DSA as annotations.
     elements = []
@@ -54,7 +63,6 @@ def main(args):
     for _, r in pred_df.iterrows():
         tile_w, tile_h = r.x2 - r.x1, r.y2 - r.y1
         tile_center = [(r.x2 + r.x1) / 2, (r.y2 + r.y1) / 2, 0]
-        label = int(r.label)
 
         elements.append({
             'lineColor': 'rgb(0,255,0)',
@@ -74,8 +82,12 @@ def main(args):
         "description": ""
     }
     
+    print('Annotation document setup')
+    
     with open(args.tissueAnnotationFile, 'w') as fh:
         json.dump(ann_doc, fh, separators=(',', ':'), sort_keys=False)
+        
+    print('done')
 
 
 if __name__ == "__main__":

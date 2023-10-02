@@ -1,4 +1,4 @@
 {
   "TissueSegmentation": {"type": "python"},
-  "NucleiDetectionYOLO": {"type": "python"}
+  "DAPINucleiDetection": {"type": "python"}
 }

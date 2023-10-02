@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<executable>
+  <category>npFxns</category>
+  <title>DAPI Nuclei Detection</title>
+  <description>Detect DAPI Nuclei</description>
+  <version>0.1.0</version>
+  <license>Apache 2.0</license>
+  <contributor>Juan Carlos Vizcarra</contributor>
+  <parameters>
+    <label>IO</label>
+    <description>Input/output parameters</description>
+    <image>
+      <name>in_file</name>
+      <label>Input image</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>Input image</description>
+    </image>
+    <integer>
+      <name>frame</name>
+      <label>Frame</label>
+      <index>1</index>
+      <description>DAPI frame index.</description>
+      <default>2</default>
+    </integer>
+    <integer>
+      <name>max_det</name>
+      <label>Max detections</label>
+      <index>2</index>
+      <description>Maximum number of tile detections.</description>
+      <default>1000</default>
+    </integer>
+    <float>
+      <name>iou_thr</name>
+      <label>NMS IoU threshold</label>
+      <index>3</index>
+      <description>NMS IoU threshold.</description>
+      <default>0.4</default>
+    </float>
+    <float>
+      <name>conf_thr</name>
+      <label>Confidence threshold</label>
+      <index>4</index>
+      <description>Confidence threshold.</description>
+      <default>0.5</default>
+    </float>
+    <float>
+      <name>contained_thr</name>
+      <label>Contained threshold</label>
+      <index>5</index>
+      <description>Contained threshold.</description>
+      <default>0.6</default>
+    </float>
+    <string>
+      <name>device</name>
+      <label>Device</label>
+      <index>6</index>
+      <description>Device, cuda, cpu, 0,1,2.</description>
+      <default>cuda</default>
+    </string>
+    <string>
+      <name>docname</name>
+      <label>docname</label>
+      <index>7</index>
+      <description>Annotation document name.</description>
+      <default>nuclei</default>
+    </string>
+    <file fileExtensions=".anot" reference="in_file">
+      <name>tissueAnnotationFile</name>
+      <label>Output Tissue Annotation File</label>
+      <description>Output NFT annotation file (*.anot)</description>
+      <channel>output</channel>
+      <index>8</index>
+    </file>
+  </parameters>
+
+  <parameters advanced="true">
+    <label>Girder API URL and Key</label>
+    <description>A Girder API URL and token for Girder client</description>
+    <string>
+      <name>girderApiUrl</name>
+      <longflag>api-url</longflag>
+      <label>Girder API URL</label>
+      <description>A Girder API URL (e.g., https://girder.example.com:443/api/v1)</description>
+      <default></default>
+    </string>
+    <string>
+      <name>girderToken</name>
+      <longflag>girder-token</longflag>
+      <label>Girder Token</label>
+      <description>A Girder token</description>
+      <default></default>
+    </string>
+  </parameters>
+</executable>
