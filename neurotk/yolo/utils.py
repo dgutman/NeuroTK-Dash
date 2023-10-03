@@ -1,5 +1,6 @@
 from typing import Union, Tuple
 import numpy as np
+import torch
 
 
 def convert_box_type(box: np.ndarray) -> np.ndarray:
@@ -91,3 +92,36 @@ def read_yolo_label(
         coords[:, 1:5] = convert_box_type(coords[:, 1:5])
         
     return coords
+
+
+def get_devices(device=None):
+    """Get the number of GPU devices, if available. 
+    
+    INPUTS
+    ------
+    device : str
+        either a string in the format 0,1,2 for device ids, or None if it should be inferred by torch
+    
+    RETURNS
+    -------
+    device : str
+        id of devices in format: 0,1,2,3
+    n_devices : int
+        number of devices
+    
+    """
+    if device is None:
+        # calcualte the device string, with all available devices
+        device = ''
+        n_devices = torch.cuda.device_count()
+        
+        if n_devices:
+            for i in range(n_devices):
+                device += str(i) + ','
+            device = device[:-1]
+        else:
+            device = None
+    else:
+        n_devices = len(device.split(','))
+        
+    return device, n_devices
