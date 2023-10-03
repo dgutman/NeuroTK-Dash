@@ -193,3 +193,5 @@ def wsi_inference(
     pred_df = remove_contained_boxes(pred_df, contained_thr)
     print(f'    {len(pred_df)} numbers of predictions returned.')
     
+    return pred_df
+    
