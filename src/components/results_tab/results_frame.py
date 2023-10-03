@@ -39,7 +39,6 @@ def populatePPCResultStore(selectValue):
 
     for p in ppcDocs:
         fixedPPC.append(parse_PPC(p))
-        break
 
     return fixedPPC
 
@@ -63,10 +62,11 @@ def parse_PPC(record):
             + "}"
         )
 
-    record["results"] = record["annotation"]["description"]["Results"]
-    record["params"] = record["annotation"]["description"]["params"]
+        record["results"] = record["annotation"]["description"]["Results"]
+        record["params"] = record["annotation"]["description"]["params"]
 
-    del record["annotation"]
+    if "annotation" in record:
+        del record["annotation"]
 
     return record
 
@@ -83,8 +83,6 @@ def parse_PPC(record):
 @callback(Output("ppcResults_datatable", "children"), Input("ppcResults_store", "data"))
 def generatePPCResultsTable(data):
     df = pd.json_normalize(data, sep="-")
-
-    print(df.iloc[0])
 
     ppcResults_datatable = generate_generic_DataTable(df, "ppc_dt")
     # print(ppcResults_datatable)
