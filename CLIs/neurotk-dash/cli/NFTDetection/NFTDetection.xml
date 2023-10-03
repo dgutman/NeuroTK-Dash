@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <executable>
   <category>npFxns</category>
-  <title>DAPI Nuclei Detection</title>
-  <description>Detect DAPI Nuclei</description>
+  <title>NFT Detection</title>
+  <description>Detect Pre-NFTs and iNFTs.</description>
   <version>0.1.0</version>
   <license>Apache 2.0</license>
   <contributor>Juan Carlos Vizcarra</contributor>
@@ -16,19 +16,26 @@
       <index>0</index>
       <description>Input image</description>
     </image>
-    <integer>
-      <name>frame</name>
-      <label>Frame</label>
+    <region shapes="rectangle,polygon,multipolygon">
+      <name>region</name>
+      <label>Analysis ROI</label>
+      <longflag>region</longflag>
+      <description>Region of interest where analysis is performed.  This is either -1,-1,-1,-1 for the whole image, or a four-element vector in the format "left, top, width, height", or a list of four or more x,y vertices to specify a polygon.</description>
+      <default>-1,-1,-1,-1</default>
+    </region>
+    <float>
+      <name>mask_mag</name>
+      <label>Mask Magnification</label>
       <index>1</index>
-      <description>DAPI frame index.</description>
+      <description>Create analysis mask at low resolution.</description>
       <default>2</default>
-    </integer>
+    </float>
     <integer>
       <name>max_det</name>
       <label>Max detections</label>
       <index>2</index>
       <description>Maximum number of tile detections.</description>
-      <default>1000</default>
+      <default>300</default>
     </integer>
     <float>
       <name>iou_thr</name>
@@ -42,7 +49,7 @@
       <label>Confidence threshold</label>
       <index>4</index>
       <description>Confidence threshold.</description>
-      <default>0.5</default>
+      <default>0.2</default>
     </float>
     <float>
       <name>contained_thr</name>
@@ -51,17 +58,30 @@
       <description>Contained threshold.</description>
       <default>0.6</default>
     </float>
+    <float>
+      <name>mask_thr</name>
+      <label>Mask threshold</label>
+      <index>6</index>
+      <description>Fraction of tile that must be in mask to include.</description>
+      <default>0.2</default>
+    </float>
+    <integer>
+      <name>mag</name>
+      <label>Magnification</label>
+      <index>7</index>
+      <description>Magnification to predict on.</description>
+      <default>20</default>
+    </integer>
     <string>
       <name>docname</name>
       <label>docname</label>
-      <index>6</index>
+      <index>8</index>
       <description>Annotation document name.</description>
       <default>nuclei</default>
     </string>
     <string-enumeration>
       <name>device</name>
       <label>Device</label>
-      <index>7</index>
       <description>Device (cpu or cuda) to use.</description>
       <channel>input</channel>
       <longflag>output_form</longflag>
@@ -72,7 +92,6 @@
     <file fileExtensions=".anot" reference="in_file">
       <name>tissueAnnotationFile</name>
       <label>Output Tissue Annotation File</label>
-      <index>8</index>
       <description>Output NFT annotation file (*.anot)</description>
       <channel>output</channel>
     </file>
