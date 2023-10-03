@@ -29,16 +29,17 @@ def populatePPCResultStore(selectValue):
     """The select value is just a place holder... currently it doesn't do anything but eventually we will want
     to pull results based on the specific selected task and data set... again.. PLACE HOLDER!!
     """
+    # Get all available annotation documents with positive pixel results.
     ppcDocs = dbConn["annotationData"].find(
         {"annotation.name": "Positive Pixel Count"}, {"annotation.description": 1}
     )
 
+    # Annotation results are not properly jsonified, so fix this.
     fixedPPC = []
 
     for p in ppcDocs:
-        p = parse_PPC(p)
-        # pprint(p)
-        fixedPPC.append(p)
+        fixedPPC.append(parse_PPC(p))
+        break
 
     return fixedPPC
 
@@ -50,34 +51,40 @@ def clean_groups(groups):
 
 
 def parse_PPC(record):
-    # record["created"] = record["created"].split("T")[0]
+    description = record.get("annotation", {}).get("description")
 
-    try:
-        description = json.loads(
-            record["annotation"]["description"]
-            .replace("Used params: ", "{'params':")
+    if description is not None:
+        # Update the description.
+        record["annotation"]["description"] = json.loads(
+            description.replace("Used params: ", "{'params':")
             .replace("\nResults:", ',"Results":')
             .replace("'", '"')
             .replace("None", "null")
             + "}"
         )
-    except:
-        print("Something wrong with document", record)
-        return record
 
-    record["test"] = description
+    record["results"] = record["annotation"]["description"]["Results"]
+    record["params"] = record["annotation"]["description"]["params"]
+
+    del record["annotation"]
+
+    return record
+
+    # record["test"] = description
 
     # if record["groups"] is not None:
     #     record.update(clean_groups(record["groups"]))
 
     # record.pop("groups")
 
-    return record
+    # return record
 
 
 @callback(Output("ppcResults_datatable", "children"), Input("ppcResults_store", "data"))
 def generatePPCResultsTable(data):
-    df = pd.json_normalize(data)
+    df = pd.json_normalize(data, sep="-")
+
+    print(df.iloc[0])
 
     ppcResults_datatable = generate_generic_DataTable(df, "ppc_dt")
     # print(ppcResults_datatable)
