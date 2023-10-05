@@ -16,9 +16,9 @@ from .add_dataset_popup import add_dataset_popup
 
 dataset_view = html.Div(
     [
-        dcc.Store("filteredItem_store"),
-        dcc.Store("projectItem_store"),
-        dcc.Store("taskItem_store"),
+        dcc.Store("filteredItem_store", data=[]),
+        dcc.Store("projectItem_store", data=[]),
+        dcc.Store("taskItem_store", data=[]),
         dcc.Store("dataset-item-store", data=get_datasets_list()),
         dmc.Tabs(
             [

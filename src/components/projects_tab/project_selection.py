@@ -13,31 +13,28 @@ from ...utils.settings import PROJECTS_ROOT_FOLDER_ID
 
 project_selection = html.Div(
     [
-        dcc.Store(
-            id="projects-store",
-            data=' '
-        ),
+        dcc.Store(id="projects-store", data=" "),
         dcc.Store(id="curProjectName_store"),
         html.Div(id="load-project-store"),
         dbc.Row(
             [
                 dbc.Col(
                     html.Button(
-                        [html.I(className='fa-solid fa-arrows-rotate')],
-                        id='refresh-item-store',
-                        style={'background-color': 'orange'},
-                        title='Refresh current project item store.',
-                        disabled=True
+                        [html.I(className="fa-solid fa-arrows-rotate")],
+                        id="refresh-item-store",
+                        style={"background-color": "orange"},
+                        title="Refresh current project item store.",
+                        disabled=True,
                     ),
-                    width='auto'
+                    width="auto",
                 ),
                 dbc.Col(
                     html.Button(
-                        [html.I(className='fa-solid fa-arrows-rotate')],
-                        id='refresh-projects-bn',
-                        title='Refresh the availble projects.'
-                    ), 
-                    width='auto'
+                        [html.I(className="fa-solid fa-arrows-rotate")],
+                        id="refresh-projects-bn",
+                        title="Refresh the availble projects.",
+                    ),
+                    width="auto",
                 ),
                 dbc.Col(
                     html.Div("Select project: ", style={"fontWeight": "bold"}),
@@ -82,9 +79,9 @@ project_selection = html.Div(
 
 
 @callback(
-    Output('refresh-item-store', 'disabled'),
-    Input('projects-dropdown', 'value'),
-    prevent_initial_call=True
+    Output("refresh-item-store", "disabled"),
+    Input("projects-dropdown", "value"),
+    prevent_initial_call=True,
 )
 def refresh_itemStore_state(selected_project):
     """
@@ -96,12 +93,9 @@ def refresh_itemStore_state(selected_project):
 
 @callback(
     Output("projectItem_store", "data", allow_duplicate=True),
-    Input('refresh-item-store', 'n_clicks'),
-    [
-        State("projects-dropdown", "data"),
-        State("projects-dropdown", "value")
-    ],
-    prevent_initial_call=True
+    Input("refresh-item-store", "n_clicks"),
+    [State("projects-dropdown", "data"), State("projects-dropdown", "value")],
+    prevent_initial_call=True,
 )
 def refresh_projectItem_store(n_clicks, available_projects, project_id):
     """
@@ -124,18 +118,14 @@ def refresh_projectItem_store(n_clicks, available_projects, project_id):
 
             return projectItemSet if projectItemSet else []
         else:
-            raise Exception('Could not find the project in the dropdown.')
+            raise Exception("Could not find the project in the dropdown.")
     else:
         return no_update
 
 
-
 @callback(
-    Output('projects-store', 'data'),
-    [
-        Input('load-project-store', 'children'),
-        Input('refresh-projects-bn', 'n_clicks')
-    ]
+    Output("projects-store", "data"),
+    [Input("load-project-store", "children"), Input("refresh-projects-bn", "n_clicks")],
 )
 def start_store(_, n_clicks: bool):
     """
@@ -146,15 +136,12 @@ def start_store(_, n_clicks: bool):
 
 # Adding current project info to the main top bar
 @callback(
-    [
-        Output("curProject_disp", "children"),
-        Output("curProjectName_store", "data")
-    ],
+    [Output("curProject_disp", "children"), Output("curProjectName_store", "data")],
     [
         Input("projects-dropdown", "value"),
         Input("projects-dropdown", "data"),
     ],
-    prevent_initial_call=True
+    prevent_initial_call=True,
 )
 def updateProjectNameStore(projectId, projectData):
     if projectId and projectData:
@@ -163,15 +150,18 @@ def updateProjectNameStore(projectId, projectData):
                 return (
                     html.Div(
                         ["Current project: ", html.Strong(f"{p['label']}")],
-                        style={"color": "#fcfcfc"}
+                        style={"color": "#fcfcfc"},
                     ),
-                    p["label"]
+                    p["label"],
                 )
     else:
-        return html.Div(
-            ['Current project: ', html.Strong('no project selected')],
-            style={"color": "#fcfcfc"}
-        ), ''
+        return (
+            html.Div(
+                ["Current project: ", html.Strong("no project selected")],
+                style={"color": "#fcfcfc"},
+            ),
+            "",
+        )
 
 
 @callback(
