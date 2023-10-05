@@ -11,13 +11,37 @@ import plotly.express as px
 
 resultSelectOptions = ["There", "Are", "None"]
 
+## PPC ParamSet...
+
+
+analysisProps = [
+    "annotation-attributes-stats-IntensityAverage",
+    "annotation-attributes-stats-IntensityAverageWeakAndPositive",
+    "annotation-attributes-stats-IntensitySumPositive",
+    "annotation-attributes-stats-IntensitySumStrongPositive",
+    "annotation-attributes-stats-IntensitySumWeakPositive",
+    "annotation-attributes-stats-NumberPositive",
+    "annotation-attributes-stats-NumberStrongPositive",
+    "annotation-attributes-stats-NumberTotalPixels",
+    "annotation-attributes-stats-NumberWeakPositive",
+    "annotation-attributes-stats-RatioStrongToPixels",
+    "annotation-attributes-stats-RatioStrongToTotal",
+    "annotation-attributes-stats-RatioTotalToPixels",
+    "annotation-attributes-stats-RatioWeakToPixels",
+]
+
+ppcResultOptions = []
+for ap in analysisProps:
+    ppcResultOptions.append({"value": ap, "label": ap.split("-")[-1]})
+
+
 results_frame = html.Div(
     [
         dcc.Store(id="ppcResults_store", data=[]),
         dbc.Select(
             id="selectPPCResultSet",
-            options=resultSelectOptions,
-            value=resultSelectOptions[0],
+            options=ppcResultOptions,
+            value=ppcResultOptions[0]["value"],
             style={"maxWidth": 200},
         ),
         html.Div(id="ppcResults_graphs_container"),
@@ -27,17 +51,16 @@ results_frame = html.Div(
 
 
 # generates (modified) version of figure 4 from Dunn aBeta PPC paper
-def make_stacked_ppc_bar_chart(metadata_df):
+def make_stacked_ppc_bar_chart(metadata_df, propToGraph):
     """
     Makes multipanel figure where each panel is a bar chart for a particular stain
     Each bar chart is itself representative of Percent Strong Positive for each region of a particular case
     Which is given as a single bar for each case, subdivided into, and color coded by, region (recreating Dunn fig 4)
     """
-
     fig = px.bar(
         metadata_df,
         x="npSchema-caseID",
-        y="annotation-attributes-stats-RatioStrongToPixels",
+        y=propToGraph,
         color="npSchema-region",
         facet_col="npSchema-stainID",
         category_orders={
@@ -136,14 +159,18 @@ def generatePPCResultsTable(data):
 
 
 @callback(
-    Output("ppcResults_graphs_container", "children"), Input("ppcResults_store", "data")
+    Output("ppcResults_graphs_container", "children"),
+    Input("ppcResults_store", "data"),
+    Input("selectPPCResultSet", "value"),
 )
-def generatePPCRGraphs(data):
+def generatePPCRGraphs(data, propToGraph):
     df = pd.json_normalize(data, sep="-")
-    stacked_ppc_graph = make_stacked_ppc_bar_chart(df)
+    print(propToGraph)
+    if data:
+        stacked_ppc_graph = make_stacked_ppc_bar_chart(df, propToGraph)
 
-    # print(ppcResults_datatable)
-    return stacked_ppc_graph
+        # print(ppcResults_datatable)
+        return stacked_ppc_graph
 
 
 # ppcResults_datatable
