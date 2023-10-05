@@ -4,6 +4,7 @@
 # images.
 from dash_mantine_components import Select
 from dash import html, Dash, callback, Output, Input
+from os.path import join
 
 DSA_URL = "https://styx.neurology.emory.edu"
 API_KEY = "F24SKHTasyuZI1TihEjQU8peB4mzwBYl0tZOTHy6"
@@ -28,14 +29,21 @@ app.layout = html.Div(
                 ],
             )
         ),
-        html.Div("This is where the HistomicsUI iframe should go!", id="iframe"),
+        html.Div(
+            "This is where the HistomicsUI iframe should go!",
+            id="iframe",
+            style={"height": "80vh", "width": "80vw"},
+        ),
     ]
 )
 
 
 @callback(Output("iframe", "children"), Input("wsi-select", "value"))
 def return_iframe(img_id):
-    return html.Iframe(src=DSA_URL)
+    return html.Iframe(
+        src=join(DSA_URL, f"histomics?image={img_id}"),
+        style={"height": "100vh", "width": "100vw"},
+    )
 
 
 if __name__ == "__main__":
