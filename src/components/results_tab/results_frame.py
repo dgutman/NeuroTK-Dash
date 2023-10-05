@@ -14,6 +14,62 @@ resultSelectOptions = ["There", "Are", "None"]
 ## PPC ParamSet...
 
 
+# generates (modified) version of figure 8 from Dunn aBeta PPC paper
+def make_ppc_box_chart(metadata_df):
+    """
+    Makes multipanel figure where each panel is a box chart for a particular diagnostic/staging framework
+    """
+
+    metadata_df["Braak Stage"] = (
+        metadata_df["Braak Stage"].str.replace("(", "").str.replace(")", "")
+    )
+
+    meta_cols = [
+        "caseID",
+        "ABC",
+        "Braak Stage",
+        "CERAD",
+        "Thal",
+        "Percent Strong Positive",
+    ]
+    metadata_df = metadata_df[meta_cols].copy()
+
+    metadata_df.dropna(subset=meta_cols[1:-1], how="all", inplace=True)
+
+    metadata_df = metadata_df.groupby(meta_cols[:-1], group_keys=False).mean()
+    metadata_df.reset_index(inplace=True, drop=False)
+
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=meta_cols[1:-1],
+        shared_yaxes=True,
+        y_title="Percent Strong Positive",
+        x_title="Stage",
+    )
+    mapping = {"ABC": (1, 1), "Braak Stage": (1, 2), "CERAD": (2, 1), "Thal": (2, 2)}
+
+    psp = metadata_df["Percent Strong Positive"].tolist()
+
+    for col, loc in mapping.items():
+        fig.add_trace(
+            go.Box(x=metadata_df[col].tolist(), y=psp), row=loc[0], col=loc[1]
+        )
+        fig.update_xaxes(
+            categoryorder="array",
+            categoryarray=sorted(metadata_df[col].unique()),
+            row=loc[0],
+            col=loc[1],
+        )
+
+    fig.update_layout(
+        showlegend=False,
+        title_text="Percent Strong Positive by Stage of Given Diagnostic Framework",
+    )
+
+    return dcc.Graph(figure=fig)
+
+
 analysisProps = [
     "annotation-attributes-stats-IntensityAverage",
     "annotation-attributes-stats-IntensityAverageWeakAndPositive",
