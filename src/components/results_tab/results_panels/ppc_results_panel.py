@@ -37,7 +37,7 @@ ppc_results_panel = html.Div(
             value="RatioStrongToPixels",
             style={"maxWidth": 200},
         ),
-        html.Div(id="stat-per-patient-graph"),
+        html.Div(id="stat-per-patient-graph", style={"height": "100vh"}),
     ]
 )
 
@@ -70,18 +70,19 @@ def make_ppc_box_chart(metadata_df, selected_stat):
     metadata_df.reset_index(inplace=True, drop=False)
 
     fig = make_subplots(
-        rows=2,
+        rows=1,
         cols=2,
         subplot_titles=meta_cols[1:-1],
         shared_yaxes=True,
         y_title=selected_stat,
         x_title="Stage",
+        row_heights=[1000, 1000],
     )
     mapping = {
         "npClinical-ABC": (1, 1),
         "npClinical-Braak Stage": (1, 2),
-        "npClinical-CERAD": (2, 1),
-        "npClinical-Thal": (2, 2),
+        # "npClinical-CERAD": (2, 1),
+        # "npClinical-Thal": (2, 2),
     }
 
     psp = metadata_df[selected_stat].tolist()

@@ -13,7 +13,7 @@ results_frame = html.Div(
     [
         # Stores annotation documents related to selected task.
         dcc.Store(id="results-store", data=[]),
-        html.Div(id="results-graphs-and-tables"),
+        html.Div(id="results-graphs-and-tables", style={"height": "100vh"}),
     ]
 )
 
