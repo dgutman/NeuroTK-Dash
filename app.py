@@ -12,6 +12,9 @@ neuroTK_dashapp = SingletonDashApp()
 
 app = neuroTK_dashapp.app
 
+# This suppresses callback exceptions when running, might not be the best way to do this though!
+app.config["suppress_callback_exceptions"] = True
+
 # Assign the layout to the app.
 app.layout = html.Div([banner, app_tabs])
 
