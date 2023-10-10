@@ -2,30 +2,35 @@ import sys
 sys.path.append('/opt/scw/NeuroTK-Dash')
 
 from histomicstk.cli.utils import CLIArgumentParser
+# from argparse import ArgumentParser
 import torch
 import large_image
 import cv2 as cv
 import numpy as np
 import json
+from pathlib import Path
 
 from neurotk.torch.models import deeplabv3_model
 from neurotk.torch.utils import predict_mask
 from neurotk.utils import contours_to_points
-
-# from argparse import ArgumentParser
 
 
 # def parse_args():
 #     """Testing arguments being passed"""
 #     parser = ArgumentParser()
     
-#     parser.add_argument('--in-file', default='/opt/scw/wsis/E20-17_10_AB.svs')
+#     parser.add_argument(
+#         '--in-file', 
+#         default='/opt/scw/data/2020/E20-17/ScannedSlides/E20-17_10_AB.svs'
+#     )
 #     parser.add_argument('--size', default=256)
 #     parser.add_argument('--thresh', default=0.7)
 #     parser.add_argument('--smooth', default=0.1)
 #     parser.add_argument('--docname', default='test')
+#     parser.add_argument('--tissueAnnotationFile', default='test.json')
     
 #     return parser.parse_args()
+
 
 def reshape_with_pad(img, size, pad = (255, 255, 255)):
     """Reshape an image into a square aspect ratio without changing the original
@@ -86,12 +91,36 @@ def main(args):
     
     print(f'Size of prediction: {pred.shape}')
     
-    # Smooth the mask.
+    # Smooth the mask, deprecated since it seemed to make results worse.
     # pred = cv.blur(pred, (args.kernel, args.kernel))
     # pred = (pred > 0).astype(np.uint8) * 255
     
-    # Extract contours.
-    contours = cv.findContours(pred, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)[0]
+    # Extract contours.    
+    contours, hierarchy  = cv.findContours(
+        pred, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE
+    )
+    
+    # Get the area of the contour.
+    pos_area = 0
+    neg_area = 0
+    
+    for i, contour in enumerate(contours):
+        if hierarchy[0, i, 3] == -1:
+            pos_area += cv.contourArea(contour)
+        else:
+            neg_area += cv.contourArea(contour)
+            
+    area = pos_area - neg_area
+    
+    print(f'Area in pixels at the original thumbnail size: {area}')
+    
+    # Convert the area in pixels's square in thumbnail size to original size.
+    sf = (ts_metadata['sizeX'] / lr_w) * (ts_metadata['sizeY'] / lr_h)
+    print(f'Scale factor going from thumbnail area to full resolution area: {sf}')
+    area = area * sf
+    print(f'Area in full resolution pixels: {area}')
+    area = area * (ts_metadata['mm_x'] * ts_metadata['mm_y'])
+    print(f'Area in mm^2: {area}')
     
     # Smoothe the contours
     smoothed_contours = []
@@ -106,6 +135,9 @@ def main(args):
     # DSA element.
     tissue_els = []
     
+    n_points = 0
+    n_polygons = 0
+    
     for pt in tissue_points:
         # Skip a point with too few points*
         # * DSA appears to prevent annotations of three points only.
@@ -116,23 +148,35 @@ def main(args):
         pt = np.array(pt) 
         print(f'Points shape: {pt.shape}')
         
+        n_polygons += 1
+        n_points += pt.shape[0]
+        
         pt = pt * [sf_w, sf_h, 1]
         
         pt = pt.astype(int)
         
         tissue_els.append({
-            'group': args.docname,
+            'group': 'tissue',
             'type': 'polyline',
             'lineColor': 'rgb(0,179,60)',
             'lineWidth': 4.0,
             'closed': True,
             'points': pt.tolist(),
-            'label': {'value': args.docname},
+            'label': {'value': 'tissue'},
         })
-
+        
+    stats = {
+        'area_mm': area, 'num_points': n_points, 'num_polygons': n_polygons
+    }
+        
     ann_doc = {
         "name": args.docname, "elements": tissue_els, 
-        "description": ""
+        "description": "",
+        "attributes": {
+            "params": vars(args),
+            "stats": stats,
+            "cli": Path(__file__).stem,
+        }
     }
 
     with open(args.tissueAnnotationFile, 'w') as fh:

@@ -82,6 +82,7 @@
     <string-enumeration>
       <name>device</name>
       <label>Device</label>
+      <index>9</index>
       <description>Device (cpu or cuda) to use.</description>
       <channel>input</channel>
       <longflag>output_form</longflag>
@@ -92,6 +93,7 @@
     <file fileExtensions=".anot" reference="in_file">
       <name>tissueAnnotationFile</name>
       <label>Output Tissue Annotation File</label>
+      <index>10</index>
       <description>Output NFT annotation file (*.anot)</description>
       <channel>output</channel>
     </file>
