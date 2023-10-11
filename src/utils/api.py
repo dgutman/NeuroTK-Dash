@@ -307,7 +307,7 @@ def submit_ppc_job(data, params, maskName=None):
 
 def submit_tissue_detection(data, params):
     """Submit tissue detection CLI to set of images."""
-    cli_ext = "slicer_cli_web/jvizcar_tissue-detection_latest/tissue_segmentation/run"
+    cli_ext = "slicer_cli_web/jvizcar_neurotk_latest/TissueSegmentation/run"
 
     try:
         item = gc.get(f"item/{data['_id']}")
@@ -318,6 +318,60 @@ def submit_tissue_detection(data, params):
             "tissueAnnotationFile_folder": "6512fb223c737ca0f21dab57",
         }
         cliInputData.update(params)
+
+    except KeyError:
+        return {"status": "FAILED", "girderResponse": {"status": "JobSubmitFailed"}}
+        ## TO DO Figure out how we want to report these...
+
+    if not lookup_job_record(cliInputData, USER):
+        jobSubmission_response = gc.post(cli_ext, data=cliInputData)
+        ## Should I add the userID here as well?
+
+        jobSubmission_response["user"] = USER
+
+        dbConn["dsaJobQueue"].insert_one(jobSubmission_response)
+        return {"status": "SUBMITTED", "girderResponse": jobSubmission_response}
+
+    else:
+        # print("Job  was already submitted")
+        # JC: jobCached_info is not even defined!
+        # return {"status": "CACHED", "girderResponse": jobCached_info}
+        return {"status": "CACHED", "girderResponse": None}
+
+
+def submit_nft_inference(data, params, maskName):
+    """Submit tissue detection CLI to set of images."""
+    cli_ext = "slicer_cli_web/jvizcar_neurotk_latest/NFTDetection/run"
+
+    try:
+        item = gc.get(f"item/{data['_id']}")
+
+        cliInputData = {
+            "in_file": item["largeImage"]["fileId"],  # WSI ID
+            "tissueAnnotationFile": f"{item['name']}_tissue-detection.anot",
+            "tissueAnnotationFile_folder": "6512fb223c737ca0f21dab57",
+        }
+        cliInputData.update(params)
+
+        if maskName:
+            # print("Should be fetching point set from", maskName, "for", item["_id"])
+            ## Lookup annotation data for this image..
+            # print(item)
+            ## TO DO.. what if there is more than one mask with the same name.. to be fixed
+            maskPointSet = dbConn["annotationData"].find_one(
+                {"itemId": item["_id"], "annotation.name": maskName},
+                {"annotation.elements": 1},
+            )
+
+            if maskPointSet:
+                maskRegionPoints = get_points(maskPointSet["annotation"]["elements"])
+
+                cliInputData["region"] = maskRegionPoints
+            else:
+                return {
+                    "status": "FAILED",
+                    "girderResponse": {"status": "JobSubmitFailed"},
+                }
 
     except KeyError:
         return {"status": "FAILED", "girderResponse": {"status": "JobSubmitFailed"}}

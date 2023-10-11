@@ -6,7 +6,7 @@ from typing import List
 from pandas import DataFrame
 import plotly.express as px
 
-from ...utils.api import submit_ppc_job, submit_tissue_detection
+from ...utils.api import submit_ppc_job, submit_tissue_detection, submit_nft_inference
 from ...utils.settings import gc, USER
 from ...utils.helpers import generate_dash_layout_from_slicer_cli
 from ...utils.database import getProjectDataset
@@ -66,7 +66,7 @@ def create_cli_selector():
                     dmc.Select(
                         label="Select CLI",
                         id="cli-select",
-                        value="tissue_segmentation",  ### NEED TO FIX LOGIC-- THJIS NEEDS TO CHANGE
+                        value="PositivePixelCount",  ### NEED TO FIX LOGIC-- THJIS NEEDS TO CHANGE
                         data=list(AVAILABLE_CLI_TASKS.keys()),
                         style={"maxWidth": 300},
                     ),
@@ -342,11 +342,14 @@ def submitCLItasks(
         jobSubmitList = []
         n_jobs = len(itemsToRun)
 
+        print(f"This is the selected task: {selected_cli}")
         for i, item in enumerate(itemsToRun):
             if selected_cli == "PositivePixelCount":
                 jobOutput = submit_ppc_job(item, curCLI_params, maskName)
-            elif selected_cli == "tissue_segmentation":
+            elif selected_cli == "TissueSegmentation":
                 jobOutput = submit_tissue_detection(item, curCLI_params)
+            elif selected_cli == "NFTDetection":
+                jobOutput = submit_nft_inference(item, curCLI_params, maskName)
             else:
                 raise Exception(f"{selected_cli} does not have a submit function!")
 
@@ -358,8 +361,16 @@ def submitCLItasks(
 
         submissionStatus = [x["status"] for x in jobSubmitList]
 
-        ## Can get the entire jobStatus cleverely..
-        currentJobStatusInfo = [x["girderResponse"]["status"] for x in jobSubmitList]
+        # Get the job status for every job.
+        currentJobStatusInfo = []
+
+        for x in jobSubmitList:
+            if x.get("girderResponse") is None:
+                currentJobStatusInfo.append("unknown")
+            else:
+                currentJobStatusInfo.append(
+                    x.get("girderResponse").get("status", "no status found")
+                )
 
         # Convert the current job status info into a dataframe for graphing
         df = []

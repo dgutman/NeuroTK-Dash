@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<executable>
+  <category>npFxns</category>
+  <title>NFT Detection</title>
+  <description>Detect Pre-NFTs and iNFTs.</description>
+  <version>0.1.0</version>
+  <license>Apache 2.0</license>
+  <contributor>Juan Carlos Vizcarra</contributor>
+  <parameters>
+    <label>IO</label>
+    <description>Input/output parameters</description>
+    <image>
+      <name>in_file</name>
+      <label>Input image</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>Input image</description>
+    </image>
+    <region shapes="rectangle,polygon,multipolygon">
+      <name>region</name>
+      <label>Analysis ROI</label>
+      <longflag>region</longflag>
+      <description>Region of interest where analysis is performed.  This is either -1,-1,-1,-1 for the whole image, or a four-element vector in the format "left, top, width, height", or a list of four or more x,y vertices to specify a polygon.</description>
+      <default>-1,-1,-1,-1</default>
+    </region>
+    <float>
+      <name>mask_mag</name>
+      <label>Mask Magnification</label>
+      <index>1</index>
+      <description>Create analysis mask at low resolution.</description>
+      <default>2</default>
+    </float>
+    <integer>
+      <name>max_det</name>
+      <label>Max detections</label>
+      <index>2</index>
+      <description>Maximum number of tile detections.</description>
+      <default>300</default>
+    </integer>
+    <float>
+      <name>iou_thr</name>
+      <label>NMS IoU threshold</label>
+      <index>3</index>
+      <description>NMS IoU threshold.</description>
+      <default>0.4</default>
+    </float>
+    <float>
+      <name>conf_thr</name>
+      <label>Confidence threshold</label>
+      <index>4</index>
+      <description>Confidence threshold.</description>
+      <default>0.2</default>
+    </float>
+    <float>
+      <name>contained_thr</name>
+      <label>Contained threshold</label>
+      <index>5</index>
+      <description>Contained threshold.</description>
+      <default>0.6</default>
+    </float>
+    <float>
+      <name>mask_thr</name>
+      <label>Mask threshold</label>
+      <index>6</index>
+      <description>Fraction of tile that must be in mask to include.</description>
+      <default>0.2</default>
+    </float>
+    <integer>
+      <name>mag</name>
+      <label>Magnification</label>
+      <index>7</index>
+      <description>Magnification to predict on.</description>
+      <default>20</default>
+    </integer>
+    <string>
+      <name>docname</name>
+      <label>docname</label>
+      <index>8</index>
+      <description>Annotation document name.</description>
+      <default>NFTs</default>
+    </string>
+    <string-enumeration>
+      <name>device</name>
+      <label>Device</label>
+      <description>Device (cpu or cuda) to use.</description>
+      <channel>input</channel>
+      <longflag>output_form</longflag>
+      <element>cuda</element>
+      <element>cpu</element>
+      <default>cuda</default>
+    </string-enumeration>
+    <file fileExtensions=".anot" reference="in_file">
+      <name>tissueAnnotationFile</name>
+      <label>Output Tissue Annotation File</label>
+      <index>9</index>
+      <description>Output NFT annotation file (*.anot)</description>
+      <channel>output</channel>
+    </file>
+  </parameters>
+
+  <parameters advanced="true">
+    <label>Girder API URL and Key</label>
+    <description>A Girder API URL and token for Girder client</description>
+    <string>
+      <name>girderApiUrl</name>
+      <longflag>api-url</longflag>
+      <label>Girder API URL</label>
+      <description>A Girder API URL (e.g., https://girder.example.com:443/api/v1)</description>
+      <default></default>
+    </string>
+    <string>
+      <name>girderToken</name>
+      <longflag>girder-token</longflag>
+      <label>Girder Token</label>
+      <description>A Girder token</description>
+      <default></default>
+    </string>
+  </parameters>
+</executable>
