@@ -178,88 +178,100 @@ def main(args):
     # pred_df.to_csv('temp.csv', index=False)
     print('Inference complete!')
     
-    # Save some results.
-    stats = {}
-    
-    label_counts = pred_df['label'].value_counts()
-    
-    stats['iNFT_count'] = int(label_counts.get(1, 0))
-    stats['PreNFT_count'] = int(label_counts.get(0, 0))
-    
-    # Calculate the image features for the WSI.
-    stats['Pre-NFT density'] = stats['PreNFT_count'] / den
-    stats['iNFT density'] = stats['iNFT_count'] / den
-    
-    # Find the FOV with the highest density of each type NFT.
-    # Convert the geomery to a point.
-    for i, r in pred_df.iterrows():
-        pred_df.loc[i, 'geometry'] = Point(
-            (r.x1 + r.x2) / 2, (r.y1 + r.y2) / 2
-        )
-
-    # Check FOVs with some overlap to catch highest FOV.
-    xys = []
-
-    for x in range(0, ts['sizeX'], int(fov_w / 2)):
-        for y in range(0, ts['sizeY'], int(fov_h / 2)):
-            xys.append([x, y])
-
-    # loop for each class
-    highest_fov = {0: None, 1: None}
-
-    for cls in (0, 1):
-        highest_within = 0
-        
-        for xy in xys:
-            x, y = xy
-
-            # Create the FOV polygon.
-            x1, y1, x2, y2 = x, y, x + fov_w, y + fov_h
-
-            fov = corners_to_polygon(x1, y1, x2, y2)
-
-            # Calculate how many points are in the FOV
-            within = pred_df[pred_df.within(fov)]
-            within = within[within['label'] == cls]
-
-            if len(within) > highest_within:
-                highest_fov[cls] = within.copy()
-                highest_within = len(within)
-                
-        if highest_fov[cls] is None:
-            highest_fov[cls] = DataFrame(
-                [],
-                columns=['label', 'x1', 'y1', 'x2', 'y2', 'geometry']
-            )
+    if len(pred_df):    
+        # Save some results.
+        stats = {}
             
-    stats['Pre-NFT FOV count'] = len(highest_fov[0])
-    stats['iNFT FOV count'] = len(highest_fov[1])
-    
-    # Calculate average clustering cofficient for different radii in the highest FOV!.
-    for cls in (0, 1):
-        coordinates = []
+        stats['iNFT_count'] = len(pred_df[pred_df['label'] == 1])
+        stats['PreNFT_count'] = len(pred_df[pred_df['label'] == 0])
         
-        cls_label = 'iNFT' if cls else 'Pre-NFT'
+        # Calculate the image features for the WSI.
+        stats['Pre-NFT density'] = stats['PreNFT_count'] / den
+        stats['iNFT density'] = stats['iNFT_count'] / den
+        
+        # Find the FOV with the highest density of each type NFT.
+        # Convert the geomery to a point.
+        for i, r in pred_df.iterrows():
+            pred_df.loc[i, 'geometry'] = Point(
+                (r.x1 + r.x2) / 2, (r.y1 + r.y2) / 2
+            )
 
-        for _, r in highest_fov[cls].iterrows():
-            coordinates.append([(r.x1 + r.x2) / 2, (r.y1 + r.y2) / 2])
-        
-        coordinates = np.array(coordinates)
-        
-        if len(coordinates):
-            for i, r in enumerate(px_radii):
-                # https://networkx.org/documentation/stable/auto_examples/geospatial/plot_points.html
-                dist = weights.DistanceBand.from_array(
-                    coordinates, threshold=r, silence_warnings=True
+        # Check FOVs with some overlap to catch highest FOV.
+        xys = []
+
+        for x in range(0, ts['sizeX'], int(fov_w / 2)):
+            for y in range(0, ts['sizeY'], int(fov_h / 2)):
+                xys.append([x, y])
+
+        # loop for each class
+        highest_fov = {0: None, 1: None}
+
+        for cls in (0, 1):
+            highest_within = 0
+            
+            for xy in xys:
+                x, y = xy
+
+                # Create the FOV polygon.
+                x1, y1, x2, y2 = x, y, x + fov_w, y + fov_h
+
+                fov = corners_to_polygon(x1, y1, x2, y2)
+
+                # Calculate how many points are in the FOV
+                within = pred_df[pred_df.within(fov)]
+                within = within[within['label'] == cls]
+
+                if len(within) > highest_within:
+                    highest_fov[cls] = within.copy()
+                    highest_within = len(within)
+                    
+            if highest_fov[cls] is None:
+                highest_fov[cls] = DataFrame(
+                    [],
+                    columns=['label', 'x1', 'y1', 'x2', 'y2', 'geometry']
                 )
+                
+        stats['Pre-NFT FOV count'] = len(highest_fov[0])
+        stats['iNFT FOV count'] = len(highest_fov[1])
+        
+        # Calculate average clustering cofficient for different radii in the highest FOV!.
+        for cls in (0, 1):
+            coordinates = []
+            
+            cls_label = 'iNFT' if cls else 'Pre-NFT'
 
-                dist_graph = dist.to_networkx()
+            for _, r in highest_fov[cls].iterrows():
+                coordinates.append([(r.x1 + r.x2) / 2, (r.y1 + r.y2) / 2])
+            
+            coordinates = np.array(coordinates)
+            
+            if len(coordinates):
+                for i, r in enumerate(px_radii):
+                    # https://networkx.org/documentation/stable/auto_examples/geospatial/plot_points.html
+                    dist = weights.DistanceBand.from_array(
+                        coordinates, threshold=r, silence_warnings=True
+                    )
 
-                # Calculate average clustering of the graph.
-                stats[f'{cls_label} clustering Coef (r={radii[i]})'] = \
-                    float(nx.average_clustering(dist_graph))
-        else:
-            stats[f'{cls_label} clustering Coef (r={radii[i]})'] = 0
+                    dist_graph = dist.to_networkx()
+
+                    # Calculate average clustering of the graph.
+                    stats[f'{cls_label} clustering Coef (r={radii[i]})'] = \
+                        float(nx.average_clustering(dist_graph))
+            else:
+                stats[f'{cls_label} clustering Coef (r={radii[i]})'] = 0
+    else:
+        stats = {
+            'iNFT_count': 0,
+            'PreNFT_count': 0,
+            'Pre-NFT density': 0,
+            'iNFT density': 0,
+            'Pre-NFT FOV count': 0,
+            'iNFT FOV count': 0,
+        }
+        
+        for cls in ('iNFT', 'Pre-NFT'):
+            for r in radii:
+                stats[f'{cls} clustering Coef (r={r})'] = 0
     
     # Push results to DSA as annotations.
     elements = []

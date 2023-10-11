@@ -187,10 +187,13 @@ def wsi_inference(
         columns=['label', 'x1', 'y1', 'x2', 'y2', 'conf', 'geometry', 
                  'box_area']
     )
-    
+        
     print(f"Merging overlapping boxes from a starting {len(pred_df)} boxes...")
-    pred_df = non_max_suppression(pred_df, iou_thr)
-    pred_df = remove_contained_boxes(pred_df, contained_thr)
+    
+    if len(pred_df):
+        pred_df = non_max_suppression(pred_df, iou_thr)
+        pred_df = remove_contained_boxes(pred_df, contained_thr)
+        
     print(f'    {len(pred_df)} numbers of predictions returned.')
     
     return pred_df
