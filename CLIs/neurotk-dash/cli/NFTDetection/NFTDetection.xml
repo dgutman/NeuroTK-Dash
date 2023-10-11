@@ -77,7 +77,7 @@
       <label>docname</label>
       <index>8</index>
       <description>Annotation document name.</description>
-      <default>nuclei</default>
+      <default>NFTs</default>
     </string>
     <string-enumeration>
       <name>device</name>

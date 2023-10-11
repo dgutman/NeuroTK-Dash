@@ -88,14 +88,29 @@ def main(args):
         dtype=np.uint8
     )
     
-    # From regions parameter draw a low res mask of the area of anlaysis.
+    """A region can be one or multiple polygons containing the region the 
+    analysis. For this workflow this region must be converted into a binary
+    mask."""
+    print('This is the region info:')
+    print('type', type(args.region))
+    print(args.region)
+    
     if len(args.region) == 4:
-        left, top, right, bottom = [
-            int(coord * fr_to_mask) for coord in args.region
-        ]
-        mask[top:bottom, left:right] = 255
+        if args.region == [-1, -1, -1, -1]:
+            # This signals the whole region!
+            mask[:, :] = 255
+        else:
+            left, top, width, height = args.region
+            
+            left = int(left * fr_to_mask)
+            top = int(top * fr_to_mask)
+            width = int(width * fr_to_mask)
+            height = int(height * fr_to_mask)
+    
+            mask[top:top+height, left:left+width] = 255
     else:
-        # This is not a single rectangle, convert to contours.
+        # This is multiple objects or a polygon style region.
+        # Regions are separated by two -1, -1 values.
         contours = []
         contour = []
 
