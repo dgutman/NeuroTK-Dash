@@ -182,6 +182,6 @@ def update_dropdown_value(data, value, hide, selected_project):
                 return d["_id"], ""
 
     if len(data):
-        return data[4]["_id"], ""
+        return data[0]["_id"], ""
     else:
         return "", ""

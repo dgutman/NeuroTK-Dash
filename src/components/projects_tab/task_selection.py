@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from dash_mantine_components import Select
 from typing import List
 
-from ...utils.settings import gc
+from ...utils.settings import gc, AVAILABLE_CLI_TASKS, dbConn
 from .create_task_popup import create_task_popup
 
 task_selection = html.Div(
@@ -152,7 +152,7 @@ def populate_tasks(
     # Format the tasks to go in a dmc.Select data.
     if tasks:
         options = [{"value": task, "label": task} for task in tasks]
-        selected_task = options[1]["value"]  ## This is where we hard code tasks
+        # selected_task = options[1]["value"]  ## This is where we hard code tasks
 
         return (
             options,
@@ -165,3 +165,92 @@ def populate_tasks(
         )
     else:
         return [], selected_task, hide, returned_name, is_open, alert_message, []
+
+
+@callback(
+    Output("report-store", "data"),
+    Input("tasks-dropdown", "value"),
+    [State("task-store", "data"), State("filteredItem_store", "data")],
+    prevent_initial_call=True,
+    suppress_initial_call=True,
+)
+def update_report_store(selected_task, task_store, task_items):
+    """Update the report store when the task is selected.
+
+    Warnings: for now this may cause issues when a new task is created and
+    has not been run yet.
+    """
+    task = task_store.get(selected_task, {})
+    task_meta = task.get("meta", {})
+    cli = task_meta.get("cli")
+
+    # NOTE: there needs to be a check to not update store if not all jobs
+    # are done running?
+
+    if cli in AVAILABLE_CLI_TASKS.keys():
+        # Convert task_items from a list of items to a searchable dictionary by
+        # item id.
+        task_items = {item["_id"]: item for item in task_items}
+
+        # Custom CLIs store the annotation document name in params, for
+        # PPC this is always the default name.
+        if cli == "PositivePixelCount":
+            docname = "Positive Pixel Count"
+        else:
+            docname = task_meta["params"]["docname"]
+
+        # Look for annotation documents in mongo that match this task and image list.
+        annotation_docs = list(
+            dbConn["annotationData"].find(
+                {
+                    "annotation.name": docname,
+                    "itemId": {"$in": list(task_items.keys())},
+                },
+                {
+                    "itemId": 1,
+                    "annotation.attributes.stats": 1,
+                    "annotation.attributes.params": 1,
+                },
+            )
+        )
+
+        # Region saved in task store is not the correct one!
+        task_params = task_meta.get("params", {})
+
+        if "region" in task_params:
+            del task_params["region"]
+
+        task_docs = []
+
+        # Get all the documents.
+        for doc in annotation_docs:
+            if doc.get("annotation", {}).get("attributes", {}).get("stats"):
+                doc_params = doc["annotation"]["attributes"].get("params", {})
+
+                # Check the param list.
+                doc_flag = True
+
+                for k, v in task_params.items():
+                    if doc_params[k] != v:
+                        doc_flag = False
+                        break
+
+                if doc_flag:
+                    # This may be just temporary and filters out annotation docs not run on annotated regions.
+
+                    # if len(doc_params["region"]) < 10:
+                    #     continue
+
+                    # Reformat the dictionary to make more sense.
+                    # doc.update(doc["annotation"]["attributes"]["stats"])
+                    # del doc["annotation"]["attributes"]["stats"]
+                    # doc.update(doc["annotation"]["attributes"]["params"])
+                    # del doc["annotation"]["attributes"]["params"]
+
+                    doc.update(task_items[doc["itemId"]])
+                    task_docs.append(doc)
+
+        print(len(task_items))
+
+    else:
+        return no_update

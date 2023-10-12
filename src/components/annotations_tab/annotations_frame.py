@@ -149,6 +149,7 @@ def pull_annotation_elements(set_progress, n_clicks, projectName):
         doc_with_no_element = collection.find_one(
             {"userName": USER, "annotation.elements": {"$exists": False}}
         )
+
         ## Now pull the data from the api
         fullAnnotationDoc = gc.get(f"annotation/{doc_with_no_element['_id']}")
         collection.update_one(
@@ -157,6 +158,7 @@ def pull_annotation_elements(set_progress, n_clicks, projectName):
 
         jobStatuspercent = ((i + 1) / docCount) * 100
         set_progress((str(i + 1), f"{jobStatuspercent:.2f}%"))
+
     return dash.no_update
     # return [f"Clicked {n_clicks} times"] ## I actually don't want this div to be updated
 
