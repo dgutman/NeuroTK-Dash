@@ -250,7 +250,6 @@ def update_report_store(selected_task, task_store, task_items):
                     doc.update(task_items[doc["itemId"]])
                     task_docs.append(doc)
 
-        print(len(task_items))
-
+        return task_docs
     else:
         return no_update
