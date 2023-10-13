@@ -77,10 +77,13 @@ token_info = gc.get("token/current")
 # Find the user ID that owns the token.
 try:
     for user_info in token_info["access"]["users"]:
-        USER = gc.getUser(user_info["id"])["login"]
+        user = gc.getUser(user_info["id"])
+        USER = user["login"]
+        USER_IS_ADMIN = user["admin"]
         break
 except KeyError:
     USER = "Could not match API token to user."
+    USER_IS_ADMIN = False
 
 if is_docker():
     MONGO_URI = os.environ.get("MONGO_URI", None)

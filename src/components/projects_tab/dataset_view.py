@@ -82,7 +82,6 @@ dataset_view = html.Div(
             value="table",
         ),
         add_dataset_popup,
-        html.Button("test", id="test"),
     ]
 )
 

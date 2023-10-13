@@ -171,7 +171,6 @@ def populate_tasks(
     Output("report-store", "data"),
     Input("tasks-dropdown", "value"),
     [State("task-store", "data"), State("filteredItem_store", "data")],
-    prevent_initial_call=True,
     suppress_initial_call=True,
 )
 def update_report_store(selected_task, task_store, task_items):
@@ -250,6 +249,7 @@ def update_report_store(selected_task, task_store, task_items):
                     doc.update(task_items[doc["itemId"]])
                     task_docs.append(doc)
 
-        return task_docs
+        print(len(task_docs))
+        return {"cli": cli, "docs": task_docs}
     else:
         return no_update
