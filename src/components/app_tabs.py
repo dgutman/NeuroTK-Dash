@@ -6,8 +6,6 @@ from .analysis_tab import analysis_frame
 from .jobqueue_tab import jobqueue_frame
 from .annotations_tab import annotations_frame
 from .browse_annotations_tab import browse_annotations_frame
-from .results_tab import results_frame
-
 
 app_tabs = html.Div(
     [

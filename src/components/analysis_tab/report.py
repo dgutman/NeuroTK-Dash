@@ -1,8 +1,9 @@
 """
 Results panel.
 """
-from dash import html, callback, Output, Input, State, no_update
+from dash import html, callback, Output, Input, no_update
 from .report_panels import ppc_report
+from .report_panels import nft_report
 
 report = html.Div(
     html.P("Select a task with CLI run to display report."),
@@ -25,6 +26,8 @@ def load_report_panel(results_store):
         cli = results_store["cli"]
         if cli == "PositivePixelCount":
             return ppc_report
+        elif cli == "NFTDetection":
+            return nft_report
         else:
             return html.Div(f"Report panel for CLI {cli} is not currently supported.")
     return no_update

@@ -118,10 +118,6 @@ AVAILABLE_CLI_TASKS = {
         "name": "TissueSegmentation",
         "dsa_name": "TissueSegmentation",
     },
-    "TissueSegmentation": {
-        "name": "TissueSegmentation",
-        "dsa_name": "TissueSegmentation",
-    },
     "NFTDetection": {"name": "NFTDetection", "dsa_name": "NFTDetection"},
 }
 
