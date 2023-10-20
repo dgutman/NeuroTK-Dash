@@ -1,5 +1,6 @@
 {
   "TissueSegmentation": {"type": "python"},
   "DAPINucleiDetection": {"type": "python"},
-  "NFTDetection": {"type": "python"}
+  "NFTDetection": {"type": "python"},
+  "TissueSegementationV2": {"type": "python"}
 }

@@ -45,7 +45,14 @@ def predict_mask(model, img, size=256, norm=None, thresh=0.7):
 
     # Predict the mask.
     with torch.set_grad_enabled(False):
-        pred = model(img.unsqueeze(0))['out'][0][0]
+        pred = model(img.unsqueeze(0))
+        
+        try:
+            pred = pred['out']
+        except:
+            pass
+        
+        pred = pred[0][0]
 
         # Treshold the mask to keep pixels which represent positives.
         mask = (pred.cpu().numpy() > thresh).astype(np.uint8) * 255
