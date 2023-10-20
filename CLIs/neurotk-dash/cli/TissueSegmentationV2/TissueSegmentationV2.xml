@@ -21,7 +21,7 @@
       <label>Size</label>
       <index>1</index>
       <description>Thumbnail size to do tissue detection on.</description>
-      <default>512</default>
+      <default>384</default>
     </integer>
     <float>
       <name>thresh</name>
