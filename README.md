@@ -1,64 +1,23 @@
-# NeuroTK Dash Web Application & Python Package
+# NeuroTK Web Application
+Neuropathology project defining and large scale analysis using computational approaches. Utilizes the Digital Slide Archive ([DSA](https://github.com/DigitalSlideArchive)) for data storage and API (application programming interface) for its backend. Front-end is built using Dash Plotly and local database is hosted using MongoDB for faster performance. The Mongo database is run using Docker compose and the application is run using Python.
 
-## Setup (devel)
-Create virtual or conda environment with Python >=3.8
+## Setup & Installation
+Requirements:
+* Python 3.10 or greater
+* [Docker](https://docs.docker.com/engine/install/) installed
 
-(conda) 
-```
-$ conda create -n <env name> python
-$ conda activate <env name>
-```
+Instructions:
+* Clone this repository
+* In the root of the directory do the following to create the Mongo database:
+  - ```$ docker compose install```
+  - ```$ docker compose up -d```
+* In the root of the repository: ```$ python install -r requirements.txt```
+  - recommended to do this in a Python environment
+* In the root of the repository: ```$ python app.py```
+* App is hosted on http://localhost:8050/
 
-(virtual env) 
-```
-$ python -m venv <env path>
-$ source <env path>/bin/activate
-```
+Additional setup:
+* In src directory there is a .env-template file. Rename or copy this to a .env file in the same location and set parameters to run your application, including URL to host at, port, API key for login (if not wanting to do this interactively), DSA API URL, and more.
 
-Install required packages.
-```
-$ pip install -r requirements.txt
-```
-
-In **src** directory there is a *.env-template* file, before running rename or copy this to a file called .env and add your API key and DSA API URL.
-
-## Running Application
-```
-$ docker compose up -d  # start mongo in detatched mode
-$ python app.py  # run the app, runs on localhost:8050 by default
-```
-
-### Hints & Tips:
-* Update requirements.txt: ```$ pip freeze > requirements.txt```
-* NeuroTK main application is run in the app.py located at the root of the repository
-* Additional standalone versions of the app are located in specific folders:
-  * app/
-  * dashApp/
-  * refactor/
-* src directory at the root of the repository contains the main files used by the web application 
-* neurotk directory is a Python package with various useful functions used in data analysis
-* algorithm directories contains the codeset used for the various CLIs created.
-
-### Extras
-#### Mean features
-
-Web application for applying computer vision (including AI) in neuropathology digital image cohorts.
-#### Dash App
-
-There are several components, including a Dash application https://plotly.com/dash/
-
-This will serve as the main app / dashboard for interacting with the DSA.
-
-This should be running at http://localhost:8050
-
-#### Backend database PostGIS
-
-This is a postgres database with the pgvector and postgis extensions. This is used to cache certain queries, and/or for future work related to spatial queries
-
-#### Backend database MONGODB
-
-To simplify things, I have another service running mongodb. Since the DSA itself uses a mongodatabase, this makes it MUCH easier to cache DSA queries locally. Also there are some cases where having a NoSQL database to stuff data into is easier than a full relational database (e.g. PostGres)
-
-#### Jupyter notebook
-
-Another service at http://127.0.0.1:8888 is running a jupyter notebook instance. This is for local debugging, database queries and/or development
+## Tutorial
+Tutorial on how to run the application will be coming. Also, to allow users to test the application easily, we will try to setup a dummy DSA instance with some de-identified images. Or setup instructions on how to set this up yourself.
