@@ -305,9 +305,9 @@ def submit_ppc_job(data, params, maskName=None):
         return {"status": "SUBMITTED", "girderResponse": jobSubmission_response}
 
 
-def submit_tissue_detection(data, params):
+def submit_tissue_detection(data, params, selected_task):
     """Submit tissue detection CLI to set of images."""
-    cli_ext = "slicer_cli_web/jvizcar_neurotk_latest/TissueSegmentation/run"
+    cli_ext = f"slicer_cli_web/jvizcar_neurotk_latest/{selected_task}/run"
 
     try:
         item = gc.get(f"item/{data['_id']}")

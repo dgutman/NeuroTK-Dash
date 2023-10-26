@@ -7,7 +7,7 @@ import dash_bootstrap_components as dbc
 from dash_mantine_components import Select
 from typing import List
 
-from ...utils.settings import gc, AVAILABLE_CLI_TASKS, dbConn
+from ...utils.settings import gc, AVAILABLE_CLI_TASKS, dbConn, COLORS
 from .create_task_popup import create_task_popup
 
 task_selection = html.Div(
@@ -32,21 +32,23 @@ task_selection = html.Div(
                 ),
                 dbc.Col(
                     html.Div(
-                        html.Button(
-                            [html.I(className="fa-solid fa-plus")],
-                            title="create new task",
+                        dbc.Button(
+                            "Create task",
+                            id="open-create-task-bn",
+                            color="success",
+                            className="me-1",
                         ),
-                        id="open-create-task-bn",
                     ),
                     align="end",
                     width="auto",
                 ),
                 dbc.Col(
                     html.Div(
-                        html.Button(
-                            [html.I(className="fa-solid fa-trash")],
-                            title="delete selected task",
+                        dbc.Button(
+                            "Delete selected task",
                             id="delete-task",
+                            color="danger",
+                            className="me-1",
                         )
                     ),
                     align="end",
@@ -57,6 +59,7 @@ task_selection = html.Div(
         create_task_popup,
     ],
     id="task-selection",
+    style={"backgroundColor": COLORS["background-secondary"]},
 )
 
 
@@ -164,7 +167,7 @@ def populate_tasks(
             tasks,
         )
     else:
-        return [], selected_task, hide, returned_name, is_open, alert_message, []
+        return [], selected_task, hide, returned_name, is_open, alert_message, {}
 
 
 @callback(
@@ -253,3 +256,12 @@ def update_report_store(selected_task, task_store, task_items):
         return {"cli": cli, "docs": task_docs}
     else:
         return no_update
+
+
+@callback(
+    Output("delete-task", "style"),
+    Input("tasks-dropdown", "value"),
+    suppress_initial_call=True,
+)
+def delete_task_bn_status(selected_task):
+    return {} if selected_task else dict(display="none")

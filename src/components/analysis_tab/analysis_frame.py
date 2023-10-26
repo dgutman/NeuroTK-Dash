@@ -7,12 +7,21 @@ import dash_bootstrap_components as dbc
 from .histomicsui import histomicsui
 from .clis import dsa_cli_view_layout
 from .report import report
+from ...utils.settings import COLORS
 
-tab1 = dbc.Card(dbc.CardBody([dsa_cli_view_layout]))
+tab1 = dbc.Card(
+    dbc.CardBody([dsa_cli_view_layout]),
+    style={"backgroundColor": COLORS["background-secondary"]},
+)
 
-tab2 = dbc.Card(dbc.CardBody([histomicsui]))
+tab2 = dbc.Card(
+    dbc.CardBody([histomicsui]),
+    style={"backgroundColor": COLORS["background-secondary"]},
+)
 
-tab3 = dbc.Card(dbc.CardBody([report]))
+tab3 = dbc.Card(
+    dbc.CardBody([report]), style={"backgroundColor": COLORS["background-secondary"]}
+)
 
 analysis_frame = html.Div(
     [
@@ -30,4 +39,5 @@ analysis_frame = html.Div(
         ),
     ],
     id="analysis-frame",
+    style={"backgroundColor": COLORS["background-secondary"]},
 )

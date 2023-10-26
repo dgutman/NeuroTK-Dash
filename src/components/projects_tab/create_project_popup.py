@@ -126,7 +126,7 @@ def create_new_project(n_clicks, data, state, value):
         new_project = f"{USER}/{value}"
 
         if new_project in [d["key"] for d in data]:
-            return data if len(data) else [], True, False
+            return no_update, True, False
         else:
             # Create the new folder.
             privacy = "Private" if state else "Public"
@@ -159,29 +159,22 @@ def alert_existing_project(hide, value):
         return f"{USER}/{value} project already exists."
 
 
-@callback(
-    [Output("projects-dropdown", "value"), Output("new-project-name", "value")],
-    Input("projects-store", "data"),
-    State("new-project-name", "value"),
-    State("create-project-alert", "hide"),
-    State("projects-dropdown", "value"),
-)
-def update_dropdown_value(data, value, hide, selected_project):
-    """
-    Update the value of the project dropdown.
+# @callback(
+#     Output("projects-dropdown", "value"),
+#     Input("projects-store", "data"),
+#     [State("new-project-name", "value"), State("projects-dropdown", "data")],
+#     suppress_initial_call=True,
+# )
+# def update_selected_project(project_store, new_project_name, projects):
+#     if len(project_store):
+#         # If there is a new project name, make this the value.
+#         for project in project_store:
+#             if project["name"] == new_project_name:
+#                 return project["_id"]
 
-    """
-    # If there is a value in the new project screen
-    if value:
-        # The popup must be open for this to count
-        if not hide:
-            return no_update, value
+#         # Return the first project.
+#         print("Projects", projects)
 
-        for d in data:
-            if d["name"] == value:
-                return d["_id"], ""
-
-    if len(data):
-        return data[0]["_id"], ""
-    else:
-        return "", ""
+#         return project_store[0]["_id"]
+#     else:
+#         return ""

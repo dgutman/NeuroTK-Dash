@@ -33,41 +33,43 @@ jobQueue_button_controls = html.Div(
 )
 
 
-jobqueue_frame = html.Div(dbc.Container(
-    [
-        dbc.Row(jobQueue_button_controls),
-        dbc.Row(
-            [
-                dbc.Col(
-                    dash_ag_grid.AgGrid(
-                        id="jobData_table",
-                        columnDefs=[
-                            {"headerName": "Job ID", "field": "_id"},
-                            {"headerName": "Title", "field": "title"},
-                            {"headerName": "Status Code", "field": "status"},
-                            {"headerName": "Status", "field": "statusText"},
-                            {"headerName": "Created", "field": "created"},
-                        ],
-                        defaultColDef={
-                            "resizable": True,
-                            "sortable": True,
-                            "filter": True,
-                        },
-                        dashGridOptions={
-                            "pagination": True,
-                            "paginationAutoPageSize": True,
-                        },
-                        rowData=[],
-                        columnSize="sizeToFit",
+jobqueue_frame = html.Div(
+    dbc.Container(
+        [
+            dbc.Row(jobQueue_button_controls),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dash_ag_grid.AgGrid(
+                            id="jobData_table",
+                            columnDefs=[
+                                {"headerName": "Job ID", "field": "_id"},
+                                {"headerName": "Title", "field": "title"},
+                                {"headerName": "Status Code", "field": "status"},
+                                {"headerName": "Status", "field": "statusText"},
+                                {"headerName": "Created", "field": "created"},
+                            ],
+                            defaultColDef={
+                                "resizable": True,
+                                "sortable": True,
+                                "filter": True,
+                            },
+                            dashGridOptions={
+                                "pagination": True,
+                                "paginationAutoPageSize": True,
+                            },
+                            rowData=[],
+                            columnSize="sizeToFit",
+                        ),
+                        width=9,
                     ),
-                    width=9,
-                ),
-                dbc.Col(dcc.Graph("job-status-pieChart"), width=3),
-            ]
-        ),
-        dbc.Row([html.Div(id="refreshStatusDiv")]),
-    ]
-))
+                    dbc.Col(dcc.Graph("job-status-pieChart"), width=3),
+                ]
+            ),
+            dbc.Row([html.Div(id="refreshStatusDiv")]),
+        ]
+    )
+)
 
 
 @callback(Output("job-status-pieChart", "figure"), Input("jobInfo_store", "data"))
@@ -125,7 +127,7 @@ def refresh_jobs(n_clicks):
     collection = dbConn["dsaJobQueue"]
 
     # Find jobs with status 0 == inactive
-    jobs = collection.find({"status": {'$in': [0, 1, 2]}})
+    jobs = collection.find({"status": {"$in": [0, 1, 2]}})
 
     ## TO DO.. maybe enumerate this or something?
     jobsScanned = 0
@@ -137,5 +139,5 @@ def refresh_jobs(n_clicks):
         # Update the mongo database.
         collection.update_one({"_id": job_id}, {"$set": {"status": newStatus}})
         jobsScanned += 1
-    
+
     return [html.Div(jobsScanned, "were scanned")]

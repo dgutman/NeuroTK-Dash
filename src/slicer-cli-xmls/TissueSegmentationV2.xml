@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<executable>
+  <category>npFxns</category>
+  <title>Tissue Detection (version 2)</title>
+  <description>Detect NFTs using object dection deep learning model.</description>
+  <version>0.1.0</version>
+  <license>Apache 2.0</license>
+  <contributor>Juan Carlos Vizcarra</contributor>
+  <parameters>
+    <label>IO</label>
+    <description>Input/output parameters</description>
+    <image>
+      <name>in_file</name>
+      <label>Input image</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description>Input image</description>
+    </image>
+    <integer>
+      <name>size</name>
+      <label>Size</label>
+      <index>1</index>
+      <description>Thumbnail size to do tissue detection on.</description>
+      <default>384</default>
+    </integer>
+    <float>
+      <name>thresh</name>
+      <label>Threshold</label>
+      <index>2</index>
+      <description>Threshold prediction mask, values from -1 to 1.</description>
+      <default>0.5</default>
+    </float>
+    <float>
+      <name>smooth</name>
+      <label>Smooth</label>
+      <index>3</index>
+      <description>Smooth the tissue contours.</description>
+      <default>0.1</default>
+    </float>
+    <integer>
+      <name>kernel</name>
+      <label>Gaussian Kernel Size</label>
+      <index>4</index>
+      <description>Kernel size of gaussian smoothing on prediction mask.</description>
+      <default>5</default>
+    </integer>
+    <string>
+      <name>docname</name>
+      <label>docname</label>
+      <index>5</index>
+      <description>Annotation document name.</description>
+      <default>tissue</default>
+    </string>
+    <file fileExtensions=".anot" reference="in_file">
+      <name>tissueAnnotationFile</name>
+      <label>Output Tissue Annotation File</label>
+      <description>Output NFT annotation file (*.anot)</description>
+      <channel>output</channel>
+      <index>6</index>
+    </file>
+  </parameters>
+
+  <parameters advanced="true">
+    <label>Girder API URL and Key</label>
+    <description>A Girder API URL and token for Girder client</description>
+    <string>
+      <name>girderApiUrl</name>
+      <longflag>api-url</longflag>
+      <label>Girder API URL</label>
+      <description>A Girder API URL (e.g., https://girder.example.com:443/api/v1)</description>
+      <default></default>
+    </string>
+    <string>
+      <name>girderToken</name>
+      <longflag>girder-token</longflag>
+      <label>Girder Token</label>
+      <description>A Girder token</description>
+      <default></default>
+    </string>
+  </parameters>
+</executable>

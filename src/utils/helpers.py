@@ -16,7 +16,6 @@ def generate_generic_DataTable(df, id_val, col_defs={}, exportable=False):
                 defaultColDef={
                     "filter": "agSetColumnFilter",
                     "editable": True,
-                    # "flex": 1,
                     "filterParams": {"debounceMs": 2500},
                     "floatingFilter": True,
                     "sortable": True,
@@ -24,7 +23,11 @@ def generate_generic_DataTable(df, id_val, col_defs={}, exportable=False):
                 },
                 columnDefs=col_defs,
                 rowData=df.to_dict("records"),
-                dashGridOptions={"pagination": True, "paginationAutoPageSize": True},
+                dashGridOptions={
+                    "pagination": True,
+                    "paginationAutoPageSize": True,
+                    "rowSelection": "single",
+                },
                 # columnSize="sizeToFit",
                 csvExportParams={
                     "fileName": f"{id_val.replace('-', '_')}.csv",
@@ -274,4 +277,7 @@ def generate_dash_layout_from_slicer_cli(
 
         components.append(dbc.Card(dbc.CardBody(param_components), className="mb-3"))
 
-    return dbc.Container(components, className="mt-3")
+    return dbc.Container(
+        components,
+        className="mt-3",
+    )

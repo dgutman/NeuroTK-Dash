@@ -1,42 +1,10 @@
-from dash import html, callback, Input, Output, State, dcc
+from dash import html, callback, Input, Output, State, dcc, dash_table
 import dash_mantine_components as dmc
 import dash_bootstrap_components as dbc
 from pandas import json_normalize, DataFrame
 import plotly.express as px
 import pickle
 from sklearn.metrics import cohen_kappa_score, confusion_matrix
-
-
-# def plot_cm(cm: np.array, labels: List[str], title: str = '',
-#             figsize: Tuple[int, int] = (4, 4)):
-#     """Plot confusion matrix.
-
-#     Args:
-#         cm: Confusion matrix with rows are true and columns are predictions.
-#         labels: Labels of the confusion matrix.
-#         title: Title of plot.
-#         figsize: Size of figure.
-
-#     """
-#     cm = DataFrame(cm, index=labels, columns=labels)
-
-#     plt.figure(figsize=figsize)
-#     ax = sns.heatmap(
-#         cm, cmap='viridis', annot=True, cbar=False, fmt=".0f", square=True,
-#         linewidths=1, linecolor='black', annot_kws={"size": 18}
-#     )
-#     ax.xaxis.set_ticks_position("none")
-#     ax.yaxis.set_ticks_position("none")
-#     ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=14)
-
-#     plt.ylabel('True', fontsize=18, fontweight='bold')
-#     ax.set_xticklabels(ax.get_xticklabels(), rotation=0, fontsize=14)
-
-#     plt.xlabel('Predicted', fontsize=18, fontweight='bold')
-#     plt.title(title, fontsize=14, fontweight='bold')
-
-#     return ax
-
 
 stages = ["0", "I", "II", "III", "IV", "V", "VI"]
 
@@ -69,6 +37,7 @@ nft_report = html.Div(
             label="Select figure or table to plot:",
             id="report-dropdown",
             data=[
+                {"value": "results", "label": "Results Table"},
                 {
                     "value": "summary-table",
                     "label": "Summary stats and demographics table",
@@ -80,12 +49,27 @@ nft_report = html.Div(
                 {"value": "stage-boxplot", "label": "Braak NFT Stage Group Boxplots"},
                 {"value": "braak-cm", "label": "Braak NFT Stage Confusion Matrix"},
             ],
-            value="summary-table",
+            value="results",
             style={"width": "auto"},
         ),
         html.Div(id="report-div"),
     ]
 )
+
+
+def get_results_table(data):
+    """Get the results table, allowing saving."""
+    df = json_normalize(data, sep="-").fillna(value="").astype(str)
+
+    return html.Div(
+        [
+            dash_table.DataTable(
+                df.to_dict("records"),
+                [{"name": i, "id": i} for i in df.columns],
+                export_format="csv",
+            )
+        ]
+    )
 
 
 def counts_histogram_layout(data):
@@ -217,7 +201,9 @@ def return_report_div(selected_report, data):
 
     """
     if data.get("docs"):
-        if selected_report in ("counts", "stage-boxplot"):
+        if selected_report == "results":
+            return get_results_table(data["docs"])
+        elif selected_report in ("counts", "stage-boxplot"):
             return counts_histogram_layout(data["docs"])
         elif selected_report == "braak-cm":
             return get_confusion_matrix(data["docs"])

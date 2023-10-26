@@ -7,9 +7,10 @@ from ..utils.settings import (
     MONGO_URI,
     MONGODB_USERNAME,
     MONGODB_PASSWORD,
+    COLORS,
 )
 
-bn_style = {"background-color": "#6384c6", "color": "#fcfcfc"}
+bn_style = {"background-color": COLORS["bn-background"], "color": COLORS["bn-font"]}
 
 banner = html.Div(
     [
@@ -31,7 +32,11 @@ banner = html.Div(
         ),
         html.Div(
             html.H4("NeuroTK", className="app__header__title"),
-            style={"width": "20%", "display": "inline-block", "color": "#fcfcfc"},
+            style={
+                "width": "20%",
+                "display": "inline-block",
+                "color": COLORS["bn-font"],
+            },
         ),
         html.Div(
             html.P(id="curProject_disp"),
@@ -43,7 +48,11 @@ banner = html.Div(
         ),
         html.Div(
             html.P(children=["Logged in as ", html.Strong(f"{USER}")]),
-            style={"width": "20%", "display": "inline-block", "color": "#fcfcfc"},
+            style={
+                "width": "20%",
+                "display": "inline-block",
+                "color": COLORS["bn-font"],
+            },
         ),
         html.Div(
             html.Button(
@@ -63,7 +72,7 @@ banner = html.Div(
             style={"width": "auto", "display": "inline-block"},
         ),
     ],
-    style={"border": "2px black solid", "background-color": "#002878"},
+    style={"border": "2px black solid", "background-color": COLORS["banner-main"]},
     id="banner",
 )
 

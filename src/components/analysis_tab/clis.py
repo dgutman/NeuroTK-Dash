@@ -7,7 +7,7 @@ from pandas import DataFrame
 import plotly.express as px
 
 from ...utils.api import submit_ppc_job, submit_tissue_detection, submit_nft_inference
-from ...utils.settings import gc, USER
+from ...utils.settings import gc, USER, COLORS
 from ...utils.helpers import generate_dash_layout_from_slicer_cli
 from ...utils.database import getProjectDataset
 
@@ -18,7 +18,10 @@ app = curAppObject.app
 ## I find this very confusing.. but binding to main dash app claass
 
 # Constants
-CLI_SELECTOR_STYLE = {"marginLeft": "30px"}
+CLI_SELECTOR_STYLE = {
+    "marginLeft": "30px",
+    "backgroundColor": COLORS["background-secondary"],
+}
 CARD_CLASS = "mb-3"
 MT3_CLASS = "mt-3"
 CLI_OUTPUT_STYLE = {
@@ -27,6 +30,7 @@ CLI_OUTPUT_STYLE = {
     "marginTop": "10px",
     "borderRadius": "5px",
     "boxShadow": "2px 2px 12px #aaa",
+    "backgroundColor": COLORS["background-secondary"],
 }
 
 
@@ -51,6 +55,7 @@ cli_button_controls = html.Div(
         ),
     ],
     className="d-grid gap-2 d-md-flex justify-content-md-begin",
+    style={"backgroundColor": COLORS["background-secondary"]},
 )
 
 
@@ -79,13 +84,9 @@ def create_cli_selector():
                             "gray-matter-from-xmls",
                             "gray-matter-fixed",
                             "tissue",
+                            "tissueV2",
+                            "tissue-unet",
                         ],
-                        style={"maxWidth": 300},
-                    ),
-                    html.Button(
-                        "Refresh Task Status",
-                        id="task-status-button",
-                        className="mr-2 btn btn-danger",
                         style={"maxWidth": 300},
                     ),
                 ]
@@ -111,7 +112,6 @@ def create_cli_selector():
                                 )
                             ),
                             html.Div(id="cli-output-status"),
-                            html.Div(id="debugjobtaskstatus"),
                         ],
                         width=6,
                     ),
@@ -120,23 +120,6 @@ def create_cli_selector():
         ],
         style=CLI_SELECTOR_STYLE,
     )
-
-
-## Create callback for when the app loads to see the status of jobs already submitted or running
-
-
-@callback(
-    Output("debugjobtaskstatus", "children"),
-    Input("task-status-button", "n_clicks"),
-    State("curCLI_params", "data"),
-)
-def refreshTaskStatus(n_clicks, cliParams):
-    ### This will check the dsaJobQueue mongo collection, and given a list of imageID's
-    ## and a parameter set, will see what jobs have been run and/or submitted
-    # print("You have pressed this button %d times", n_clicks)
-    # print("and the current cliParams are..")
-    # print(cliParams)
-    return html.Div("I was indeed updated..")
 
 
 ### Update this cliItems from the main table data.
@@ -346,8 +329,8 @@ def submitCLItasks(
         for i, item in enumerate(itemsToRun):
             if selected_cli == "PositivePixelCount":
                 jobOutput = submit_ppc_job(item, curCLI_params, maskName)
-            elif selected_cli == "TissueSegmentation":
-                jobOutput = submit_tissue_detection(item, curCLI_params)
+            elif selected_cli in ("TissueSegmentation", "TissueSegmentationV2"):
+                jobOutput = submit_tissue_detection(item, curCLI_params, selected_cli)
             elif selected_cli == "NFTDetection":
                 jobOutput = submit_nft_inference(item, curCLI_params, maskName)
             else:

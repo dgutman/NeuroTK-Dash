@@ -9,7 +9,7 @@ import dash_bootstrap_components as dbc
 
 from .create_project_popup import create_project_popup
 from ...utils.database import getProjects, getProjectDataset
-from ...utils.settings import PROJECTS_ROOT_FOLDER_ID
+from ...utils.settings import PROJECTS_ROOT_FOLDER_ID, USER, COLORS
 
 project_selection = html.Div(
     [
@@ -18,24 +18,6 @@ project_selection = html.Div(
         html.Div(id="load-project-store"),
         dbc.Row(
             [
-                dbc.Col(
-                    html.Button(
-                        [html.I(className="fa-solid fa-arrows-rotate")],
-                        id="refresh-item-store",
-                        style={"background-color": "orange"},
-                        title="Refresh current project item store.",
-                        disabled=True,
-                    ),
-                    width="auto",
-                ),
-                dbc.Col(
-                    html.Button(
-                        [html.I(className="fa-solid fa-arrows-rotate")],
-                        id="refresh-projects-bn",
-                        title="Refresh the availble projects.",
-                    ),
-                    width="auto",
-                ),
                 dbc.Col(
                     html.Div("Select project: ", style={"fontWeight": "bold"}),
                     align="start",
@@ -50,10 +32,11 @@ project_selection = html.Div(
                 ),
                 dbc.Col(
                     html.Div(
-                        html.Button(
-                            [html.I(className="fa-solid fa-plus")],
-                            title="create new project",
+                        dbc.Button(
+                            "Create project",
                             id="open-create-project-bn",
+                            color="success",
+                            className="me-1",
                         )
                     ),
                     align="end",
@@ -61,10 +44,11 @@ project_selection = html.Div(
                 ),
                 dbc.Col(
                     html.Div(
-                        html.Button(
-                            [html.I(className="fa-solid fa-trash")],
-                            title="delete selected project",
+                        dbc.Button(
+                            "Delete selected project",
                             id="delete-project",
+                            color="danger",
+                            className="me-1",
                         )
                     ),
                     align="end",
@@ -75,63 +59,19 @@ project_selection = html.Div(
         create_project_popup,
     ],
     id="project-selection",
+    style={"backgroundColor": COLORS["background-secondary"]},
 )
-
-
-@callback(
-    Output("refresh-item-store", "disabled"),
-    Input("projects-dropdown", "value"),
-    prevent_initial_call=True,
-)
-def refresh_itemStore_state(selected_project):
-    """
-    Disable the refresh new project button if a project is not selected.
-
-    """
-    return False if selected_project else True
-
-
-@callback(
-    Output("projectItem_store", "data", allow_duplicate=True),
-    Input("refresh-item-store", "n_clicks"),
-    [State("projects-dropdown", "data"), State("projects-dropdown", "value")],
-    prevent_initial_call=True,
-)
-def refresh_projectItem_store(n_clicks, available_projects, project_id):
-    """
-    Update the project item store.
-    """
-    if n_clicks:
-        # Get the name of the project.
-        projectName = None
-
-        for project in available_projects:
-            if project["value"] == project_id:
-                projectName = project["label"]
-                break
-
-        if projectName:
-            # Get the project items (images) from the Project folder.
-            projectItemSet = getProjectDataset(
-                projectName, project_id, forceRefresh=True
-            )
-
-            return projectItemSet if projectItemSet else []
-        else:
-            raise Exception("Could not find the project in the dropdown.")
-    else:
-        return no_update
 
 
 @callback(
     Output("projects-store", "data"),
-    [Input("load-project-store", "children"), Input("refresh-projects-bn", "n_clicks")],
+    Input("load-project-store", "children"),
 )
-def start_store(_, n_clicks: bool):
+def start_store(_):
     """
     This is a simple trigger function that will initiate store loading.
     """
-    return getProjects(PROJECTS_ROOT_FOLDER_ID, forceRefresh=n_clicks)
+    return getProjects(PROJECTS_ROOT_FOLDER_ID, forceRefresh=False)
 
 
 # Adding current project info to the main top bar
@@ -172,9 +112,52 @@ def populate_projects(data):
     """
     Populate the projects dropdown.
     """
-    options = [{"value": project["_id"], "label": project["key"]} for project in data]
+    names = [project["key"] for project in data]
+    data_dict = {
+        project["key"]: {"value": project["_id"], "label": project["key"]}
+        for project in data
+    }
 
+    user_names = []
+    other_names = []
+
+    for name in names:
+        if name.startswith(USER):
+            user_names.append(name)
+        else:
+            other_names.append(name)
+
+    user_names = sorted(user_names)
+    other_names = sorted(other_names)
+
+    options = [data_dict[name] for name in user_names + other_names]
+
+    # Sort with users first.
     if len(options):
         return options
     else:
         return []
+
+
+@callback(
+    Output("projects-dropdown", "value"),
+    Input("projects-dropdown", "data"),
+    State("new-project-name", "value"),
+    suppress_initia_call=True,
+)
+def change_selected_project(projects, new_project_name):
+    """
+    Projects is a list of dictionaries, with each dictionary have this structure:
+        {'value': a DSA id for the project, 'label': user/projectName}
+
+    """
+    if len(projects):
+        if new_project_name:
+            # There may be a new project created, automatically select it!
+            for project in projects:
+                if f"{USER}/{new_project_name}" == project["label"]:
+                    return project["value"]
+
+        return projects[0]["value"]
+    else:
+        return ""

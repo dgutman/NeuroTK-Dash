@@ -118,6 +118,10 @@ AVAILABLE_CLI_TASKS = {
         "name": "TissueSegmentation",
         "dsa_name": "TissueSegmentation",
     },
+    "TissueSegmentationV2": {
+        "name": "TissueSegmentationV2",
+        "dsa_name": "TissueSegmentationV2",
+    },
     "NFTDetection": {"name": "NFTDetection", "dsa_name": "NFTDetection"},
 }
 
@@ -129,3 +133,11 @@ dbConn = mongoConn[
     MONGODB_DB
 ]  ### Attach the mongo client object to the database I want to store everything
 ## dbConn is a connection to the dsaCache database
+
+COLORS = {
+    "banner-main": "#002878",
+    "bn-background": "#6384c6",
+    "bn-font": "#fcfcfc",
+    "background": "#e4e6f0",
+    "background-secondary": "#ecedf0",
+}

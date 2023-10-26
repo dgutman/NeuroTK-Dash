@@ -38,23 +38,54 @@ valid_scores = ["0", "1", "2", "3", "4", "5", "I", "II", "III", "IV", "V", "VI"]
 
 ppc_report = html.Div(
     [
-        dmc.Select(
-            label="Select figure or table to plot:",
-            id="ppc-report-dropdown",
-            data=[
-                {
-                    "value": "summary-stats",
-                    "label": "Clinical & demographic summary statistics",
-                },
-                {"value": "stacked-barplot", "label": "Stacked Barplot"},
-                {"value": "boxplot", "label": "Region Boxplots"},
-            ],
-            value="summary-stats",
-            style={"width": "auto"},
+        dbc.Row(
+            [
+                dbc.Col(
+                    dmc.Select(
+                        label="Select figure or table to plot:",
+                        id="ppc-report-dropdown",
+                        data=[
+                            {"value": "results", "label": "Results Table"},
+                            {
+                                "value": "summary-stats",
+                                "label": "Clinical & demographic summary statistics",
+                            },
+                            {"value": "stacked-barplot", "label": "Stacked Barplot"},
+                            {"value": "boxplot", "label": "Region Boxplots"},
+                        ],
+                        value="results",
+                        style={"width": "auto"},
+                    ),
+                ),
+                dbc.Col(
+                    dmc.Button(
+                        "Export Results as CSV",
+                        color="info",
+                        className="me-1",
+                        id="export-results-bn",
+                    )
+                ),
+            ]
         ),
         html.Div(id="ppc-report-div"),
+        html.Div(id="bn-test"),
     ]
 )
+
+
+def get_results_table(data):
+    """Get the results table, allowing saving."""
+    df = json_normalize(data, sep="-").fillna(value="").astype(str)
+
+    return html.Div(
+        [
+            dash_table.DataTable(
+                df.to_dict("records"),
+                [{"name": i, "id": i} for i in df.columns],
+                export_format="csv",
+            )
+        ]
+    )
 
 
 def get_summary_stats_table(data):
@@ -154,11 +185,13 @@ def get_summary_stats_table(data):
         # No data so just return an empty table.
         table_data = DataFrame(columns=["Clinical variable", "Description"])
 
+    table_data.to_csv("test.csv")
     return html.Div(
         [
             dash_table.DataTable(
                 table_data.to_dict("records"),
                 [{"name": i, "id": i} for i in table_data.columns],
+                export_format="csv",
             )
         ]
     )
@@ -296,14 +329,19 @@ def return_report_div(ppc_selected_report, data):
     show for PPC report.
 
     """
-    if ppc_selected_report == "summary-stats":
-        return get_summary_stats_table(data["docs"])
-    elif ppc_selected_report == "stacked-barplot":
-        return get_stacked_barplot()
-    elif ppc_selected_report == "boxplot":
-        return get_boxplot(data["docs"])
+    if data.get("docs"):
+        if ppc_selected_report == "results":
+            return get_results_table(data["docs"])
+        elif ppc_selected_report == "summary-stats":
+            return get_summary_stats_table(data["docs"])
+        elif ppc_selected_report == "stacked-barplot":
+            return get_stacked_barplot()
+        elif ppc_selected_report == "boxplot":
+            return get_boxplot(data["docs"])
+        else:
+            return html.Div("This report is not currently available.")
     else:
-        return html.Div("This report is not currently available.")
+        return html.Div()
 
 
 @callback(
@@ -318,7 +356,8 @@ def return_report_div(ppc_selected_report, data):
 )
 def update_boxplot(metric, regions, score, data):
     """Update the boxplot based on the metric and region selected."""
-    df = json_normalize(data["docs"], sep="-")
+    # Report store might be empty.
+    df = json_normalize(data.get("docs", []), sep="-")
 
     df = df[df["npSchema-region"].isin(regions)]
     df = df[df[f"npClinical-{score}"].isin(valid_scores)]

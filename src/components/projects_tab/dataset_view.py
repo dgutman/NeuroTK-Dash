@@ -7,7 +7,7 @@ import dash_ag_grid as dag
 
 from ...utils.database import getProjectDataset
 from ...utils.helpers import generate_generic_DataTable
-from ...utils.settings import gc
+from ...utils.settings import gc, COLORS
 from ...utils.api import get_datasets_list
 
 from .dataView_component import generateDataViewLayout
@@ -26,11 +26,11 @@ dataset_view = html.Div(
                     [
                         dmc.Tab("Table", value="table"),
                         dmc.Tab("Images", value="images"),
-                        html.Button(
-                            "+ Dataset",
+                        dbc.Button(
+                            "Add Dataset",
                             id="add-dataset",
-                            title="Add dataset",
-                            style={"background": "#7df097"},
+                            color="success",
+                            className="me-1",
                         ),
                     ]
                 ),
@@ -80,22 +80,29 @@ dataset_view = html.Div(
             ],
             orientation="vertical",
             value="table",
+            inverted=True,
+            variant="pills",
         ),
         add_dataset_popup,
-    ]
+    ],
+    style={"backgroundColor": COLORS["background-secondary"]},
 )
 
 
 @callback(
     Output("projectItem_store", "data"),
-    [Input("projects-dropdown", "value"), Input("add-dataset-bn", "n_clicks")],
     [
-        State("projects-dropdown", "data"),
+        Input("projects-dropdown", "value"),
+        Input("add-dataset-bn", "n_clicks"),
+        Input("projects-dropdown", "data"),
+    ],
+    [
+        # State("projects-dropdown", "data"),
         State("projects-store", "data"),
         State("dataset-dropdown", "value"),
         State("dataset-item-store", "data"),
     ],
-    prevent_initial_call=True,
+    # prevent_initial_call=True,
 )
 def updateProjectItemStore(
     projectId: str,
@@ -116,6 +123,17 @@ def updateProjectItemStore(
         List of dictionaries with item / image metadata.
 
     """
+    # Run this only if the selected project is in the store.
+    missing_project = True
+
+    for project in projectData:
+        if project["value"] == projectId:
+            missing_project = False
+            break
+
+    if missing_project:
+        return []
+
     if projectId:
         # Update project "add dataset button" was clicked.
         if n_clicks:
